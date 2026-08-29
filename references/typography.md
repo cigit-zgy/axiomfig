@@ -27,7 +27,7 @@ The first command checks the default sans mode; the second explicitly checks ser
 
 ## Ordinary artist pass
 
-`render_figure(..., typography=mode)` calls `apply_figure_typography()` immediately before saving the Matplotlib PDF. It visits figure text, all three axes-title positions, x/y labels, major/minor tick labels, axes annotations, legend titles, and legend labels. Artists without an explicit font file receive the exact Latin, Chinese, or Japanese font for the selected mode and custom math family.
+`render_figure(..., typography=mode)` calls `apply_figure_typography()` immediately before saving the Matplotlib PDF. It visits figure text, all three axes-title positions, x/y labels, major/minor tick labels, axes annotations, legend titles, and legend labels. Artists without an explicit font file receive the exact Latin, Chinese, or Japanese file for the selected mode while preserving their existing size, weight, style, and stretch. Every such artist, including a pure-math artist with no plain-script run, receives the selected custom math family.
 
 This pass covers ordinary single-script `Text` artists; it is not a general text shaping engine. Latin is `en`, kana marks a string as `ja`, and otherwise Han-only text is treated as `zh`. An artist with an explicitly assigned font file is preserved, so shared Han-only Japanese text must be assigned explicitly.
 

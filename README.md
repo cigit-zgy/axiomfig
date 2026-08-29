@@ -59,7 +59,7 @@ The exact helper APIs and limits are routed from [SKILL.md](SKILL.md) to [layout
 
 ## LaTeX and Tectonic boundary
 
-The wheel packages `axiomfig.sty` and a generated `axiomfig-colors.tex`. A real standalone Tectonic probe verifies `xcolor`, `siunitx`, `mhchem`, `amsmath`, and `unicode-math` semantics with embedded, subset, Unicode-mapped, non-Type-3 fonts:
+The wheel packages `axiomfig.sty` and a generated `axiomfig-colors.tex`. Color generation and tests verify that the xcolor definitions exactly match the canonical Matplotlib palette. A separate standalone Tectonic probe verifies `siunitx`, `mhchem`, and math semantics with embedded, subset, Unicode-mapped, non-Type-3 fonts:
 
 ```bash
 python scripts/check_latex.py

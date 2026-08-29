@@ -32,7 +32,7 @@ Typography remains in physical points rather than scaling with width.
 
 ## Tick contract
 
-Call `apply_axis_contract(axis, surface="open")` for line and scatter axes and `surface="filled"` for bar, distribution, heatmap, image, or matrix axes.
+Call `apply_axis_contract(axis, surface="open")` for line and scatter data axes and `surface="filled"` for bar, distribution, heatmap, image, or matrix data axes. Apply it once per data-bearing axes, not to Matplotlib-generated support axes such as a colorbar; the colorbar keeps the locator and tick geometry created by Matplotlib.
 
 | Surface | Major | Minor | Linear minor locator |
 |---|---|---|---|

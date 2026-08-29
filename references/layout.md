@@ -20,4 +20,4 @@ The helper measures rendered geometry, so templates do not guess `ncol`. It only
 
 ## Mixed layouts
 
-Apply open/filled tick and artist helpers per axes before adding panel labels. `layout-4-panel` and `style-contract` demonstrate different surface types in one figure without weakening the per-axes contract. The whole figure still selects exactly one typography mode, geometry preset, and palette layer.
+Apply open/filled tick and artist helpers per data axes before adding panel labels. Matplotlib-generated support axes, including colorbars, keep their own locator/tick geometry and do not receive `apply_axis_contract()`. `layout-4-panel` and `style-contract` demonstrate different data-surface types in one figure without weakening the per-axes contract. The whole figure still selects exactly one typography mode, geometry preset, and palette layer.

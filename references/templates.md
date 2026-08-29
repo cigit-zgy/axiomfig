@@ -28,7 +28,7 @@ from axiomfig.template_helpers import (
 )
 ```
 
-- Every axes calls `apply_axis_contract(axis, surface="open" | "filled")`. Linear axes get one minor tick per major interval; log locators are preserved.
+- Every data-bearing axes calls `apply_axis_contract(axis, surface="open" | "filled")`. Linear data axes get one minor tick per major interval; log locators are preserved. Do not apply the helper to Matplotlib-generated support axes such as a colorbar.
 - Every scatter collection passes through `apply_scatter_contract(collection)` for black `0.6 pt` edges.
 - Every bar container passes through `add_bar_value_labels(axis, containers, decimals=2)`. It applies black `0.6 pt` edges, `2 pt` label padding, fixed trailing-zero precision, and reserves headroom for vertical or horizontal bars. `decimals` must be non-negative.
 - Multi-panel templates call `add_panel_labels(axes)` once; single-panel templates omit panel labels.

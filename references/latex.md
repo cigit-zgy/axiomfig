@@ -2,10 +2,12 @@
 
 ## Packaged resources
 
-The wheel includes:
+The wheel resources are installed as:
 
-- `src/axiomfig/resources/latex/axiomfig.sty`
-- `src/axiomfig/resources/latex/axiomfig-colors.tex`
+- `axiomfig/resources/latex/axiomfig.sty`
+- `axiomfig/resources/latex/axiomfig-colors.tex`
+
+Their checkout sources live under `src/axiomfig/resources/latex/`.
 
 `axiomfig.sty` inputs the generated color definitions and loads `xcolor`, `siunitx`, `mhchem` version 4, `amsmath`, and `unicode-math`. It provides generic scientific typesetting infrastructure only; it defines no wastewater-, ASM-, ADM-, COD-, or BOD-specific macros.
 
@@ -17,6 +19,26 @@ python scripts/check_latex.py --output-dir tmp/latex-probe
 ```
 
 This PASS applies to TeX-native documents that explicitly load `axiomfig.sty`.
+
+## Export for a TeX-native document
+
+After installing AxiomFig, copy both package resources into the TeX document directory with the standard `importlib.resources` API:
+
+```bash
+python - /absolute/path/to/tex-project <<'PY'
+from importlib.resources import files
+from pathlib import Path
+import sys
+
+destination = Path(sys.argv[1])
+destination.mkdir(parents=True, exist_ok=True)
+resources = files("axiomfig").joinpath("resources", "latex")
+for name in ("axiomfig.sty", "axiomfig-colors.tex"):
+    (destination / name).write_bytes(resources.joinpath(name).read_bytes())
+PY
+```
+
+Keep the two files together, then use `\usepackage{axiomfig}` in a Tectonic document. Regenerate and test canonical colors in the AxiomFig checkout; do not edit the exported color file as an independent palette source.
 
 ## Matplotlib-to-Tectonic boundary
 

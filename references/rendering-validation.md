@@ -50,13 +50,20 @@ The gallery contract is exactly twenty final files:
 
 `09_serif` checks the complete serif text/math/CJK family. `10_style_contract` checks open/filled ticks, `0.6 pt` strokes, bar labels/edges, scatter edges, panel offsets, responsive legends, palette consistency, and multi-panel symmetry.
 
-## Deterministic checks
+## Validation tiers
 
-`validate_pair()` always rejects missing, empty, or unparseable artifacts; more than one PDF page; a missing PNG; out-of-page text; non-embedded or non-subset fonts; and Type 3 fonts. It checks physical dimensions and a Tectonic log when the caller supplies those expectations. `validate_gallery(..., expected_stems=...)` also rejects a missing or unexpected PDF set; `build_gallery.py` supplies the frozen `01`-`10` set, expected dimensions, and per-render logs, and separately checks multilingual content. The standalone LaTeX probe adds the stricter Unicode-map and semantic checks described in [latex.md](latex.md).
+The checks are deliberately split; do not report the generic validator as the full build-time/E2E gate.
 
-The gallery builder uses `SOURCE_DATE_EPOCH=0` for deterministic PDF metadata and records hashes, style paths, commands, dimensions, and font rows in the ignored manifest.
+| Tier | Verified behavior |
+|---|---|
+| `validate_pair()` | PDF exists, parses as one page, has a non-empty PNG partner, keeps text within the page, embeds/subsets every font, and has no Type 3 fonts; optional caller-supplied width/height and Tectonic log checks |
+| `validate_gallery()` / `python scripts/validate.py` | runs the generic pair checks over existing PDFs; an API caller may supply `expected_stems`, but the CLI does not reconstruct artifacts or supply the frozen set, dimensions, render logs, or multilingual strings |
+| `build_gallery.py` plus gallery E2E tests | reconstructs `01`-`10`, supplies each spec's dimensions and fresh render log, checks required multilingual text, enforces the exact set after building, and tests reproducible PDF/PNG hashes and expected font families |
+| `check_latex.py` | separately verifies TeX-native `siunitx`/`mhchem`/math extraction and requires embedded, subset, Unicode-mapped, non-Type-3 Latin Modern text/math fonts |
 
-Poppler can report `Mismatch between font type and embedded font file` for Matplotlib CFF OpenType subsets. This warning is recorded rather than hidden; acceptance still requires `emb=yes`, `sub=yes`, `uni=yes`, exact font names, extraction, and visual inspection.
+The gallery builder uses `SOURCE_DATE_EPOCH=0` for deterministic PDF metadata and records hashes, style paths, commands, dimensions, and font rows in the ignored manifest. The xcolor/Matplotlib RGB equality belongs to `generate_colors.py --check` and `tests/test_colors.py`, not to the standalone typesetting probe.
+
+Poppler can report `Mismatch between font type and embedded font file` for Matplotlib CFF OpenType subsets. This warning is recorded rather than hidden. Generic figure validation still requires `emb=yes`, `sub=yes`, and no Type 3 fonts; gallery E2E adds expected-family and extracted-content checks plus visual inspection. The standalone probe separately requires `uni=yes`.
 
 ## Visual gate
 
