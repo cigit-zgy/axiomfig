@@ -1,0 +1,2 @@
+# Paul Tol high-contrast qualitative scheme; also robust in monochrome.
+axes.prop_cycle: cycler(color=['004488', 'DDAA33', 'BB5566'])

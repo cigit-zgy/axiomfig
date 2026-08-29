@@ -1,0 +1,3 @@
+# Explicit ordered families; templates select SC and JP directly for regional glyphs.
+font.family: sans-serif
+font.sans-serif: LMSans10, Noto Sans CJK SC, Noto Sans CJK JP

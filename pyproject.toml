@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=80"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "axiomfig"
+version = "0.1.0"
+description = "Deterministic-first scientific figure skill"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "fonttools>=4.59",
+  "matplotlib>=3.10",
+  "numpy>=2.2",
+  "pillow>=11.3",
+  "pypdf>=6.0",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.4",
+  "ruff>=0.12",
+]
+
+[project.scripts]
+axiomfig-compose = "axiomfig.cli:compose_main"
+axiomfig-render = "axiomfig.cli:render_main"
+axiomfig-validate = "axiomfig.cli:validate_main"
+axiomfig-gallery = "axiomfig.cli:gallery_main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests"]
+pythonpath = ["src"]
+markers = [
+  "e2e: requires Tectonic and Poppler",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]

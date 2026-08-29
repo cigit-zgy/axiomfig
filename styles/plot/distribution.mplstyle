@@ -1,0 +1,6 @@
+patch.linewidth: 0.65
+boxplot.boxprops.linewidth: 0.65
+boxplot.capprops.linewidth: 0.65
+boxplot.flierprops.markersize: 3.0
+boxplot.medianprops.linewidth: 0.9
+boxplot.whiskerprops.linewidth: 0.65

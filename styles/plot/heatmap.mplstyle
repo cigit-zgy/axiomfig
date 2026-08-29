@@ -1,0 +1,2 @@
+image.cmap: cividis
+image.interpolation: nearest
