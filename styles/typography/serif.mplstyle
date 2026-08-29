@@ -1,5 +1,5 @@
 # One complete serif publication family. Maple Mono is restricted to code roles.
-font.family: LMRoman10
+font.family: serif
 font.serif: LMRoman10, Noto Serif CJK SC, Noto Serif CJK JP
 font.monospace: Maple Mono
 mathtext.fontset: custom

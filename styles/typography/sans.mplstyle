@@ -1,5 +1,5 @@
 # Latin family names match the Homebrew Latin Modern font metadata.
-font.family: LMSans10
+font.family: sans-serif
 font.sans-serif: LMSans10, Noto Sans CJK SC, Noto Sans CJK JP
 font.monospace: Maple Mono
 mathtext.fontset: custom
