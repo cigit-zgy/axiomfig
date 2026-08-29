@@ -55,8 +55,8 @@ def test_font_discovery_rejects_cross_family_fallback(monkeypatch: pytest.Monkey
 
     monkeypatch.setattr(typography.font_manager, "findfont", lambda *args, **kwargs: fallback_path)
 
-    with pytest.raises(FontContractError, match="expected 'LMRoman10'"):
-        discover_fonts(mode="serif", overrides={"chinese": "Noto Serif CJK SC"})
+    with pytest.raises(FontContractError, match="expected 'Required Test Family'"):
+        discover_fonts({"latin": "Required Test Family"})
 
 
 @pytest.mark.parametrize(
