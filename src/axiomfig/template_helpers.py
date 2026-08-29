@@ -80,6 +80,9 @@ def place_legend_above(axis: Axes, gap_pt: float = 2.0) -> Legend | None:
             raise ValueError("legend cannot fit above the axes within the figure bounds")
         figure.subplots_adjust(top=top)
         figure.canvas.draw()
+    final_bbox = legend.get_window_extent(figure.canvas.get_renderer())
+    if final_bbox.y1 > figure.bbox.y1 + 1e-6:
+        raise ValueError("legend cannot fit above the axes within the figure bounds")
     return legend
 
 

@@ -48,3 +48,14 @@ def test_legend_is_responsive_frameless_and_right_aligned_to_the_spine() -> None
     assert bbox.x1 <= figure.bbox.x1
     assert bbox.y1 <= figure.bbox.y1
     plt.close(figure)
+
+
+def test_legend_rejects_add_axes_when_figure_top_space_cannot_be_reserved() -> None:
+    figure = plt.figure(figsize=(3.0, 2.0))
+    axis = figure.add_axes((0.125, 0.11, 0.775, 0.77))
+    for index in range(4):
+        axis.plot([0, 1], [index, index + 1], label=f"Long label {index}")
+
+    with pytest.raises(ValueError, match="cannot fit"):
+        template_helpers.place_legend_above(axis, gap_pt=2.0)
+    plt.close(figure)
