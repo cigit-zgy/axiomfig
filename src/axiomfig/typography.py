@@ -267,7 +267,7 @@ def _latin_variant_path(mode: str, weight: str | int | None, style: str | None) 
         "black",
     }
     if isinstance(weight, Real) and not isinstance(weight, bool):
-        if not float(weight).is_integer() or weight < 0:
+        if not float(weight).is_integer() or not 0 <= weight <= 1000:
             raise FontContractError(
                 f"Unsupported Latin weight {weight!r}; no exact variant file is available"
             )

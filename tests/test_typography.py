@@ -91,7 +91,7 @@ def test_language_font_mapping_uses_the_selected_mode(
     assert font_for_language(language, mode=mode).get_name() == expected
 
 
-@pytest.mark.parametrize("weight", ["light", "medium", 500, 500.0])
+@pytest.mark.parametrize("weight", ["light", "medium", 500, 500.0, -1, -1.0, 1001, 1001.0, 10000])
 def test_latin_weights_without_an_exact_file_hard_fail(weight: str | int) -> None:
     with pytest.raises(FontContractError, match="Unsupported Latin weight"):
         font_for_language("en", weight=weight)
