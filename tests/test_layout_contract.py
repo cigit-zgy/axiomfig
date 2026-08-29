@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+import warnings
+
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import pytest
 from matplotlib.transforms import ScaledTranslation
 
 from axiomfig import template_helpers
+from axiomfig.styles import StyleSelection, compose_styles
 
 
 def test_panel_labels_use_the_same_physical_gap_above_each_top_spine() -> None:
@@ -73,7 +77,7 @@ def test_legend_rejects_an_irreducibly_wide_single_column() -> None:
 
 def test_legend_rejects_a_rendered_collision_with_a_tagged_panel_label() -> None:
     figure, axis = plt.subplots(figsize=(5.0, 2.5))
-    axis.plot([0, 1], [0, 1], label="W" * 23)
+    axis.plot([0, 1], [0, 1], label="W" * 25)
     template_helpers.add_panel_labels([axis])
     transform = axis.transAxes + ScaledTranslation(0.0, 2.0 / 72.0, figure.dpi_scale_trans)
     candidate = axis.legend(
@@ -96,9 +100,31 @@ def test_legend_rejects_a_rendered_collision_with_a_tagged_panel_label() -> None
 
 def test_panel_labels_reject_a_preexisting_colliding_legend() -> None:
     figure, axis = plt.subplots(figsize=(5.0, 2.5))
-    axis.plot([0, 1], [0, 1], label="W" * 23)
+    axis.plot([0, 1], [0, 1], label="W" * 25)
     template_helpers.place_legend_above(axis)
 
     with pytest.raises(ValueError, match="panel label"):
         template_helpers.add_panel_labels([axis])
     plt.close(figure)
+
+
+@pytest.mark.parametrize("typography", ["sans", "serif"])
+@pytest.mark.parametrize("reverse_order", [False, True])
+def test_cjk_legend_layout_uses_exact_typography_before_collision_measurement(
+    reverse_order: bool, typography: str
+) -> None:
+    params = compose_styles(StyleSelection(typography=typography).paths()).params
+    with mpl.rc_context(rc=params), warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        figure, axis = plt.subplots(figsize=(2.5, 2.0))
+        axis.plot([0, 1], [0, 1], label="硝化效率" * 4 + "硝")
+        if reverse_order:
+            template_helpers.place_legend_above(axis)
+            with pytest.raises(ValueError, match="panel label"):
+                template_helpers.add_panel_labels([axis])
+        else:
+            template_helpers.add_panel_labels([axis])
+            with pytest.raises(ValueError, match="panel label"):
+                template_helpers.place_legend_above(axis)
+        plt.close(figure)
+    assert not [warning for warning in caught if "Glyph" in str(warning.message)]

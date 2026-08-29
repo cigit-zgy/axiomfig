@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Literal
 
+import matplotlib as mpl
 from matplotlib.axes import Axes
 from matplotlib.collections import PathCollection
 from matplotlib.container import BarContainer
@@ -12,7 +13,7 @@ from matplotlib.ticker import AutoMinorLocator
 from matplotlib.transforms import ScaledTranslation
 
 from axiomfig.contracts import FILLED_TICK_PARAMS, OPEN_TICK_PARAMS, STROKE_WIDTH_PT
-from axiomfig.typography import font_for_language
+from axiomfig.typography import apply_figure_typography, font_for_language
 
 PANEL_LABEL_GID = "axiomfig-panel-label"
 
@@ -31,7 +32,9 @@ def apply_axis_contract(axis: Axes, surface: Literal["open", "filled"] = "open")
     axis.tick_params(axis="both", which="minor", direction=policy["minor"])
 
 
-def add_panel_labels(axes: Iterable[Axes], gap_pt: float = 2.0) -> None:
+def add_panel_labels(
+    axes: Iterable[Axes], gap_pt: float = 2.0, mode: Literal["sans", "serif"] | None = None
+) -> None:
     """Place sequential panel labels at a uniform physical offset above each axes."""
     for index, axis in enumerate(axes):
         offset = ScaledTranslation(0.0, gap_pt / 72.0, axis.figure.dpi_scale_trans)
@@ -47,6 +50,7 @@ def add_panel_labels(axes: Iterable[Axes], gap_pt: float = 2.0) -> None:
             clip_on=False,
         )
         label.set_gid(PANEL_LABEL_GID)
+        apply_figure_typography(axis.figure, mode=_layout_typography_mode(mode))
         legend = axis.get_legend()
         if legend is not None:
             axis.figure.canvas.draw()
@@ -56,13 +60,17 @@ def add_panel_labels(axes: Iterable[Axes], gap_pt: float = 2.0) -> None:
                 )
 
 
-def place_legend_above(axis: Axes, gap_pt: float = 2.0) -> Legend | None:
+def place_legend_above(
+    axis: Axes, gap_pt: float = 2.0, mode: Literal["sans", "serif"] | None = None
+) -> Legend | None:
     """Place a frameless legend above an axes, measured before choosing its columns."""
     handles, labels = axis.get_legend_handles_labels()
     if not handles:
         return None
 
     figure = axis.figure
+    typography_mode = _layout_typography_mode(mode)
+    apply_figure_typography(figure, mode=typography_mode)
     figure.canvas.draw()
     transform = axis.transAxes + ScaledTranslation(0.0, gap_pt / 72.0, figure.dpi_scale_trans)
     legend: Legend | None = None
@@ -78,6 +86,7 @@ def place_legend_above(axis: Axes, gap_pt: float = 2.0) -> Legend | None:
             frameon=False,
             borderaxespad=0.0,
         )
+        apply_figure_typography(figure, mode=typography_mode)
         figure.canvas.draw()
         if legend.get_window_extent(
             figure.canvas.get_renderer()
@@ -120,6 +129,13 @@ def _legend_overlaps_panel_label(axis: Axes, legend: Legend) -> bool:
         for text in axis.texts
         if text.get_gid() == PANEL_LABEL_GID
     )
+
+
+def _layout_typography_mode(mode: Literal["sans", "serif"] | None) -> Literal["sans", "serif"]:
+    if mode is not None:
+        return mode
+    family = mpl.rcParams["font.family"]
+    return "serif" if "serif" in family else "sans"
 
 
 def _reserve_bar_label_headroom(axis: Axes, containers: list[BarContainer]) -> None:
