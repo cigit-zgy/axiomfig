@@ -14,7 +14,7 @@ from axiomfig.colors import PALETTES, render_mplstyle, render_xcolor  # noqa: E4
 
 def artifacts() -> dict[Path, str]:
     """Return all generated color artifact paths and their expected contents."""
-    generated = {ROOT / "latex/axiomfig-colors.tex": render_xcolor()}
+    generated = {ROOT / "src/axiomfig/resources/latex/axiomfig-colors.tex": render_xcolor()}
     generated.update(
         {ROOT / "styles/colors" / f"{name}.mplstyle": render_mplstyle(name) for name in PALETTES}
     )

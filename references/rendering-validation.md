@@ -13,10 +13,11 @@ Matplotlib Figure
 
 Matplotlib's PGF backend does not accept `tectonic` as `pgf.texsystem`; setting it directly is not a supported route. AxiomFig therefore uses Matplotlib's vector PDF as the TeX-compatible intermediate, then compiles a zero-border standalone TeX wrapper with Tectonic. Tectonic is always the final PDF producer. The same embedded vector content becomes the PNG by rasterizing that final PDF.
 
-The wrapper deliberately does not load `latex/axiomfig.sty`. Figure text has already
-been shaped and embedded in `intermediate.pdf`, so loading scientific packages in the
-outer document could not expand macros inside labels. The shared package is for
-TeX-native documents and the standalone probe described below.
+The wrapper deliberately does not load the packaged
+`src/axiomfig/resources/latex/axiomfig.sty`. Figure text has already been shaped and
+embedded in `intermediate.pdf`, so loading scientific packages in the outer document
+could not expand macros inside labels. The shared package is for TeX-native documents
+and the standalone probe described below.
 
 All `.tex`, `.aux`, `.log`, wrapper PDF, source PDF, and preview intermediates stay below `tmp/`. The render manifest records the full Tectonic command, style paths, font paths, intermediate path, physical dimensions, file size, and `pdffonts` rows.
 
@@ -30,14 +31,17 @@ python scripts/build_gallery.py
 python scripts/check_latex.py
 ```
 
-`check_latex.py` copies the committed `axiomfig.sty` and generated
-`axiomfig-colors.tex` into ignored `tmp/latex-probe/`, then compiles real standalone
-examples through Tectonic. The probe exercises `\qty{10}{\milli\gram\per\litre}`,
+`check_latex.py` copies the wheel-packaged `axiomfig.sty` and the single canonical,
+generated `axiomfig-colors.tex` into a fresh work directory, then compiles real
+standalone examples through Tectonic. Only after semantic and font checks pass are the
+verified artifacts atomically published to ignored `tmp/latex-probe/`. The probe
+exercises `\qty{10}{\milli\gram\per\litre}`,
 `\ce{NH4+}`, `\ce{NO3-}`, `\ce{PO4^3-}`, and
 `\mu_{\max}, \alpha, \beta`. Success requires extracted semantic text plus non-Type-3,
-embedded, subset Latin Modern text and math fonts. `axiomfig.sty` provides only generic
-infrastructure: generated xcolor definitions, `xcolor`, `siunitx`, `mhchem`, `amsmath`,
-and `unicode-math`; it defines no wastewater- or model-specific macros.
+embedded, subset Latin Modern text and math fonts with Unicode mappings.
+`axiomfig.sty` provides only generic infrastructure: generated xcolor definitions,
+`xcolor`, `siunitx`, `mhchem`, `amsmath`, and `unicode-math`; it defines no
+wastewater- or model-specific macros.
 
 ## Tectonic-native Matplotlib text investigation
 

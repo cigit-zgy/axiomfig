@@ -31,6 +31,9 @@ axiomfig-gallery = "axiomfig.cli:gallery_main"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+axiomfig = ["resources/latex/*.sty", "resources/latex/*.tex"]
+
 [tool.pytest.ini_options]
 addopts = "-ra"
 testpaths = ["tests"]

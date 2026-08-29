@@ -19,4 +19,6 @@ def test_matplotlib_and_xcolor_use_exactly_the_same_canonical_rgb_values() -> No
 
     assert xcolor_values == PALETTES["default"]
     assert tuple(xcolor_values.values()) == tuple(PALETTES["default"].values())
-    assert (ROOT / "latex/axiomfig-colors.tex").read_text(encoding="utf-8") == render_xcolor()
+    assert (ROOT / "src/axiomfig/resources/latex/axiomfig-colors.tex").read_text(
+        encoding="utf-8"
+    ) == render_xcolor()
