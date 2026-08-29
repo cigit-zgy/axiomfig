@@ -77,3 +77,38 @@ def test_typography_pass_rejects_unsegmentable_mixed_plain_scripts() -> None:
         apply_figure_typography(figure, mode="sans")
 
     plt.close(figure)
+
+
+def test_typography_pass_preserves_artist_metrics_while_replacing_font_file() -> None:
+    figure, axis = plt.subplots()
+    title = axis.set_title("Nitrification", fontsize=8.5, fontweight="bold", fontstyle="italic")
+    title.set_fontstretch("condensed")
+    before = title.get_fontproperties()
+
+    apply_figure_typography(figure, mode="sans")
+
+    after = title.get_fontproperties()
+    assert after.get_file() is not None
+    assert after.get_size_in_points() == before.get_size_in_points()
+    assert after.get_weight() == before.get_weight()
+    assert after.get_style() == before.get_style()
+    assert after.get_stretch() == before.get_stretch()
+    plt.close(figure)
+
+
+@pytest.mark.e2e
+@pytest.mark.parametrize(
+    ("mode", "expected_math"),
+    [("sans", "FiraMath"), ("serif", "LatinModernMath")],
+)
+def test_render_pipeline_uses_exact_math_for_pure_math_artist(
+    tmp_path: Path, mode: str, expected_math: str
+) -> None:
+    figure, axis = plt.subplots(figsize=(3.543307, 2.65748))
+    axis.text(0.5, 0.5, r"$\mu_{\max}$", transform=axis.transAxes)
+
+    result = render_figure(figure, tmp_path / mode, typography=mode)
+    entry = validate_pair(result.pdf, result.png, tectonic_log=result.log)
+
+    assert any(expected_math in row for row in entry.fonts)
+    plt.close(figure)

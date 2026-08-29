@@ -308,7 +308,9 @@ def apply_figure_typography(figure: Figure, mode: str = "sans") -> Figure:
         if artist.get_fontproperties().get_file() is not None:
             continue
         language = _language_for_text(artist.get_text())
+        artist.set_math_fontfamily("custom")
         if language is not None:
-            artist.set_fontproperties(font_for_language(language, mode=mode))
-            artist.set_math_fontfamily("custom")
+            properties = artist.get_fontproperties().copy()
+            properties.set_file(font_for_language(language, mode=mode).get_file())
+            artist.set_fontproperties(properties)
     return figure
