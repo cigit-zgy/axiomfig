@@ -36,24 +36,13 @@ where = ["src"]
 axiomfig = [
   "resources/latex/*.sty",
   "resources/latex/*.tex",
+  "resources/fonts/*.otf",
+  "resources/fonts/*.ttf",
+  "resources/fonts/licenses/*",
 ]
 
 [tool.setuptools.data-files]
 "share/axiomfig/styles" = ["styles/style.yaml", "styles/fonts.yaml", "styles/colors.yaml"]
-"share/axiomfig/fonts" = [
-  "fonts/lmsans10-regular.otf",
-  "fonts/lmsans10-bold.otf",
-  "fonts/lmsans10-oblique.otf",
-  "fonts/lmsans10-boldoblique.otf",
-  "fonts/latinmodern-math.otf",
-  "fonts/XCharter-Roman.otf",
-  "fonts/XCharter-Bold.otf",
-  "fonts/XCharter-Italic.otf",
-  "fonts/XCharter-BoldItalic.otf",
-  "fonts/XCharter-Math.otf",
-  "fonts/MapleMono[wght].ttf",
-]
-"share/axiomfig/fonts/licenses" = ["fonts/licenses/*"]
 
 [tool.pytest.ini_options]
 addopts = "-ra"

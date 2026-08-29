@@ -4,8 +4,9 @@ from collections.abc import Callable
 
 from matplotlib.figure import Figure
 
-from axiomfig.config import load_contracts
-from axiomfig.template_helpers import apply_single_panel_layout, refresh_panel_labels
+from axiomfig.layout import get_figure_layout, solve_panel_layout
+from axiomfig.ornaments import finalize_ornaments
+from axiomfig.template_helpers import apply_single_panel_layout
 from axiomfig.templates.curves import (
     build_bland_altman,
     build_calibration_curve,
@@ -100,20 +101,15 @@ def get_template_builder(name: str) -> Callable[..., Figure]:
 
 
 def _apply_family_layout(figure: Figure, name: str) -> None:
-    panel_templates = {"two-panel", "four-panel", "six-panel", "complex-multi-panel"}
-    if name not in panel_templates:
+    del name
+    if get_figure_layout(figure) is None:
         apply_single_panel_layout(figure)
         return
-    layout = load_contracts().style["layout"]["multi_panel"]
-    figure.subplots_adjust(
-        **{key: float(value) for key, value in layout["margins"].items()},
-        wspace=float(layout["wspace"]),
-        hspace=float(layout["hspace"]),
-    )
+    solve_panel_layout(figure)
+    finalize_ornaments(figure)
 
 
 def build_template(name: str, **kwargs: object) -> Figure:
     figure = get_template_builder(name)(**kwargs)
     _apply_family_layout(figure, name)
-    refresh_panel_labels(figure)
     return figure

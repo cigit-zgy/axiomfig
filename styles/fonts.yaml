@@ -1,6 +1,6 @@
 version: 1
 default: sans
-bundle_subdir: fonts
+bundle_subdir: resources/fonts
 
 modes:
   sans: {text: latin-modern-sans, math: latin-modern-sans, mono: maple-mono}

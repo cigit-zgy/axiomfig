@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import re
-import sysconfig
 from collections.abc import Mapping
 from dataclasses import dataclass
-from pathlib import Path
+from importlib.resources import files
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 from fontTools.ttLib import TTFont
@@ -27,11 +27,9 @@ class ResolvedFont:
 
 
 def _search_roots(contracts: Contracts) -> tuple[Path, ...]:
-    bundle = str(contracts.fonts["bundle_subdir"])
-    bundled_roots = (
-        Path(__file__).resolve().parents[2] / bundle,
-        Path(sysconfig.get_path("data")) / "share" / "axiomfig" / bundle,
-    )
+    bundle = PurePosixPath(str(contracts.fonts["bundle_subdir"]))
+    resource = files("axiomfig").joinpath(*bundle.parts)
+    bundled_roots = (Path(str(resource)),)
     system_roots = tuple(Path(value).expanduser() for value in contracts.fonts["search_roots"])
     return bundled_roots + system_roots
 

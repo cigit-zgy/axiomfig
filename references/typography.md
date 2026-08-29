@@ -10,7 +10,7 @@
 | Matplotlib mathematics | Latin Modern Sans | XCharter Math |
 | monospace auxiliary | Maple Mono | Maple Mono |
 
-Font provenance, filenames, licenses, license URLs, copyright attribution, redistribution status, attribution files, and full license files live only in `styles/fonts.yaml`. The selected open Latin/math/mono binaries and their notices are bundled under `fonts/` and installed under `share/axiomfig/fonts/`.
+Font provenance, filenames, licenses, license URLs, copyright attribution, redistribution status, attribution files, and full license files live only in `styles/fonts.yaml`. The selected open Latin/math/mono binaries and their notices are runtime package resources under `src/axiomfig/resources/fonts/`; installed callers locate them with `importlib.resources`.
 
 Arial, Times New Roman, SimSun, and Yu Gothic are optional system-font records with `bundled: false`. They are not copied, redistributed, or selected by a canonical mode.
 
@@ -26,4 +26,4 @@ Chinese and Japanese font work, multilingual segmentation, and heavy multilingua
 
 ## License attribution
 
-Latin Modern text/math use the GUST Font License. XCharter carries the Bitstream Charter free-font notice, while XCharter Math and Maple Mono use the SIL Open Font License 1.1. The repository retains the required attribution and full license text named by each bundled family. Arial and Times New Roman remain proprietary optional system fonts: their metadata is recorded with `bundled: false`, and their binaries are never copied or redistributed. SimSun and Yu Gothic are likewise metadata-only optional system fonts while CJK work is deferred.
+Latin Modern text/math use the GUST Font License. XCharter carries the Bitstream Charter free-font notice, while XCharter Math and Maple Mono use the SIL Open Font License 1.1. The package retains every attribution and full license text under `src/axiomfig/resources/fonts/licenses/`. Arial and Times New Roman remain proprietary optional system fonts: their metadata is recorded with `bundled: false`, and their binaries are never copied or redistributed. SimSun and Yu Gothic are likewise metadata-only optional system fonts while CJK work is deferred.

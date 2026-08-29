@@ -6,8 +6,8 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
 
+from axiomfig.layout import add_panel_axes, create_panel_grid
 from axiomfig.template_helpers import (
-    add_colorbar_panel_axes,
     apply_axis_contract,
     apply_categorical_axis,
     apply_colorbar_contract,
@@ -83,8 +83,9 @@ def _heatmap_figure(
     fmt: str = ".2f",
 ) -> Figure:
     figure = plt.figure()
-    outer = figure.add_gridspec(1, 1)[0, 0]
-    axis, colorbar_axis = add_colorbar_panel_axes(figure, outer)
+    layout = create_panel_grid(figure, 1, 1, panel_labels=False)
+    axis, colorbar_axis = add_panel_axes(layout, 0, colorbar=True)
+    assert colorbar_axis is not None
     image = _add_matrix(
         axis,
         matrix,

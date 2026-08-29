@@ -114,6 +114,9 @@ def _validate_style(style: Mapping[str, Any]) -> None:
             (style["ticks"]["geometry"]["minor_length_pt"], "ticks.geometry.minor_length_pt"),
             (style["ticks"]["geometry"]["major_length_pt"], "ticks.geometry.major_length_pt"),
             (style["legend"]["handlelength"], "legend.handlelength"),
+            (style["legend"]["columnspacing"], "legend.columnspacing"),
+            (style["legend"]["handletextpad"], "legend.handletextpad"),
+            (style["legend"]["labelspacing"], "legend.labelspacing"),
             (style["panel"]["font_size_pt"], "panel.font_size_pt"),
             (style["plots"]["line_marker"]["marker_size_pt"], "plots.line_marker.marker_size_pt"),
             (style["plots"]["scatter"]["marker_size_pt2"], "plots.scatter.marker_size_pt2"),
@@ -124,6 +127,10 @@ def _validate_style(style: Mapping[str, Any]) -> None:
             (style["plots"]["violin"]["width"], "plots.violin.width"),
             (style["plots"]["bar"]["single_width"], "plots.bar.single_width"),
             (style["plots"]["bar"]["group_width"], "plots.bar.group_width"),
+            (
+                style["layout"]["multi_panel"]["colorbar_width_pt"],
+                "layout.multi_panel.colorbar_width_pt",
+            ),
             (style["rendering"]["dpi"], "rendering.dpi"),
         )
     )
@@ -132,7 +139,25 @@ def _validate_style(style: Mapping[str, Any]) -> None:
     for value, name in (
         (style["ticks"]["categorical"]["length_pt"], "ticks.categorical.length_pt"),
         (style["legend"]["top_gap_pt"], "legend.top_gap_pt"),
+        (style["legend"]["borderpad"], "legend.borderpad"),
+        (style["legend"]["borderaxespad"], "legend.borderaxespad"),
         (style["output"]["padding_pt"], "output.padding_pt"),
+        (
+            style["layout"]["multi_panel"]["horizontal_gap_pt"],
+            "layout.multi_panel.horizontal_gap_pt",
+        ),
+        (
+            style["layout"]["multi_panel"]["vertical_gap_pt"],
+            "layout.multi_panel.vertical_gap_pt",
+        ),
+        (
+            style["layout"]["multi_panel"]["containment_padding_pt"],
+            "layout.multi_panel.containment_padding_pt",
+        ),
+        (
+            style["layout"]["multi_panel"]["colorbar_gap_pt"],
+            "layout.multi_panel.colorbar_gap_pt",
+        ),
         (
             style["plots"]["violin"]["limit_padding_fraction"],
             "plots.violin.limit_padding_fraction",

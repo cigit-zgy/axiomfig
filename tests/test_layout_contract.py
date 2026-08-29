@@ -30,10 +30,13 @@ def test_normal_legend_is_one_row_frameless_and_right_aligned() -> None:
     assert legend._ncols == 3
     assert legend.get_frame_on() is False
     assert legend.handlelength == 1.0
+    assert legend.columnspacing == 1.0
+    assert legend.borderpad == 0.0
+    assert legend.borderaxespad == 0.0
     assert bbox.x1 == pytest.approx(axis.bbox.x1, abs=0.02)
     assert bbox.y0 > axis.bbox.y1
     assert bbox.y1 <= figure.bbox.y1
-    expected_gap_px = (0.7 * 2.0 / 3.0) * figure.dpi / 72.0
+    expected_gap_px = 0.4666666667 * figure.dpi / 72.0
     assert bbox.y0 - axis.bbox.y1 == pytest.approx(expected_gap_px, abs=0.15)
     plt.close(figure)
 
@@ -108,6 +111,46 @@ def test_multi_panel_data_axes_are_equal_and_colorbar_is_independent() -> None:
     assert colorbar_axis.yaxis._minor_tick_kw["tickdir"] == "out"
     assert colorbar_axis.yaxis._major_tick_kw["tick1On"] is False
     assert colorbar_axis.yaxis._major_tick_kw["tick2On"] is True
+    plt.close(figure)
+
+
+@pytest.mark.parametrize(
+    ("template", "rows", "columns"),
+    [("four-panel", 2, 2), ("six-panel", 2, 3), ("complex-multi-panel", 3, 2)],
+)
+def test_registered_outer_footprints_are_exact_and_owned(
+    template: str, rows: int, columns: int
+) -> None:
+    from axiomfig.layout import get_figure_layout
+
+    figure = build_template(template)
+    figure.canvas.draw()
+    layout = get_figure_layout(figure)
+
+    assert layout is not None
+    assert (layout.rows, layout.columns) == (rows, columns)
+    assert len(layout.panels) == rows * columns
+    assert all(panel.primary_axes.figure is figure for panel in layout.panels)
+    boxes = [panel.bbox().transformed(figure.transFigure) for panel in layout.panels]
+    assert max(box.width for box in boxes) - min(box.width for box in boxes) < 1e-6
+    assert max(box.height for box in boxes) - min(box.height for box in boxes) < 1e-6
+    for row in range(rows):
+        row_boxes = boxes[row * columns : (row + 1) * columns]
+        assert max(box.y0 for box in row_boxes) - min(box.y0 for box in row_boxes) < 1e-6
+        assert max(box.y1 for box in row_boxes) - min(box.y1 for box in row_boxes) < 1e-6
+    for column in range(columns):
+        column_boxes = boxes[column::columns]
+        assert max(box.x0 for box in column_boxes) - min(box.x0 for box in column_boxes) < 1e-6
+        assert max(box.x1 for box in column_boxes) - min(box.x1 for box in column_boxes) < 1e-6
+    plt.close(figure)
+
+
+@pytest.mark.parametrize("template", ["four-panel", "six-panel", "complex-multi-panel"])
+def test_registered_panel_content_is_contained(template: str) -> None:
+    from axiomfig.anatomy import validate_figure_anatomy
+
+    figure = build_template(template)
+    validate_figure_anatomy(figure)
     plt.close(figure)
 
 
@@ -198,7 +241,10 @@ def test_tight_output_margin_handles_an_outside_multi_series_legend() -> None:
         figure.set_size_inches(params["figure.figsize"], forward=False)
         template_helpers.apply_output_margin(figure)
         figure.canvas.draw()
-        tight = figure.get_tightbbox(figure.canvas.get_renderer()).transformed(
+        legend = figure.axes[0].get_legend()
+        assert legend is not None
+        renderer = figure.canvas.get_renderer()
+        tight = figure.get_tightbbox(renderer, bbox_extra_artists=[legend]).transformed(
             figure.dpi_scale_trans
         )
         padding = 1.5 * figure.dpi / 72.0
@@ -206,4 +252,6 @@ def test_tight_output_margin_handles_an_outside_multi_series_legend() -> None:
         assert tight.y0 == pytest.approx(padding, abs=0.5)
         assert figure.bbox.width - tight.x1 == pytest.approx(padding, abs=0.5)
         assert figure.bbox.height - tight.y1 == pytest.approx(padding, abs=0.5)
+        legend_bbox = legend.get_window_extent(renderer)
+        assert figure.bbox.y1 - legend_bbox.y1 == pytest.approx(padding, abs=0.5)
         plt.close(figure)

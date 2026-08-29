@@ -182,7 +182,7 @@ def test_heatmap_uses_outward_ticks_on_image_and_colorbar() -> None:
         assert axis.yaxis._minor_tick_kw["tickdir"] == "out"
     image_axis, colorbar_axis = figure.axes
     assert image_axis.yaxis._major_tick_kw["size"] == 0.0
-    assert colorbar_axis.yaxis._major_tick_kw["size"] == pytest.approx(6.0, abs=0.01)
+    assert colorbar_axis.yaxis._major_tick_kw["size"] == pytest.approx(3.0, abs=0.01)
     assert colorbar_axis.yaxis._minor_tick_kw["size"] == pytest.approx(1.854)
     plt.close(figure)
 

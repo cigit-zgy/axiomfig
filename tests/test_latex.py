@@ -32,14 +32,12 @@ def test_vector_wrapper_is_honest_about_non_tex_native_plot_text() -> None:
     assert r"\ce" not in source
 
 
-def test_repository_latex_package_matches_packaged_generic_infrastructure() -> None:
-    repository_style = ROOT / "latex" / "axiomfig.sty"
-    repository_colors = ROOT / "latex" / "axiomfig-colors.tex"
+def test_runtime_latex_has_one_packaged_resource_source() -> None:
     packaged = ROOT / "src" / "axiomfig" / "resources" / "latex"
 
-    assert repository_style.read_bytes() == (packaged / "axiomfig.sty").read_bytes()
-    assert repository_colors.read_bytes() == (packaged / "axiomfig-colors.tex").read_bytes()
-    assert (ROOT / "latex" / "README.md").is_file()
+    assert not (ROOT / "latex").exists()
+    assert (packaged / "axiomfig.sty").is_file()
+    assert (packaged / "axiomfig-colors.tex").is_file()
 
 
 def test_xcharter_probe_text_preserves_unit_chemistry_and_math_semantics() -> None:

@@ -6,10 +6,9 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
 from axiomfig.contracts import bar_width
+from axiomfig.layout import add_panel_axes, create_panel_grid
 from axiomfig.template_helpers import (
     add_bar_value_labels,
-    add_colorbar_panel_axes,
-    add_panel_labels,
     apply_axis_contract,
     apply_categorical_axis,
     apply_colorbar_contract,
@@ -94,15 +93,15 @@ def _residual_panel(axis: Axes, seed: int) -> None:
 
 def _build_grid(rows: int, columns: int, *, heatmap: bool) -> Figure:
     figure = plt.figure()
-    grid = figure.add_gridspec(rows, columns)
+    layout = create_panel_grid(figure, rows, columns)
     axes: list[Axes] = []
     colorbar_axis: Axes | None = None
     panel_count = rows * columns
     for index in range(panel_count):
         if heatmap and index == panel_count - 1:
-            axis, colorbar_axis = add_colorbar_panel_axes(figure, grid[index])
+            axis, colorbar_axis = add_panel_axes(layout, index, colorbar=True)
         else:
-            axis = figure.add_subplot(grid[index])
+            axis, _ = add_panel_axes(layout, index)
         axes.append(axis)
 
     builders = (_line_panel, _bar_panel, _scatter_panel, _residual_panel)
@@ -118,7 +117,6 @@ def _build_grid(rows: int, columns: int, *, heatmap: bool) -> Figure:
                 builder(axis, 109 + index)
             else:
                 builder(axis)
-    add_panel_labels(axes)
     return figure
 
 

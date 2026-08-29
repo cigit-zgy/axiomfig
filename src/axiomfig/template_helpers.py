@@ -7,19 +7,21 @@ import matplotlib as mpl
 from matplotlib import colors as mcolors
 from matplotlib.axes import Axes
 from matplotlib.collections import PathCollection
-from matplotlib.colorbar import Colorbar
 from matplotlib.container import BarContainer
 from matplotlib.figure import Figure
-from matplotlib.gridspec import SubplotSpec
-from matplotlib.legend import Legend
 from matplotlib.ticker import AutoMinorLocator, MultipleLocator
-from matplotlib.transforms import Bbox, ScaledTranslation
 
 from axiomfig.config import load_contracts
 from axiomfig.contracts import MAIN_STROKE_PT, nice_linear_axis, tick_lengths
+from axiomfig.layout import get_figure_layout, solve_panel_layout
+from axiomfig.layout import outer_panel_bbox as outer_panel_bbox
+from axiomfig.ornaments import add_panel_labels as add_panel_labels
+from axiomfig.ornaments import apply_colorbar_contract as apply_colorbar_contract
+from axiomfig.ornaments import finalize_ornaments, refresh_panel_labels
+from axiomfig.ornaments import request_legend as request_legend
 from axiomfig.typography import font_for_language
 
-PANEL_LABEL_GID = "axiomfig-panel-label"
+place_legend_above = request_legend
 
 
 def apply_single_panel_layout(figure: Figure) -> None:
@@ -29,6 +31,10 @@ def apply_single_panel_layout(figure: Figure) -> None:
 
 def apply_output_margin(figure: Figure) -> None:
     """Fit visible artists to physical padding while preserving the page size."""
+    if get_figure_layout(figure) is not None:
+        solve_panel_layout(figure)
+        finalize_ornaments(figure)
+        return
     contract = load_contracts().style["output"]
     mode = str(contract["margin_mode"])
     if mode == "normal":
@@ -39,7 +45,14 @@ def apply_output_margin(figure: Figure) -> None:
         refresh_panel_labels(figure)
         figure.canvas.draw()
         renderer = figure.canvas.get_renderer()
-        tight = figure.get_tightbbox(renderer).transformed(figure.dpi_scale_trans)
+        legends = [
+            legend
+            for axis in figure.axes
+            if (legend := axis.get_legend()) is not None and legend.get_visible()
+        ]
+        tight = figure.get_tightbbox(renderer, bbox_extra_artists=legends).transformed(
+            figure.dpi_scale_trans
+        )
         width, height = figure.bbox.width, figure.bbox.height
         delta_left = (padding_px - tight.x0) / width
         delta_right = (tight.x1 - (width - padding_px)) / width
@@ -101,56 +114,6 @@ def apply_categorical_axis(axis: Axes, coordinate: Literal["x", "y"] = "x") -> N
     axis.tick_params(axis=coordinate, which="both", length=0.0)
 
 
-def apply_colorbar_contract(colorbar: Colorbar) -> None:
-    policy = load_contracts().style["ticks"]["filled"]
-    major_length, minor_length = tick_lengths()
-    axis = colorbar.ax
-    if colorbar.orientation == "vertical":
-        axis.yaxis.set_minor_locator(AutoMinorLocator(2))
-        axis.tick_params(
-            axis="y",
-            which="major",
-            direction=str(policy["major"]["direction"]),
-            length=major_length,
-            width=MAIN_STROKE_PT,
-            left=False,
-            right=True,
-            labelleft=False,
-            labelright=True,
-        )
-        axis.tick_params(
-            axis="y",
-            which="minor",
-            direction=str(policy["minor"]["direction"]),
-            length=minor_length,
-            width=MAIN_STROKE_PT,
-            left=False,
-            right=True,
-        )
-    else:
-        axis.xaxis.set_minor_locator(AutoMinorLocator(2))
-        axis.tick_params(
-            axis="x",
-            which="major",
-            direction=str(policy["major"]["direction"]),
-            length=major_length,
-            width=MAIN_STROKE_PT,
-            bottom=True,
-            top=False,
-            labelbottom=True,
-            labeltop=False,
-        )
-        axis.tick_params(
-            axis="x",
-            which="minor",
-            direction=str(policy["minor"]["direction"]),
-            length=minor_length,
-            width=MAIN_STROKE_PT,
-            bottom=True,
-            top=False,
-        )
-
-
 def apply_nice_linear_axis(
     axis: Axes, data_min: float, data_max: float, *, coordinate: Literal["x", "y"] = "x"
 ) -> None:
@@ -161,140 +124,6 @@ def apply_nice_linear_axis(
     coordinate_axis.set_major_locator(MultipleLocator(result.major_step))
     coordinate_axis.set_minor_locator(MultipleLocator(result.minor_step))
     (axis.set_xlim if coordinate == "x" else axis.set_ylim)(result.lower, result.upper)
-
-
-def outer_panel_bbox(axis: Axes) -> Bbox:
-    """Return the top-level GridSpec footprint owned by an axes."""
-    try:
-        spec = axis.get_subplotspec().get_topmost_subplotspec()
-    except AttributeError:
-        return axis.get_position()
-    return spec.get_position(axis.figure)
-
-
-def add_colorbar_panel_axes(figure: Figure, outer_spec: SubplotSpec) -> tuple[Axes, Axes]:
-    """Create data and colorbar axes inside one immutable outer panel footprint."""
-    layout = load_contracts().style["layout"]["multi_panel"]
-    colorbar_ratio = float(layout["colorbar_width_ratio"])
-    gap_ratio = float(layout["colorbar_gap"])
-    inner = outer_spec.subgridspec(
-        1,
-        3,
-        width_ratios=(1.0 - colorbar_ratio - gap_ratio, gap_ratio, colorbar_ratio),
-        wspace=0.0,
-    )
-    return figure.add_subplot(inner[0, 0]), figure.add_subplot(inner[0, 2])
-
-
-def add_panel_labels(axes: Iterable[Axes]) -> None:
-    contract = load_contracts().style["panel"]
-    for index, axis in enumerate(axes):
-        footprint = outer_panel_bbox(axis)
-        offset = ScaledTranslation(
-            float(contract["left_offset_pt"]) / 72.0,
-            float(contract["top_offset_pt"]) / 72.0,
-            axis.figure.dpi_scale_trans,
-        )
-        label = axis.figure.text(
-            footprint.x0,
-            footprint.y1,
-            str(contract["format"]).format(letter=chr(ord("a") + index)),
-            transform=axis.figure.transFigure + offset,
-            ha="left",
-            va="bottom",
-            fontsize=float(contract["font_size_pt"]),
-            fontweight=str(contract["font_weight"]),
-            clip_on=False,
-        )
-        label.set_gid(PANEL_LABEL_GID)
-        label.__dict__["_axiomfig_panel_axis"] = axis
-
-
-def refresh_panel_labels(figure: Figure) -> None:
-    """Re-anchor panel labels after any change to subplot geometry."""
-    for label in figure.texts:
-        if label.get_gid() != PANEL_LABEL_GID:
-            continue
-        axis = getattr(label, "_axiomfig_panel_axis", None)
-        if axis is None:
-            continue
-        footprint = outer_panel_bbox(axis)
-        label.set_position((footprint.x0, footprint.y1))
-
-
-def _panel_collision(axis: Axes, legend: Legend) -> bool:
-    renderer = axis.figure.canvas.get_renderer()
-    legend_bbox = legend.get_window_extent(renderer)
-    return any(
-        legend_bbox.overlaps(text.get_window_extent(renderer))
-        for text in axis.figure.texts
-        if text.get_gid() == PANEL_LABEL_GID
-    )
-
-
-def place_legend_above(axis: Axes) -> Legend | None:
-    handles, labels = axis.get_legend_handles_labels()
-    existing = axis.get_legend()
-    if len(handles) <= 1:
-        if existing is not None:
-            existing.remove()
-        return None
-
-    contract = load_contracts().style["legend"]
-    figure = axis.figure
-    figure.canvas.draw()
-    transform = axis.transAxes + ScaledTranslation(
-        0.0, float(contract["top_gap_pt"]) / 72.0, figure.dpi_scale_trans
-    )
-    legend: Legend | None = None
-    tolerance = 0.5
-    for ncol in range(len(handles), 0, -1):
-        legend = axis.legend(
-            handles,
-            labels,
-            ncol=ncol,
-            loc="lower right",
-            bbox_to_anchor=(1.0, 1.0),
-            bbox_transform=transform,
-            frameon=False,
-            handlelength=float(contract["handlelength"]),
-            borderaxespad=0.0,
-        )
-        figure.canvas.draw()
-        bbox = legend.get_window_extent(figure.canvas.get_renderer())
-        if (
-            bbox.x0 >= figure.bbox.x0 - tolerance
-            and bbox.x1 <= figure.bbox.x1 + tolerance
-            and not _panel_collision(axis, legend)
-        ):
-            break
-    else:  # pragma: no cover - the loop always has at least one candidate.
-        legend = None
-    if legend is None:
-        raise ValueError("legend cannot fit above the axes")
-    bbox = legend.get_window_extent(figure.canvas.get_renderer())
-    if bbox.x0 < figure.bbox.x0 - tolerance or bbox.x1 > figure.bbox.x1 + tolerance:
-        legend.remove()
-        raise ValueError("legend cannot fit above the axes")
-
-    overflow = bbox.y1 - figure.bbox.y1
-    if overflow > 0:
-        top = figure.subplotpars.top - overflow / figure.bbox.height
-        if top <= figure.subplotpars.bottom:
-            legend.remove()
-            raise ValueError("legend cannot fit above the axes")
-        figure.subplots_adjust(top=top)
-        figure.canvas.draw()
-    bbox = legend.get_window_extent(figure.canvas.get_renderer())
-    if (
-        bbox.x0 < figure.bbox.x0 - tolerance
-        or bbox.x1 > figure.bbox.x1 + tolerance
-        or bbox.y1 > figure.bbox.y1 + tolerance
-        or _panel_collision(axis, legend)
-    ):
-        legend.remove()
-        raise ValueError("legend cannot fit above the axes")
-    return legend
 
 
 def _reserve_bar_label_headroom(axis: Axes, containers: list[BarContainer]) -> None:

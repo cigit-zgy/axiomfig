@@ -63,6 +63,17 @@ Use `\definecolor{name}{HTML}{RRGGBB}` for a named canonical color, `\textcolor{
 
 ## Current boundary
 
-`gallery/latex/01_scientific_typography` and `gallery/latex/02_palettes` are genuinely Tectonic-native documents built through `latex/axiomfig.sty`; macros and palette-qualified colors are expanded by TeX there.
+The only runtime LaTeX source is `src/axiomfig/resources/latex/`. Its `axiomfig.sty` loads `xcolor`, `siunitx`, `mhchem`, `amsmath`, and `unicode-math`, selects XCharter text with XCharter Math, and imports the generated canonical and palette-qualified colors. Installed callers locate both `.sty`/`.tex` resources with `importlib.resources`.
+
+```latex
+\documentclass{article}
+\usepackage{axiomfig}
+\begin{document}
+\qty{10}{\milli\gram\per\litre}, \ce{NH4+}, $\mu_{\max}$,
+\textcolor{AxiomBlue}{validated text}.
+\end{document}
+```
+
+`gallery/latex/01_scientific_typography` and `gallery/latex/02_palettes` are genuinely Tectonic-native documents built through that packaged resource; macros and palette-qualified colors are expanded by TeX there.
 
 The Matplotlib Gallery path renders plot text into an intermediate PDF before Tectonic wraps that PDF. Therefore Tectonic cannot expand `\qty`, `\unit`, `\ce`, or other TeX macros placed inside Matplotlib labels. TeX-native Matplotlib text remains **DEFERRED**. The syntax above is valid for TeX-native documents; it is not evidence that Matplotlib labels support these macros.

@@ -28,6 +28,8 @@ The three canonical sources have exclusive responsibilities:
 
 There are no `.mplstyle` layers. Thirty-six public templates are grouped into four small family modules under `src/axiomfig/templates/`; see the [template contract](references/template-contract.md).
 
+Runtime LaTeX files and redistributable fonts/licenses live only under `src/axiomfig/resources/` and remain available through `importlib.resources` after wheel installation.
+
 ## Quick start
 
 Requirements are Python 3.11+, Tectonic, Poppler, PyYAML, and the exact fonts selected by the typography contract.
@@ -50,14 +52,14 @@ Installed commands are `axiomfig-render`, `axiomfig-validate`, and `axiomfig-gal
 - `main_stroke = 0.8 pt`; black filled-geometry edges use `fill_edge = 0.6 pt`.
 - Open continuous axes use major `inout`, minor `in`, and one minor per major interval. The minor is `1.854 pt`; the major parameter is derived from the measured `inout` projection and φ ratio. Filled surfaces/colorbars reuse these lengths with `out`; categorical axes keep labels but no tick marks.
 - Nice linear axes target 5–7 majors with steps limited to `1`, `2`, `2.5`, or `5 × 10^n`, half-step minors, and snapped limits.
-- Single-series figures omit legends. Multi-series legends sit outside top-right, prefer one row, align to the right spine, and reduce columns only on measured figure-boundary overflow or panel-label collision.
-- Panel labels are bold `(a)`, `(b)`, … at `11 pt` with fixed point offsets from equal outer panel footprints. A colorbar subdivides its owning footprint and never compresses a peer panel.
+- Single-series figures omit legends. Multi-series legends are Figure-level Ornaments with explicit zero border padding, a physical top gap, measured `N..1` columns, and collision/boundary validation.
+- Panel labels are bold `(a)`, `(b)`, … at `11 pt` with fixed point offsets from equal registered Outer Panel Footprints. A colorbar is contained Auxiliary Axes and never expands its footprint or compresses a peer panel.
 - Filled geometry stores transparency only in face RGBA; black `0.6 pt` edges remain opaque. Scatter uses face alpha `0.55` and `36 pt²` markers. Bars use exact width `0.60`, or total group width `0.76`, and show two-decimal values.
 - Multi-series identity redundantly cycles color, line style, and marker. The first four line styles are solid, dash-dot, dotted, and long-dash; reference lines default to dash-dot.
-- The fixed-page output solver keeps visible artists at the canonical `1.5 pt` page padding without changing 90/140/190 mm geometry.
+- Registered grids use a one-measurement physical layout solve and runtime anatomy validation. Single panels retain the fixed-page output solver; both preserve 90/140/190 mm geometry and the canonical `1.5 pt` output padding.
 - `sans` uses bundled Latin Modern Sans for text and Matplotlib math; `serif` uses bundled XCharter + XCharter Math; both use bundled Maple Mono. CJK/Japanese work is deferred.
 
-See [SKILL.md](SKILL.md), [the style contract](references/style-contract.md), [typography](references/typography.md), [layout](references/layout.md), and [the template contract](references/template-contract.md).
+See [SKILL.md](SKILL.md), [the style contract](references/style-contract.md), [typography](references/typography.md), [layout](references/layout-contract.md), [validation](references/validation-contract.md), and [the template contract](references/template-contract.md).
 
 ## LaTeX boundary
 

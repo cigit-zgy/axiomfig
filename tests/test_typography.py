@@ -80,7 +80,7 @@ def test_open_font_metadata_preserves_verified_license_attribution() -> None:
 
 def test_bundled_font_assets_and_attributions_exist() -> None:
     contracts = load_contracts(ROOT / "styles")
-    font_root = ROOT / "fonts"
+    font_root = ROOT / "src" / "axiomfig" / "resources" / "fonts"
 
     for entry in contracts.fonts["families"].values():
         assert entry["bundled"] is True

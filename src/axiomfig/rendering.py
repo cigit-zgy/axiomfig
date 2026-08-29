@@ -9,7 +9,9 @@ from pathlib import Path
 import matplotlib as mpl
 from matplotlib.figure import Figure
 
+from axiomfig.anatomy import validate_figure_anatomy
 from axiomfig.config import build_rcparams, load_contracts
+from axiomfig.layout import invalidate_panel_layout
 from axiomfig.template_helpers import apply_output_margin
 from axiomfig.typography import apply_figure_typography, discover_fonts
 
@@ -103,8 +105,11 @@ def render_figure(
         figure.canvas.draw()
         apply_figure_typography(figure, mode=typography)
         figure.canvas.draw()
-        apply_figure_typography(figure, mode=typography)
+        invalidate_panel_layout(figure)
         apply_output_margin(figure)
+        apply_figure_typography(figure, mode=typography)
+        figure.canvas.draw()
+        validate_figure_anatomy(figure)
     with mpl.rc_context(rc=style_params), warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         figure.savefig(intermediate_pdf, format="pdf")

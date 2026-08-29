@@ -28,7 +28,7 @@ Use color, alpha, linestyle, or fill for hierarchy. A template may not create a 
 | filled surface (`bar`, `heatmap`, `image`) | `out` | `out` | exactly one minor between numeric majors |
 | categorical | none | none | labels remain |
 
-Raster measurement confirms that Matplotlib divides an `inout` tick approximately equally across the spine. Round 04 lengthens the previous `1.236 pt` minor by 1.5 to `1.854 pt`. With φ = `0.6180339887`, the required major inward projection is `1.854 / φ`, approximately `3 pt`, so the central Matplotlib `inout` major parameter is `2 × 1.854 / φ = 5.9996700308 pt`. Filled numeric axes and colorbars reuse `5.9996700308 pt` major and `1.854 pt` minor lengths with outward direction. These values are one derived central relationship, not duplicated magic numbers.
+Raster measurement confirms that Matplotlib divides an `inout` tick approximately equally across the spine. Round 04 lengthens the previous `1.236 pt` minor by 1.5 to `1.854 pt`. With φ = `0.6180339887`, the required major inward projection is `1.854 / φ`, approximately `3 pt`, so the central Matplotlib `inout` major parameter is `2 × 1.854 / φ = 5.9996700308 pt`. Filled numeric axes reuse that total with outward direction. A colorbar deletes the inward half and therefore derives its outward major as `5.9996700308 / 2 pt`; its minor remains `1.854 pt`. No second colorbar length token exists.
 
 `AutoMinorLocator(2)` yields one minor tick per major interval. Log axes keep their mathematical locators and do not use the deterministic linear-axis rule.
 
@@ -52,4 +52,4 @@ Multi-series graphics use one ordered central cycle that combines palette color,
 
 ## Fixed-page output margins
 
-The default output mode is `tight` with `1.5 pt` physical padding. A centralized post-layout solver measures all visible artists and adjusts subplot margins while preserving the requested page size. `normal` leaves the configured layout margins unchanged; `custom` is reserved as a validated configuration value. Templates must not implement their own crop or `bbox_inches` policy.
+The default output mode is `tight` with `1.5 pt` physical padding. Ordinary single panels retain the centralized fixed-page margin solver. Registered panel grids reserve the output boundary in advance, perform one measurement/formula solve, and then run anatomy validation; they are never moved by the single-panel solver. `normal` leaves configured single-panel margins unchanged, and `custom` remains a validated configuration value. Templates must not implement crop, `bbox_inches`, or trial-and-error placement.
