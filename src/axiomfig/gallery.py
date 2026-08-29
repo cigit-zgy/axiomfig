@@ -16,58 +16,33 @@ from axiomfig.config import build_rcparams, load_contracts
 from axiomfig.latex import LatexGalleryResult, build_latex_gallery
 from axiomfig.rendering import RenderResult, render_figure
 from axiomfig.templates import build_template
+from axiomfig.templates.registry import public_template_specs
 from axiomfig.typography import discover_fonts
 from axiomfig.validation import validate_pair
 
 GALLERY_MODES = ("sans", "serif")
-LATEX_GALLERY_STEMS = ("01_scientific_typography", "02_palettes")
+TECHNICAL_LATEX_STEMS = ("scientific_typography", "palettes")
 
 
 @dataclass(frozen=True)
 class GallerySpec:
-    stem: str
-    template: str
+    template_id: str
     geometry: str
 
+    @property
+    def family(self) -> str:
+        return self.template_id.split("/", maxsplit=1)[0]
 
-GALLERY_SPECS = (
-    GallerySpec("01_single_line", "single-line", "single-column"),
-    GallerySpec("02_multi_line", "multi-line", "single-column"),
-    GallerySpec("03_line_marker", "line-marker", "single-column"),
-    GallerySpec("04_line_ci", "line-ci", "single-column"),
-    GallerySpec("05_scatter", "scatter", "single-column"),
-    GallerySpec("06_grouped_scatter", "grouped-scatter", "single-column"),
-    GallerySpec("07_parity", "parity", "single-column"),
-    GallerySpec("08_regression_scatter", "regression-scatter", "single-column"),
-    GallerySpec("09_vertical_bar", "vertical-bar", "single-column"),
-    GallerySpec("10_grouped_bar", "grouped-bar", "single-column"),
-    GallerySpec("11_horizontal_bar", "horizontal-bar", "single-column"),
-    GallerySpec("12_stacked_bar", "stacked-bar", "single-column"),
-    GallerySpec("13_boxplot", "boxplot", "single-column"),
-    GallerySpec("14_violin", "violin", "single-column"),
-    GallerySpec("15_box_violin", "box-violin", "single-column"),
-    GallerySpec("16_histogram", "histogram", "single-column"),
-    GallerySpec("17_density", "density", "single-column"),
-    GallerySpec("18_ecdf", "ecdf", "single-column"),
-    GallerySpec("19_errorbar", "errorbar", "single-column"),
-    GallerySpec("20_forest_plot", "forest-plot", "single-column"),
-    GallerySpec("21_point_interval", "point-interval", "single-column"),
-    GallerySpec("22_bland_altman", "bland-altman", "single-column"),
-    GallerySpec("23_heatmap", "heatmap", "single-column"),
-    GallerySpec("24_correlation_heatmap", "correlation-heatmap", "single-column"),
-    GallerySpec("25_clustered_heatmap", "clustered-heatmap", "single-column"),
-    GallerySpec("26_confusion_matrix", "confusion-matrix", "single-column"),
-    GallerySpec("27_roc_curve", "roc-curve", "single-column"),
-    GallerySpec("28_pr_curve", "pr-curve", "single-column"),
-    GallerySpec("29_calibration_curve", "calibration-curve", "single-column"),
-    GallerySpec("30_residual_diagnostics", "residual-diagnostics", "single-column"),
-    GallerySpec("31_mantel_test", "mantel-test", "onehalf-column"),
-    GallerySpec("32_model_evaluation", "model-evaluation", "single-column"),
-    GallerySpec("33_two_panel", "two-panel", "double-column"),
-    GallerySpec("34_four_panel", "four-panel", "double-column"),
-    GallerySpec("35_six_panel", "six-panel", "double-column"),
-    GallerySpec("36_complex_multi_panel", "complex-multi-panel", "double-column"),
+
+GALLERY_SPECS = tuple(
+    GallerySpec(spec.template_id, spec.geometry) for spec in public_template_specs()
 )
+
+
+def expected_gallery_stems() -> tuple[str, ...]:
+    stems = [f"{mode}/{spec.template_id}" for mode in GALLERY_MODES for spec in GALLERY_SPECS]
+    stems.extend(f"technical/latex/{stem}" for stem in TECHNICAL_LATEX_STEMS)
+    return tuple(stems)
 
 
 @contextmanager
@@ -88,20 +63,23 @@ def _sha256(path: Path) -> str:
         return hashlib.file_digest(stream, "sha256").hexdigest()
 
 
+def _assert_generated_tree(path: Path) -> None:
+    for artifact in path.rglob("*"):
+        if artifact.is_file() and artifact.suffix.lower() not in {".pdf", ".png"}:
+            raise RuntimeError(f"unexpected Gallery content: {artifact}")
+
+
 def _prepare_gallery(root: Path) -> None:
     root.mkdir(parents=True, exist_ok=True)
+    allowed_roots = {*GALLERY_MODES, "latex", "technical"}
     for path in root.iterdir():
-        if path.is_file() and path.suffix.lower() in {".pdf", ".png"}:
-            path.unlink()
-        elif path.is_dir() and path.name in {*GALLERY_MODES, "latex"}:
-            for artifact in path.iterdir():
-                if not artifact.is_file() or artifact.suffix.lower() not in {".pdf", ".png"}:
-                    raise RuntimeError(f"unexpected Gallery content: {artifact}")
-                artifact.unlink()
-        else:
+        if not path.is_dir() or path.name not in allowed_roots:
             raise RuntimeError(f"unexpected Gallery content: {path}")
-    for mode in (*GALLERY_MODES, "latex"):
-        (root / mode).mkdir(exist_ok=True)
+        _assert_generated_tree(path)
+        shutil.rmtree(path)
+    for mode in GALLERY_MODES:
+        (root / mode).mkdir()
+    (root / "technical" / "latex").mkdir(parents=True)
 
 
 def build_gallery(
@@ -127,12 +105,12 @@ def build_gallery(
             for spec in GALLERY_SPECS:
                 params = build_rcparams(contracts, geometry=spec.geometry, typography=mode)
                 with mpl.rc_context(rc=params):
-                    figure = build_template(spec.template)
+                    figure = build_template(spec.template_id)
                     figure.set_size_inches(params["figure.figsize"], forward=False)
                     result = render_figure(
                         figure,
-                        gallery / mode / spec.stem,
-                        work_root=work_root / mode,
+                        gallery / mode / spec.template_id,
+                        work_root=work_root / mode / spec.family,
                         typography=mode,
                         geometry=spec.geometry,
                     )
@@ -148,11 +126,10 @@ def build_gallery(
                     tectonic_log=result.log,
                 )
                 results.append(result)
-                manifest["figures"].append(
+                manifest["figures"].append(  # type: ignore[union-attr]
                     {
                         "mode": mode,
-                        "stem": spec.stem,
-                        "template": spec.template,
+                        "template": spec.template_id,
                         "geometry": spec.geometry,
                         "pdf_sha256": _sha256(result.pdf),
                         "png_sha256": _sha256(result.png),
@@ -160,15 +137,16 @@ def build_gallery(
                         "font_rows": list(entry.fonts),
                     }
                 )
-        latex_results = build_latex_gallery(gallery / "latex", work_root=work_root / "latex")
+        technical = gallery / "technical" / "latex"
+        latex_results = build_latex_gallery(technical, work_root=work_root / "technical" / "latex")
         for result in latex_results:
             entry = validate_pair(result.pdf, result.png, tectonic_log=result.log)
             results.append(result)
-            manifest["figures"].append(
+            manifest["figures"].append(  # type: ignore[union-attr]
                 {
-                    "mode": "latex",
-                    "stem": result.pdf.stem,
+                    "mode": "technical/latex",
                     "template": "tectonic-native",
+                    "stem": result.pdf.stem,
                     "geometry": "standalone",
                     "pdf_sha256": _sha256(result.pdf),
                     "png_sha256": _sha256(result.png),

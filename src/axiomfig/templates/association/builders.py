@@ -27,7 +27,7 @@ def build_mantel() -> Figure:
     matrix_axis.set_title("Environmental correlation")
 
     left = [(0.12, 0.78, "COD"), (0.12, 0.50, "TN"), (0.12, 0.22, "TP")]
-    right = [(0.88, 0.70, "Community"), (0.88, 0.30, "Function")]
+    right = [(0.85, 0.70, "Community"), (0.85, 0.30, "Function")]
     for x, y, label in left + right:
         node = link_axis.scatter([x], [y], facecolor="white")
         apply_scatter_contract(node)

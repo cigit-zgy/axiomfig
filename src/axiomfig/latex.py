@@ -262,8 +262,8 @@ def build_latex_gallery(output_dir: Path, *, work_root: Path) -> list[LatexGalle
     output_dir.mkdir(parents=True, exist_ok=True)
     work_root.mkdir(parents=True, exist_ok=True)
     cases = (
-        ("01_scientific_typography", _TYPOGRAPHY_GALLERY_SOURCE),
-        ("02_palettes", _PALETTE_GALLERY_SOURCE),
+        ("scientific_typography", _TYPOGRAPHY_GALLERY_SOURCE),
+        ("palettes", _PALETTE_GALLERY_SOURCE),
     )
     results: list[LatexGalleryResult] = []
     for stem, source in cases:

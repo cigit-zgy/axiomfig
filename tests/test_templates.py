@@ -120,3 +120,12 @@ def test_mantel_significance_legend_uses_bundled_ascii_glyphs() -> None:
 
     assert labels == ["p < 0.05", "not significant"]
     plt.close(figure)
+
+
+def test_contour_data_domain_covers_the_visible_axes() -> None:
+    figure = build_template("field/contour")
+    axis = figure.axes[0]
+
+    assert axis.get_xlim() == (axis.dataLim.x0, axis.dataLim.x1)
+    assert axis.get_ylim() == (axis.dataLim.y0, axis.dataLim.y1)
+    plt.close(figure)

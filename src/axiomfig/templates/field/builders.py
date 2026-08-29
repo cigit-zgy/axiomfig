@@ -15,7 +15,7 @@ from axiomfig.template_helpers import (
 
 
 def build_contour() -> Figure:
-    x = np.linspace(-2.5, 2.5, 81)
+    x = np.linspace(-3.0, 3.0, 81)
     y = np.linspace(-2.0, 2.0, 65)
     xx, yy = np.meshgrid(x, y)
     field = np.exp(-0.55 * (xx**2 + yy**2)) * np.cos(1.4 * xx) + 0.15 * yy
@@ -29,7 +29,7 @@ def build_contour() -> Figure:
     axis.contour(xx, yy, field, levels=levels[::2], colors="black", linewidths=MAIN_STROKE_PT)
     axis.set(xlabel="State variable x", ylabel="State variable y")
     apply_axis_contract(axis, surface="filled")
-    apply_nice_linear_axis(axis, -2.5, 2.5, coordinate="x")
+    apply_nice_linear_axis(axis, -3.0, 3.0, coordinate="x")
     apply_nice_linear_axis(axis, -2.0, 2.0, coordinate="y")
     colorbar = figure.colorbar(filled, cax=colorbar_axis, label="Field intensity (-)")
     apply_colorbar_contract(colorbar)

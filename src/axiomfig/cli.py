@@ -7,7 +7,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from axiomfig.config import build_rcparams, load_contracts
-from axiomfig.gallery import GALLERY_MODES, GALLERY_SPECS, LATEX_GALLERY_STEMS, build_gallery
+from axiomfig.gallery import build_gallery, expected_gallery_stems
 from axiomfig.rendering import render_figure
 from axiomfig.templates import TEMPLATE_BUILDERS, build_template
 from axiomfig.typography import discover_fonts
@@ -69,9 +69,7 @@ def gallery_main(argv: list[str] | None = None) -> int:
     gallery = args.gallery.expanduser().resolve()
     work_root = args.work_root.expanduser().resolve()
     results = build_gallery(gallery, work_root=work_root)
-    expected = [f"{mode}/{spec.stem}" for mode in GALLERY_MODES for spec in GALLERY_SPECS]
-    expected.extend(f"latex/{stem}" for stem in LATEX_GALLERY_STEMS)
-    validate_gallery(gallery, expected_stems=expected)
+    validate_gallery(gallery, expected_stems=expected_gallery_stems())
     for result in results:
         print(f"PASS {result.pdf.name} + {result.png.name}")
     return 0
