@@ -5,6 +5,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import matplotlib as mpl
+from matplotlib.axes import Axes
+from matplotlib.ticker import AutoMinorLocator
+
+from axiomfig.contracts import FILLED_TICK_PARAMS, OPEN_TICK_PARAMS
 
 
 class StyleConflictError(ValueError):
@@ -14,6 +18,7 @@ class StyleConflictError(ValueError):
 LAYER_ORDER = ("base", "geometry", "typography", "colors", "plot", "language", "rendering")
 ALLOWED_OVERRIDES = {
     ("typography", "language"): {"font.family"},
+    ("base", "plot"): {"xtick.direction", "ytick.direction"},
 }
 
 
@@ -49,6 +54,20 @@ class StyleSelection:
 class ComposedStyle:
     paths: tuple[Path, ...]
     params: mpl.RcParams
+
+
+def apply_tick_contract(axes: Axes, *, filled: bool) -> None:
+    """Apply deterministic ticks after the selected plot type is known.
+
+    Linear axes receive one minor tick per major interval. Logarithmic axes
+    retain Matplotlib's mathematically meaningful minor locator.
+    """
+    policy = FILLED_TICK_PARAMS if filled else OPEN_TICK_PARAMS
+    for axis in (axes.xaxis, axes.yaxis):
+        if axis.get_scale() == "linear":
+            axis.set_minor_locator(AutoMinorLocator(2))
+    axes.tick_params(axis="both", which="major", direction=policy["major"])
+    axes.tick_params(axis="both", which="minor", direction=policy["minor"])
 
 
 def _layer_name(path: Path) -> str:

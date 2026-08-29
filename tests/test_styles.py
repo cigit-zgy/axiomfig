@@ -48,3 +48,21 @@ def test_every_committed_style_is_loadable() -> None:
     for path in style_paths:
         params = mpl.rc_params_from_file(path, fail_on_error=True, use_default_template=False)
         assert params
+
+
+def test_plot_style_overrides_are_limited_to_declared_contract_exceptions() -> None:
+    expected_overrides = {
+        "bar": {"patch.edgecolor", "xtick.direction", "ytick.direction"},
+        "distribution": {"boxplot.flierprops.markersize", "xtick.direction", "ytick.direction"},
+        "heatmap": {"image.cmap", "image.interpolation", "xtick.direction", "ytick.direction"},
+        "line": {"lines.markersize"},
+        "scatter": {"lines.markersize"},
+    }
+
+    for name, expected_keys in expected_overrides.items():
+        params = mpl.rc_params_from_file(
+            ROOT / "styles/plot" / f"{name}.mplstyle",
+            fail_on_error=True,
+            use_default_template=False,
+        )
+        assert set(params) == expected_keys

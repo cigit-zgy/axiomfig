@@ -1,2 +1,3 @@
-patch.linewidth: 0.55
-patch.edgecolor: white
+patch.edgecolor: black
+xtick.direction: out
+ytick.direction: out

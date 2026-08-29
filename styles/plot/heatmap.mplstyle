@@ -1,2 +1,4 @@
 image.cmap: cividis
 image.interpolation: nearest
+xtick.direction: out
+ytick.direction: out
