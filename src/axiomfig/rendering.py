@@ -91,7 +91,9 @@ def render_figure(
 
     style_root = Path(__file__).resolve().parents[2] / "styles"
     style_path = style_root / "typography" / f"{typography}.mplstyle"
-    style_params = mpl.rc_params_from_file(style_path, fail_on_error=True, use_default_template=False)
+    style_params = mpl.rc_params_from_file(
+        style_path, fail_on_error=True, use_default_template=False
+    )
     style_params.update(
         mpl.rc_params_from_file(
             style_root / "rendering" / "vector.mplstyle",

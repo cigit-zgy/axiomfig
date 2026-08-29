@@ -60,6 +60,7 @@ def test_render_pipeline_assigns_exact_fonts_to_ordinary_multilingual_artists(
     axis.set(title="Nitrification", xlabel="硝化效率", ylabel="硝化の効率")
     axis.annotate("硝化效率", (0.5, 0.5))
     axis.text(0.5, 0.2, r"$\mu_{\max}$", transform=axis.transAxes)
+    axis.legend(title="硝化效率")
 
     result = render_figure(figure, tmp_path / mode, typography=mode)
     entry = validate_pair(result.pdf, result.png, tectonic_log=result.log)

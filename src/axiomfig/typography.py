@@ -297,6 +297,7 @@ def _figure_text_artists(figure: Figure) -> list[Text]:
         artists.extend(axis.texts)
         legend = axis.get_legend()
         if legend is not None:
+            artists.append(legend.get_title())
             artists.extend(legend.get_texts())
     return list({id(artist): artist for artist in artists}.values())
 
