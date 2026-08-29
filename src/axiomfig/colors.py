@@ -15,8 +15,21 @@ def palettes(contracts: Contracts | None = None) -> Mapping[str, Mapping[str, st
 def render_xcolor(contracts: Contracts | None = None) -> str:
     selected = contracts or load_contracts()
     default_name = selected.colors["default"]
-    definitions = "\n".join(
+    definitions = [
         f"\\definecolor{{{name}}}{{HTML}}{{{value.removeprefix('#')}}}"
         for name, value in palettes(selected)[default_name].items()
+    ]
+    for palette_name, values in palettes(selected).items():
+        if not palette_name.startswith("axiom_"):
+            continue
+        prefix = palette_name.removeprefix("axiom_").title().replace("_", "")
+        definitions.extend(
+            f"\\definecolor{{Axiom{prefix}{name.removeprefix('Axiom')}}}"
+            f"{{HTML}}{{{value.removeprefix('#')}}}"
+            for name, value in values.items()
+        )
+    return (
+        "% Generated from styles/colors.yaml; do not edit manually.\n"
+        + "\n".join(definitions)
+        + "\n"
     )
-    return "% Generated from styles/colors.yaml; do not edit manually.\n" + definitions + "\n"

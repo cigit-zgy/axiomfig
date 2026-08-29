@@ -2,10 +2,13 @@ from __future__ import annotations
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
+from axiomfig.contracts import bar_width
 from axiomfig.template_helpers import (
     add_bar_value_labels,
+    add_colorbar_panel_axes,
     add_panel_labels,
     apply_axis_contract,
     apply_categorical_axis,
@@ -14,70 +17,122 @@ from axiomfig.template_helpers import (
     apply_scatter_contract,
     confidence_interval_kwargs,
     place_legend_above,
+    reference_line_kwargs,
+    series_style,
 )
-from axiomfig.templates.surfaces import add_heatmap, add_panel_colorbar_axis
+from axiomfig.templates.surfaces import add_heatmap
 
 
-def build_multi_panel() -> Figure:
-    rng = np.random.default_rng(109)
-    figure, grid = plt.subplots(2, 2, squeeze=False)
-    axes = list(grid.flat)
-
+def _line_panel(axis: Axes) -> None:
     x = np.linspace(0.0, 12.0, 61)
     mean = 1.0 - np.exp(-x / 3.2)
     spread = 0.045 + 0.025 * np.exp(-x / 4.0)
     color = plt.rcParams["axes.prop_cycle"].by_key()["color"][0]
-    axes[0].fill_between(
+    axis.fill_between(x, mean - spread, mean + spread, **confidence_interval_kwargs(color))
+    axis.plot(x, mean, label="Hybrid model", **series_style(0, include_marker=False))
+    axis.plot(
         x,
-        mean - spread,
-        mean + spread,
-        color=color,
-        **confidence_interval_kwargs(),
+        0.9 * (1.0 - np.exp(-x / 4.0)),
+        label="Mechanistic model",
+        **series_style(1, include_marker=False),
     )
-    axes[0].plot(x, mean, label="Hybrid model")
-    axes[0].plot(x, 0.9 * (1.0 - np.exp(-x / 4.0)), label="Mechanistic model")
-    axes[0].set(xlabel="Time (d)", ylabel="Response (-)")
-    apply_axis_contract(axes[0], surface="open")
-    apply_nice_linear_axis(axes[0], 0.0, 12.0, coordinate="x")
-    apply_nice_linear_axis(axes[0], 0.0, 1.0, coordinate="y")
+    axis.set(xlabel="Time (d)", ylabel="Response (-)")
+    apply_axis_contract(axis, surface="open")
+    apply_nice_linear_axis(axis, 0.0, 12.0, coordinate="x")
+    apply_nice_linear_axis(axis, 0.0, 1.0, coordinate="y")
+    place_legend_above(axis)
 
+
+def _bar_panel(axis: Axes) -> None:
     positions = np.arange(3)
-    width = 0.34
-    first = axes[1].bar(
+    width = bar_width(2)
+    first = axis.bar(
         positions - width / 2,
         [0.72, 0.67, 0.61],
         width,
         label="Mechanistic",
     )
-    second = axes[1].bar(
+    second = axis.bar(
         positions + width / 2,
         [0.84, 0.76, 0.71],
         width,
         label="Hybrid",
     )
-    axes[1].set_xticks(positions, ["COD", "Nitrogen", "Phosphorus"])
-    axes[1].set(ylabel="Validation score (-)")
-    apply_axis_contract(axes[1], surface="open")
-    apply_categorical_axis(axes[1], coordinate="x")
-    apply_nice_linear_axis(axes[1], 0.0, 1.0, coordinate="y")
-    add_bar_value_labels(axes[1], [first, second])
+    axis.set_xticks(positions, ["COD", "N", "P"])
+    axis.set(ylabel="Score (-)")
+    apply_axis_contract(axis, surface="open")
+    apply_categorical_axis(axis, coordinate="x")
+    apply_nice_linear_axis(axis, 0.0, 1.0, coordinate="y")
+    add_bar_value_labels(axis, [first, second])
+    place_legend_above(axis)
 
+
+def _scatter_panel(axis: Axes, seed: int) -> None:
+    rng = np.random.default_rng(seed)
     observed = np.linspace(2.0, 28.0, 36)
-    apply_scatter_contract(
-        axes[2].scatter(observed, observed + rng.normal(0.0, 1.3, observed.size))
-    )
-    axes[2].plot([0, 30], [0, 30], linestyle="--")
-    axes[2].set(xlabel="Observed concentration", ylabel="Predicted concentration")
-    apply_axis_contract(axes[2], surface="open")
-    apply_nice_linear_axis(axes[2], 0.0, 30.0, coordinate="x")
-    apply_nice_linear_axis(axes[2], 0.0, 30.0, coordinate="y")
+    collection = axis.scatter(observed, observed + rng.normal(0.0, 1.3, observed.size))
+    apply_scatter_contract(collection)
+    axis.plot([0, 30], [0, 30], **reference_line_kwargs())
+    axis.set(xlabel="Observed", ylabel="Predicted")
+    apply_axis_contract(axis, surface="open")
+    apply_nice_linear_axis(axis, 0.0, 30.0, coordinate="x")
+    apply_nice_linear_axis(axis, 0.0, 30.0, coordinate="y")
 
-    image = add_heatmap(axes[3], annotate=False)
-    colorbar_axis = add_panel_colorbar_axis(axes[3])
-    colorbar = figure.colorbar(image, cax=colorbar_axis, label="Correlation (-)")
-    apply_colorbar_contract(colorbar)
 
+def _residual_panel(axis: Axes, seed: int) -> None:
+    rng = np.random.default_rng(seed)
+    fitted = np.linspace(1.0, 20.0, 42)
+    residual = rng.normal(0.0, 1.0, fitted.size) * (0.5 + 0.03 * fitted)
+    collection = axis.scatter(fitted, residual)
+    apply_scatter_contract(collection)
+    axis.axhline(0.0, **reference_line_kwargs())
+    axis.set(xlabel="Fitted", ylabel="Residual")
+    apply_axis_contract(axis, surface="open")
+    apply_nice_linear_axis(axis, 0.0, 21.0, coordinate="x")
+    apply_nice_linear_axis(axis, -3.0, 3.0, coordinate="y")
+
+
+def _build_grid(rows: int, columns: int, *, heatmap: bool) -> Figure:
+    figure = plt.figure()
+    grid = figure.add_gridspec(rows, columns)
+    axes: list[Axes] = []
+    colorbar_axis: Axes | None = None
+    panel_count = rows * columns
+    for index in range(panel_count):
+        if heatmap and index == panel_count - 1:
+            axis, colorbar_axis = add_colorbar_panel_axes(figure, grid[index])
+        else:
+            axis = figure.add_subplot(grid[index])
+        axes.append(axis)
+
+    builders = (_line_panel, _bar_panel, _scatter_panel, _residual_panel)
+    for index, axis in enumerate(axes):
+        if heatmap and index == panel_count - 1:
+            image = add_heatmap(axis, annotate=panel_count <= 4)
+            assert colorbar_axis is not None
+            colorbar = figure.colorbar(image, cax=colorbar_axis, label="Correlation (-)")
+            apply_colorbar_contract(colorbar)
+        else:
+            builder = builders[index % len(builders)]
+            if builder in {_scatter_panel, _residual_panel}:
+                builder(axis, 109 + index)
+            else:
+                builder(axis)
     add_panel_labels(axes)
-    place_legend_above(axes[0])
-    place_legend_above(axes[1])
     return figure
+
+
+def build_two_panel() -> Figure:
+    return _build_grid(1, 2, heatmap=False)
+
+
+def build_four_panel() -> Figure:
+    return _build_grid(2, 2, heatmap=True)
+
+
+def build_six_panel() -> Figure:
+    return _build_grid(2, 3, heatmap=False)
+
+
+def build_complex_multi_panel() -> Figure:
+    return _build_grid(3, 2, heatmap=True)

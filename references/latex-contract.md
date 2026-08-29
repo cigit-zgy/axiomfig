@@ -63,4 +63,6 @@ Use `\definecolor{name}{HTML}{RRGGBB}` for a named canonical color, `\textcolor{
 
 ## Current boundary
 
-The stable figure path renders Matplotlib text into an intermediate PDF before Tectonic wraps that PDF. Therefore Tectonic cannot expand `\qty`, `\unit`, `\ce`, or other TeX macros placed inside Matplotlib labels. TeX-native Matplotlib text remains **DEFERRED**. The syntax above is valid for TeX-native documents; it is not evidence that plot labels support these macros.
+`gallery/latex/01_scientific_typography` and `gallery/latex/02_palettes` are genuinely Tectonic-native documents built through `latex/axiomfig.sty`; macros and palette-qualified colors are expanded by TeX there.
+
+The Matplotlib Gallery path renders plot text into an intermediate PDF before Tectonic wraps that PDF. Therefore Tectonic cannot expand `\qty`, `\unit`, `\ce`, or other TeX macros placed inside Matplotlib labels. TeX-native Matplotlib text remains **DEFERRED**. The syntax above is valid for TeX-native documents; it is not evidence that Matplotlib labels support these macros.

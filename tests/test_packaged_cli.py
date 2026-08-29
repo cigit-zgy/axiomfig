@@ -4,6 +4,7 @@ import os
 import shutil
 import subprocess
 import sys
+import sysconfig
 import zipfile
 from pathlib import Path
 
@@ -75,13 +76,14 @@ def test_clean_wheel_installs_yaml_fonts_and_four_template_families(tmp_path: Pa
     assert not any("axiomfig/resources/styles/" in name for name in names)
     assert not any("axiomfig/resources/templates/" in name for name in names)
 
-    _run([sys.executable, "-m", "venv", "--system-site-packages", str(environment)], cwd=outside)
+    _run([sys.executable, "-m", "venv", str(environment)], cwd=outside)
     python = environment / "bin/python"
     _run([str(python), "-m", "pip", "install", "--no-deps", str(wheel)], cwd=outside)
     env = {
         key: value for key, value in os.environ.items() if key not in {"PYTHONPATH", "PYTHONHOME"}
     }
     env["PYTHONNOUSERSITE"] = "1"
+    env["PYTHONPATH"] = sysconfig.get_path("purelib")
     _run(
         [
             str(python),
@@ -90,7 +92,7 @@ def test_clean_wheel_installs_yaml_fonts_and_four_template_families(tmp_path: Pa
                 "from axiomfig.config import load_contracts; "
                 "from axiomfig.templates import TEMPLATE_BUILDERS; "
                 "assert load_contracts().style['stroke']['main_stroke_pt'] == 0.8; "
-                "assert len(TEMPLATE_BUILDERS) == 20; "
+                "assert len(TEMPLATE_BUILDERS) == 36; "
                 "from axiomfig.typography import discover_fonts; "
                 "assert discover_fonts('serif')['text'].family == 'XCharter'"
             ),

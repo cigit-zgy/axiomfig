@@ -27,6 +27,15 @@ class LatexProbeResult:
     tectonic_command: tuple[str, ...]
 
 
+@dataclass(frozen=True)
+class LatexGalleryResult:
+    pdf: Path
+    png: Path
+    tex: Path
+    log: Path
+    tectonic_command: tuple[str, ...]
+
+
 _PROBE_SOURCE = r"""\documentclass{article}
 \usepackage{axiomfig}
 \pagestyle{empty}
@@ -49,6 +58,53 @@ _EXPECTED_TEXT = (
     "𝛼",
     "𝛽",
 )
+
+_TYPOGRAPHY_GALLERY_SOURCE = r"""\documentclass[border=8pt]{standalone}
+\usepackage{axiomfig}
+\begin{document}
+\begin{minipage}{140mm}
+{\Large\bfseries\textcolor{AxiomBlue}{AxiomFig scientific typography}}\\[8pt]
+Units: \qty{10}{\milli\gram\per\litre}; \unit{\kilo\gram\per\cubic\metre}.\\[4pt]
+Chemistry: \ce{NH4+}, \ce{NO3-}, \ce{PO4^3-}, and \ce{O2}.\\[4pt]
+Math: $R^2 = 0.94$, $\mu_{\max}$, $\alpha + \beta$, and $\symbf{x}$.\\[4pt]
+\begin{align*}
+  \frac{\mathrm{d}S}{\mathrm{d}t} &= -\mu_{\max}\frac{S}{K_S + S}X, \\
+  \operatorname{RMSE} &= \sqrt{\frac{1}{n}\sum_{i=1}^{n}(y_i-\hat y_i)^2}.
+\end{align*}
+\end{minipage}
+\end{document}
+"""
+
+_PALETTE_GALLERY_SOURCE = r"""\documentclass[border=8pt]{standalone}
+\usepackage{axiomfig}
+\newcommand{\swatch}[1]{\colorbox{#1}{\phantom{\rule{8mm}{4mm}}}}
+\begin{document}
+\begin{minipage}{150mm}
+{\Large\bfseries AxiomFig palette comparison}\\[7pt]
+Classic\quad
+\swatch{AxiomClassicBlue}\swatch{AxiomClassicCyan}\swatch{AxiomClassicGreen}
+\swatch{AxiomClassicYellow}\swatch{AxiomClassicOrange}\swatch{AxiomClassicRed}
+\swatch{AxiomClassicPurple}\swatch{AxiomClassicGrey}\\[4pt]
+Soft\qquad
+\swatch{AxiomSoftBlue}\swatch{AxiomSoftCyan}\swatch{AxiomSoftGreen}
+\swatch{AxiomSoftYellow}\swatch{AxiomSoftOrange}\swatch{AxiomSoftRed}
+\swatch{AxiomSoftPurple}\swatch{AxiomSoftGrey}\\[4pt]
+Deep\qquad
+\swatch{AxiomDeepBlue}\swatch{AxiomDeepCyan}\swatch{AxiomDeepGreen}
+\swatch{AxiomDeepYellow}\swatch{AxiomDeepOrange}\swatch{AxiomDeepRed}
+\swatch{AxiomDeepPurple}\swatch{AxiomDeepGrey}\\[4pt]
+Warm\quad
+\swatch{AxiomWarmBlue}\swatch{AxiomWarmCyan}\swatch{AxiomWarmGreen}
+\swatch{AxiomWarmYellow}\swatch{AxiomWarmOrange}\swatch{AxiomWarmRed}
+\swatch{AxiomWarmPurple}\swatch{AxiomWarmGrey}\\[4pt]
+Cool\qquad
+\swatch{AxiomCoolBlue}\swatch{AxiomCoolCyan}\swatch{AxiomCoolGreen}
+\swatch{AxiomCoolYellow}\swatch{AxiomCoolOrange}\swatch{AxiomCoolRed}
+\swatch{AxiomCoolPurple}\swatch{AxiomCoolGrey}\\[5pt]
+Canonical colors are generated from \texttt{styles/colors.yaml}; math check: $\alpha+\beta$.
+\end{minipage}
+\end{document}
+"""
 
 
 def _executable(name: str) -> str:
@@ -197,3 +253,71 @@ def compile_latex_probe(output_dir: Path) -> LatexProbeResult:
         fonts=font_rows,
         tectonic_command=tectonic_command,
     )
+
+
+def build_latex_gallery(output_dir: Path, *, work_root: Path) -> list[LatexGalleryResult]:
+    """Compile the two canonical Tectonic-native Gallery figures."""
+    output_dir = Path(output_dir).resolve()
+    work_root = Path(work_root).resolve()
+    output_dir.mkdir(parents=True, exist_ok=True)
+    work_root.mkdir(parents=True, exist_ok=True)
+    cases = (
+        ("01_scientific_typography", _TYPOGRAPHY_GALLERY_SOURCE),
+        ("02_palettes", _PALETTE_GALLERY_SOURCE),
+    )
+    results: list[LatexGalleryResult] = []
+    for stem, source in cases:
+        workdir = work_root / stem
+        if workdir.exists():
+            shutil.rmtree(workdir)
+        workdir.mkdir()
+        for name in ("axiomfig.sty", "axiomfig-colors.tex"):
+            (workdir / name).write_bytes(_resource_bytes(name))
+        tex = workdir / f"{stem}.tex"
+        tex.write_text(source, encoding="utf-8")
+        command = (
+            _executable("tectonic"),
+            "--outdir",
+            str(workdir),
+            "--keep-logs",
+            "--keep-intermediates",
+            tex.name,
+        )
+        completed = _run(list(command), cwd=workdir, label=f"Tectonic Gallery {stem}")
+        compiled_pdf = workdir / f"{stem}.pdf"
+        if not compiled_pdf.is_file() or compiled_pdf.stat().st_size == 0:
+            raise LatexProbeError(f"Tectonic did not create a fresh PDF: {compiled_pdf}")
+        published_pdf = output_dir / f"{stem}.pdf"
+        published_png = output_dir / f"{stem}.png"
+        _atomic_copy(compiled_pdf, published_pdf)
+        preview = workdir / "preview"
+        _run(
+            [
+                _executable("pdftoppm"),
+                "-f",
+                "1",
+                "-singlefile",
+                "-png",
+                "-r",
+                "300",
+                str(published_pdf),
+                str(preview),
+            ],
+            cwd=workdir,
+            label=f"Poppler Gallery {stem}",
+        )
+        _atomic_copy(preview.with_suffix(".png"), published_png)
+        log = workdir / f"{stem}.log"
+        if not log.exists():
+            log.write_text(completed.stdout, encoding="utf-8")
+        _font_rows(published_pdf)
+        results.append(
+            LatexGalleryResult(
+                pdf=published_pdf,
+                png=published_png,
+                tex=tex,
+                log=log,
+                tectonic_command=command,
+            )
+        )
+    return results

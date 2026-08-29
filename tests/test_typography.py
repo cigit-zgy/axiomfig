@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
             "sans",
             {
                 "text": "Latin Modern Sans",
-                "math": "Latin Modern Math",
+                "math": "Latin Modern Sans",
                 "mono": "Maple Mono",
             },
         ),
@@ -37,6 +37,17 @@ def test_font_discovery_uses_only_latin_math_and_mono_roles(
 
     assert {role: font.family for role, font in fonts.items()} == expected
     assert all(Path(font.path).is_file() for font in fonts.values())
+
+
+def test_sans_mode_maps_all_mathtext_roles_to_latin_modern_sans() -> None:
+    from axiomfig.config import build_rcparams
+
+    params = build_rcparams(load_contracts(ROOT / "styles"), typography="sans")
+
+    assert params["mathtext.fontset"] == "custom"
+    assert params["mathtext.rm"] == "Latin Modern Sans"
+    assert params["mathtext.it"] == "Latin Modern Sans"
+    assert params["mathtext.bf"] == "Latin Modern Sans"
 
 
 def test_font_metadata_declares_optional_commercial_system_fonts_unbundled() -> None:

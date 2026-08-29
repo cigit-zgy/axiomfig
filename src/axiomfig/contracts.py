@@ -12,6 +12,22 @@ MAIN_STROKE_PT = float(_CONTRACTS.style["stroke"]["main_stroke_pt"])
 FILL_EDGE_PT = float(_CONTRACTS.style["stroke"]["fill_edge_pt"])
 
 
+def tick_lengths() -> tuple[float, float]:
+    """Return the central Matplotlib major and minor tick lengths in points."""
+    geometry = _CONTRACTS.style["ticks"]["geometry"]
+    return float(geometry["major_length_pt"]), float(geometry["minor_length_pt"])
+
+
+def bar_width(series_count: int = 1) -> float:
+    """Return the exact central bar width for a single or grouped series."""
+    if isinstance(series_count, bool) or not isinstance(series_count, int) or series_count < 1:
+        raise ValueError("series_count must be a positive integer")
+    contract = _CONTRACTS.style["plots"]["bar"]
+    if series_count == 1:
+        return float(contract["single_width"])
+    return float(contract["group_width"]) / series_count
+
+
 @dataclass(frozen=True)
 class NiceLinearAxis:
     lower: float

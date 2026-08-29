@@ -2,9 +2,9 @@
 
 AxiomFig is a deterministic-first Agent Skill for publication-quality scientific figures. Scientific meaning stays in a small set of native Matplotlib builders; all reusable visual decisions come from three YAML contracts and thin helpers.
 
-![Sans multi-panel contract](gallery/sans/20_multi_panel.png)
+![Sans complex panel contract](gallery/sans/36_complex_multi_panel.png)
 
-![Serif multi-panel contract](gallery/serif/20_multi_panel.png)
+![Serif four-panel contract](gallery/serif/34_four_panel.png)
 
 ![Sans violin contract](gallery/sans/14_violin.png)
 
@@ -26,7 +26,7 @@ The three canonical sources have exclusive responsibilities:
 - `fonts.yaml`: exact Latin/math/mono families, files, sources, licenses, redistribution status, and optional system fonts;
 - `colors.yaml`: canonical scientific palettes.
 
-There are no `.mplstyle` layers. Twenty public templates are grouped into four small family modules under `src/axiomfig/templates/`; see the [template contract](references/template-contract.md).
+There are no `.mplstyle` layers. Thirty-six public templates are grouped into four small family modules under `src/axiomfig/templates/`; see the [template contract](references/template-contract.md).
 
 ## Quick start
 
@@ -48,23 +48,24 @@ Installed commands are `axiomfig-render`, `axiomfig-validate`, and `axiomfig-gal
 
 - Physical widths are 90, 140, and 190 mm at default 4:3; point sizes do not scale with width.
 - `main_stroke = 0.8 pt`; black filled-geometry edges use `fill_edge = 0.6 pt`.
-- Open continuous axes use major `inout`, minor `in`, and one minor per major interval. Filled surfaces use major/minor `out`; categorical axes keep labels but no tick marks.
+- Open continuous axes use major `inout`, minor `in`, and one minor per major interval. The minor is `1.854 pt`; the major parameter is derived from the measured `inout` projection and φ ratio. Filled surfaces/colorbars reuse these lengths with `out`; categorical axes keep labels but no tick marks.
 - Nice linear axes target 5–7 majors with steps limited to `1`, `2`, `2.5`, or `5 × 10^n`, half-step minors, and snapped limits.
-- Single-series figures omit legends. Multi-series legends sit outside top-right, prefer one row, align to the right spine, and reduce columns only on measured overflow.
-- Panel labels are bold `(a)`, `(b)`, … at `10 pt` with fixed point offsets. Ordinary panel boxes remain identical; colorbars occupy dedicated layout slots.
-- Scatter uses black `0.6 pt` edges, alpha `0.55`, and `36 pt²` markers. Bars and violins use black `0.6 pt` edges; bars show two-decimal values.
+- Single-series figures omit legends. Multi-series legends sit outside top-right, prefer one row, align to the right spine, and reduce columns only on measured figure-boundary overflow or panel-label collision.
+- Panel labels are bold `(a)`, `(b)`, … at `11 pt` with fixed point offsets from equal outer panel footprints. A colorbar subdivides its owning footprint and never compresses a peer panel.
+- Filled geometry stores transparency only in face RGBA; black `0.6 pt` edges remain opaque. Scatter uses face alpha `0.55` and `36 pt²` markers. Bars use exact width `0.60`, or total group width `0.76`, and show two-decimal values.
+- Multi-series identity redundantly cycles color, line style, and marker. The first four line styles are solid, dash-dot, dotted, and long-dash; reference lines default to dash-dot.
 - The fixed-page output solver keeps visible artists at the canonical `1.5 pt` page padding without changing 90/140/190 mm geometry.
-- `sans` uses bundled Latin Modern Sans + Latin Modern Math; `serif` uses bundled XCharter + XCharter Math; both use bundled Maple Mono. CJK/Japanese work is deferred.
+- `sans` uses bundled Latin Modern Sans for text and Matplotlib math; `serif` uses bundled XCharter + XCharter Math; both use bundled Maple Mono. CJK/Japanese work is deferred.
 
 See [SKILL.md](SKILL.md), [the style contract](references/style-contract.md), [typography](references/typography.md), [layout](references/layout.md), and [the template contract](references/template-contract.md).
 
 ## LaTeX boundary
 
-[The LaTeX contract](references/latex-contract.md) records exact allowed syntax for `siunitx`, `mhchem`, `amsmath`, `unicode-math`, and `xcolor`. The stable renderer embeds Matplotlib text before Tectonic wraps the intermediate PDF, so TeX-native macro expansion inside plot labels remains **DEFERRED**.
+[The LaTeX contract](references/latex-contract.md) records exact allowed syntax for `siunitx`, `mhchem`, `amsmath`, `unicode-math`, and `xcolor`. `gallery/latex/` contains two genuinely Tectonic-native references. The Matplotlib renderer still embeds plot text before Tectonic wraps the intermediate PDF, so TeX-native macro expansion inside Matplotlib labels remains **DEFERRED**.
 
 ## Gallery and validation
 
-The committed Gallery contains matching English-only suites under `gallery/sans/` and `gallery/serif/`. Each mode has 20 canonical PDF/PNG pairs (`01_single_line` through `20_multi_panel`): 40 files per mode and 80 final artifacts in total.
+The committed Gallery contains matching English-only suites under `gallery/sans/` and `gallery/serif/`. Each mode has 36 canonical PDF/PNG pairs (`01_single_line` through `36_complex_multi_panel`). `gallery/latex/` adds two Tectonic-native pairs, for 74 pairs and 148 final artifacts in total.
 
 ```bash
 python scripts/generate_colors.py --check

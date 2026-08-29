@@ -14,7 +14,11 @@ from axiomfig.colors import render_xcolor  # noqa: E402
 
 def artifacts() -> dict[Path, str]:
     """Return all generated color artifact paths and their expected contents."""
-    return {ROOT / "src/axiomfig/resources/latex/axiomfig-colors.tex": render_xcolor()}
+    content = render_xcolor()
+    return {
+        ROOT / "src/axiomfig/resources/latex/axiomfig-colors.tex": content,
+        ROOT / "latex/axiomfig-colors.tex": content,
+    }
 
 
 def main() -> int:

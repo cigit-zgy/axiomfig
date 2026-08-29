@@ -6,6 +6,7 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
 from axiomfig.config import load_contracts
+from axiomfig.contracts import bar_width
 from axiomfig.template_helpers import (
     add_bar_value_labels,
     apply_axis_contract,
@@ -13,8 +14,10 @@ from axiomfig.template_helpers import (
     apply_categorical_axis,
     apply_nice_linear_axis,
     apply_violin_contract,
+    confidence_interval_kwargs,
     histogram_kwargs,
     place_legend_above,
+    series_style,
 )
 
 
@@ -28,7 +31,7 @@ def _vertical_bar_axes(axis: Axes, labels: list[str], upper: float) -> None:
 def build_vertical_bar() -> Figure:
     labels = ["COD", "Nitrogen", "Phosphorus"]
     figure, axis = plt.subplots()
-    bars = axis.bar(np.arange(3), [0.84, 0.76, 0.71])
+    bars = axis.bar(np.arange(3), [0.84, 0.76, 0.71], width=bar_width())
     axis.set(ylabel="Validation score (-)")
     _vertical_bar_axes(axis, labels, 1.0)
     add_bar_value_labels(axis, [bars])
@@ -38,7 +41,7 @@ def build_vertical_bar() -> Figure:
 def build_grouped_bar() -> Figure:
     labels = ["COD", "Nitrogen", "Phosphorus"]
     positions = np.arange(3)
-    width = 0.34
+    width = bar_width(2)
     figure, axis = plt.subplots()
     first = axis.bar(positions - width / 2, [0.72, 0.67, 0.61], width, label="Mechanistic")
     second = axis.bar(positions + width / 2, [0.84, 0.76, 0.71], width, label="Hybrid")
@@ -53,7 +56,7 @@ def build_horizontal_bar() -> Figure:
     labels = ["Mechanistic", "Neural ODE", "Hybrid ODE"]
     positions = np.arange(3)
     figure, axis = plt.subplots()
-    bars = axis.barh(positions, [0.66, 0.78, 0.87])
+    bars = axis.barh(positions, [0.66, 0.78, 0.87], height=bar_width())
     axis.set_yticks(positions, labels)
     axis.set(xlabel="Explained variance (-)")
     apply_axis_contract(axis, surface="open")
@@ -69,8 +72,15 @@ def build_stacked_bar() -> Figure:
     first_values = np.array([0.42, 0.50, 0.57])
     second_values = np.array([0.25, 0.28, 0.31])
     figure, axis = plt.subplots()
-    first = axis.bar(positions, first_values, label="Mechanistic")
-    second = axis.bar(positions, second_values, bottom=first_values, label="Data-driven")
+    width = bar_width()
+    first = axis.bar(positions, first_values, width=width, label="Mechanistic")
+    second = axis.bar(
+        positions,
+        second_values,
+        width=width,
+        bottom=first_values,
+        label="Data-driven",
+    )
     axis.set(ylabel="Explained contribution (-)")
     _vertical_bar_axes(axis, labels, 1.0)
     add_bar_value_labels(axis, [first, second])
@@ -153,4 +163,38 @@ def build_histogram() -> Figure:
     apply_axis_contract(axis, surface="open")
     apply_nice_linear_axis(axis, -3.5, 3.5, coordinate="x")
     apply_nice_linear_axis(axis, 0.0, 50.0, coordinate="y")
+    return figure
+
+
+def build_density() -> Figure:
+    rng = np.random.default_rng(89)
+    samples = rng.normal(0.2, 0.95, 180)
+    grid = np.linspace(-3.2, 3.6, 240)
+    bandwidth = 0.38
+    density = np.exp(-0.5 * ((grid[:, None] - samples[None, :]) / bandwidth) ** 2).mean(axis=1) / (
+        bandwidth * np.sqrt(2.0 * np.pi)
+    )
+    figure, axis = plt.subplots()
+    color = plt.rcParams["axes.prop_cycle"].by_key()["color"][0]
+    axis.fill_between(grid, 0.0, density, **confidence_interval_kwargs(color))
+    axis.plot(grid, density)
+    axis.set(xlabel="Standardized residual", ylabel="Density")
+    apply_axis_contract(axis, surface="open")
+    apply_nice_linear_axis(axis, -3.2, 3.6, coordinate="x")
+    apply_nice_linear_axis(axis, 0.0, float(density.max()) * 1.08, coordinate="y")
+    return figure
+
+
+def build_ecdf() -> Figure:
+    rng = np.random.default_rng(97)
+    figure, axis = plt.subplots()
+    for index, (mean, label) in enumerate(((0.0, "Baseline"), (0.55, "Hybrid"))):
+        values = np.sort(rng.normal(mean, 0.9, 90))
+        probability = np.arange(1, values.size + 1) / values.size
+        axis.step(values, probability, where="post", label=label, **series_style(index))
+    axis.set(xlabel="Standardized score", ylabel="Cumulative probability")
+    apply_axis_contract(axis, surface="open")
+    apply_nice_linear_axis(axis, -3.0, 3.5, coordinate="x")
+    apply_nice_linear_axis(axis, 0.0, 1.0, coordinate="y")
+    place_legend_above(axis)
     return figure

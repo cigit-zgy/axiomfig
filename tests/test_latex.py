@@ -51,3 +51,9 @@ def test_xcharter_probe_text_preserves_unit_chemistry_and_math_semantics() -> No
         "Math marker: 𝜇max , 𝛼, 𝛽.\n"
     )
     _validate_semantics(extracted)
+
+
+def test_palette_tex_swatch_exposes_background_instead_of_a_black_rule() -> None:
+    from axiomfig.latex import _PALETTE_GALLERY_SOURCE
+
+    assert r"\colorbox{#1}{\phantom{\rule{8mm}{4mm}}}" in _PALETTE_GALLERY_SOURCE

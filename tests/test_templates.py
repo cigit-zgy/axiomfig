@@ -22,14 +22,30 @@ CANONICAL_TEMPLATES = {
     "violin",
     "box-violin",
     "histogram",
+    "density",
+    "ecdf",
     "heatmap",
     "errorbar",
+    "forest-plot",
+    "point-interval",
+    "bland-altman",
+    "correlation-heatmap",
+    "clustered-heatmap",
+    "confusion-matrix",
+    "roc-curve",
+    "pr-curve",
+    "calibration-curve",
+    "residual-diagnostics",
+    "mantel-test",
     "model-evaluation",
-    "multi-panel",
+    "two-panel",
+    "four-panel",
+    "six-panel",
+    "complex-multi-panel",
 }
 
 
-def test_registry_contains_only_twenty_canonical_templates_from_four_families() -> None:
+def test_registry_contains_only_thirty_six_canonical_templates_from_four_families() -> None:
     assert set(TEMPLATE_BUILDERS) == CANONICAL_TEMPLATES
     assert {
         builder.__module__.rsplit(".", maxsplit=1)[-1] for builder in TEMPLATE_BUILDERS.values()
@@ -53,4 +69,17 @@ def test_templates_do_not_mutate_contract_rcparams(name: str) -> None:
     figure = build_template(name)
 
     assert {key: mpl.rcParams[key] for key in keys} == before
+    plt.close(figure)
+
+
+def test_mantel_significance_legend_uses_bundled_ascii_glyphs() -> None:
+    figure = build_template("mantel-test")
+    labels = [
+        text.get_text()
+        for axis in figure.axes
+        if axis.get_legend() is not None
+        for text in axis.get_legend().get_texts()
+    ]
+
+    assert labels == ["p < 0.05", "not significant"]
     plt.close(figure)

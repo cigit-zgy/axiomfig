@@ -7,18 +7,21 @@ geometry:
 
 typography:
   default: sans
-  sizes_pt: { base: 8.0, small: 7.0, label: 8.0, title: 9.0, panel: 10.0 }
+  sizes_pt: { base: 8.0, small: 7.0, label: 8.0, title: 9.0, panel: 11.0 }
 
 stroke: { main_stroke_pt: 0.8, fill_edge_pt: 0.6 }
 
 ticks:
+  geometry:
+    minor_to_major_inward_ratio: 0.6180339887
+    minor_length_pt: 1.854
+    major_length_pt: 5.9996700308
   open:
-    major: { direction: inout, length_pt: 4.0 }
-    minor: { direction: in, length_pt: 1.236 }
-    minor_inward_ratio: 0.618
+    major: { direction: inout, length_token: major }
+    minor: { direction: in, length_token: minor }
   filled:
-    major: { direction: out, length_pt: 4.0 }
-    minor: { direction: out, length_pt: 2.0 }
+    major: { direction: out, length_token: major }
+    minor: { direction: out, length_token: minor }
   categorical: { length_pt: 0.0 }
 
 axes:
@@ -33,14 +36,14 @@ axes:
 legend:
   single_series: none
   location: outside-top-right
-  top_gap_pt: 0.7
+  top_gap_pt: 0.4666666667
   handlelength: 1.0
   frame: false
   prefer_single_row: true
 
 panel:
   format: "({letter})"
-  font_size_pt: 10.0
+  font_size_pt: 11.0
   font_weight: bold
   left_offset_pt: -2.0
   top_offset_pt: 2.0
@@ -61,6 +64,12 @@ layout:
     colorbar_gap: 0.025
     wspace: 0.34
     hspace: 0.45
+
+series:
+  line_styles: [solid, dashdot, dotted, long-dash]
+  markers: [o, s, '^', D, v, P, X, h]
+  long_dash_pattern: [6.0, 2.0]
+  reference_line_style: dashdot
 
 plots:
   line: { linewidth_token: main_stroke }
@@ -85,8 +94,11 @@ plots:
     edge_width_token: fill_edge
     cap_size_pt: 2.5
   bar:
+    alpha: 0.82
     edge_color: black
     edge_width_token: fill_edge
+    single_width: 0.60
+    group_width: 0.76
     value_labels: true
     decimals: 2
   boxplot:
@@ -102,7 +114,7 @@ plots:
     edge_width_token: fill_edge
     width: 0.82
     limit_padding_fraction: 0.02
-  histogram: { edge_color: black, edge_width_token: fill_edge }
+  histogram: { alpha: 0.72, edge_color: black, edge_width_token: fill_edge }
   heatmap: { cmap: cividis, interpolation: nearest }
 
 rendering: { pdf_fonttype: 42, ps_fonttype: 42, dpi: 300, transparent: false }

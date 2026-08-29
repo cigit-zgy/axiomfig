@@ -60,6 +60,40 @@ def test_visual_stroke_tokens_are_distinct_and_positive() -> None:
     assert get_token(contracts, "style.stroke.fill_edge_pt") == 0.6
 
 
+def test_tick_geometry_is_centralized_and_phi_derived() -> None:
+    from axiomfig.config import load_contracts
+
+    ticks = load_contracts(STYLE_ROOT).style["ticks"]
+    phi = float(ticks["geometry"]["minor_to_major_inward_ratio"])
+    minor = float(ticks["geometry"]["minor_length_pt"])
+    major = float(ticks["geometry"]["major_length_pt"])
+
+    assert phi == pytest.approx(0.6180339887)
+    assert minor == pytest.approx(1.236 * 1.5)
+    assert major / 2.0 == pytest.approx(minor / phi)
+    assert ticks["open"]["major"]["length_token"] == "major"
+    assert ticks["filled"]["major"]["length_token"] == "major"
+    assert ticks["open"]["minor"]["length_token"] == "minor"
+    assert ticks["filled"]["minor"]["length_token"] == "minor"
+
+
+def test_bar_width_and_redundant_series_cycle_are_central_tokens() -> None:
+    from axiomfig.config import load_contracts
+
+    style = load_contracts(STYLE_ROOT).style
+
+    assert style["plots"]["bar"]["single_width"] == 0.60
+    assert style["plots"]["bar"]["group_width"] == 0.76
+    assert tuple(style["series"]["line_styles"]) == (
+        "solid",
+        "dashdot",
+        "dotted",
+        "long-dash",
+    )
+    assert tuple(style["series"]["markers"][:4]) == ("o", "s", "^", "D")
+    assert style["series"]["reference_line_style"] == "dashdot"
+
+
 def test_output_margin_contract_is_centralized_and_physical() -> None:
     from axiomfig.config import load_contracts
 
@@ -86,7 +120,7 @@ def test_unknown_geometry_and_missing_token_fail_explicitly() -> None:
     [
         (("stroke", "main_stroke_pt"), -0.8),
         (("typography", "sizes_pt", "base"), float("nan")),
-        (("ticks", "open", "minor", "length_pt"), -1.0),
+        (("ticks", "geometry", "minor_length_pt"), -1.0),
         (("output", "padding_pt"), -0.1),
     ],
 )

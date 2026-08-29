@@ -13,12 +13,14 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from axiomfig.config import build_rcparams, load_contracts
+from axiomfig.latex import LatexGalleryResult, build_latex_gallery
 from axiomfig.rendering import RenderResult, render_figure
 from axiomfig.templates import build_template
 from axiomfig.typography import discover_fonts
 from axiomfig.validation import validate_pair
 
 GALLERY_MODES = ("sans", "serif")
+LATEX_GALLERY_STEMS = ("01_scientific_typography", "02_palettes")
 
 
 @dataclass(frozen=True)
@@ -45,10 +47,26 @@ GALLERY_SPECS = (
     GallerySpec("14_violin", "violin", "single-column"),
     GallerySpec("15_box_violin", "box-violin", "single-column"),
     GallerySpec("16_histogram", "histogram", "single-column"),
-    GallerySpec("17_heatmap", "heatmap", "single-column"),
-    GallerySpec("18_errorbar", "errorbar", "single-column"),
-    GallerySpec("19_model_evaluation", "model-evaluation", "single-column"),
-    GallerySpec("20_multi_panel", "multi-panel", "double-column"),
+    GallerySpec("17_density", "density", "single-column"),
+    GallerySpec("18_ecdf", "ecdf", "single-column"),
+    GallerySpec("19_errorbar", "errorbar", "single-column"),
+    GallerySpec("20_forest_plot", "forest-plot", "single-column"),
+    GallerySpec("21_point_interval", "point-interval", "single-column"),
+    GallerySpec("22_bland_altman", "bland-altman", "single-column"),
+    GallerySpec("23_heatmap", "heatmap", "single-column"),
+    GallerySpec("24_correlation_heatmap", "correlation-heatmap", "single-column"),
+    GallerySpec("25_clustered_heatmap", "clustered-heatmap", "single-column"),
+    GallerySpec("26_confusion_matrix", "confusion-matrix", "single-column"),
+    GallerySpec("27_roc_curve", "roc-curve", "single-column"),
+    GallerySpec("28_pr_curve", "pr-curve", "single-column"),
+    GallerySpec("29_calibration_curve", "calibration-curve", "single-column"),
+    GallerySpec("30_residual_diagnostics", "residual-diagnostics", "single-column"),
+    GallerySpec("31_mantel_test", "mantel-test", "onehalf-column"),
+    GallerySpec("32_model_evaluation", "model-evaluation", "single-column"),
+    GallerySpec("33_two_panel", "two-panel", "double-column"),
+    GallerySpec("34_four_panel", "four-panel", "double-column"),
+    GallerySpec("35_six_panel", "six-panel", "double-column"),
+    GallerySpec("36_complex_multi_panel", "complex-multi-panel", "double-column"),
 )
 
 
@@ -75,18 +93,20 @@ def _prepare_gallery(root: Path) -> None:
     for path in root.iterdir():
         if path.is_file() and path.suffix.lower() in {".pdf", ".png"}:
             path.unlink()
-        elif path.is_dir() and path.name in GALLERY_MODES:
+        elif path.is_dir() and path.name in {*GALLERY_MODES, "latex"}:
             for artifact in path.iterdir():
                 if not artifact.is_file() or artifact.suffix.lower() not in {".pdf", ".png"}:
                     raise RuntimeError(f"unexpected Gallery content: {artifact}")
                 artifact.unlink()
         else:
             raise RuntimeError(f"unexpected Gallery content: {path}")
-    for mode in GALLERY_MODES:
+    for mode in (*GALLERY_MODES, "latex"):
         (root / mode).mkdir(exist_ok=True)
 
 
-def build_gallery(gallery: Path, *, work_root: Path | None = None) -> list[RenderResult]:
+def build_gallery(
+    gallery: Path, *, work_root: Path | None = None
+) -> list[RenderResult | LatexGalleryResult]:
     gallery = Path(gallery).expanduser().resolve()
     work_root = (
         Path(work_root).expanduser().resolve()
@@ -98,7 +118,7 @@ def build_gallery(gallery: Path, *, work_root: Path | None = None) -> list[Rende
     work_root.mkdir(parents=True)
     _prepare_gallery(gallery)
     contracts = load_contracts()
-    results: list[RenderResult] = []
+    results: list[RenderResult | LatexGalleryResult] = []
     manifest: dict[str, object] = {"figures": []}
 
     with _deterministic_pdf_environment():
@@ -140,6 +160,21 @@ def build_gallery(gallery: Path, *, work_root: Path | None = None) -> list[Rende
                         "font_rows": list(entry.fonts),
                     }
                 )
+        latex_results = build_latex_gallery(gallery / "latex", work_root=work_root / "latex")
+        for result in latex_results:
+            entry = validate_pair(result.pdf, result.png, tectonic_log=result.log)
+            results.append(result)
+            manifest["figures"].append(
+                {
+                    "mode": "latex",
+                    "stem": result.pdf.stem,
+                    "template": "tectonic-native",
+                    "geometry": "standalone",
+                    "pdf_sha256": _sha256(result.pdf),
+                    "png_sha256": _sha256(result.png),
+                    "font_rows": list(entry.fonts),
+                }
+            )
     (work_root / "gallery_manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )

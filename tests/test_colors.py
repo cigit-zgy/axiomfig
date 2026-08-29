@@ -32,13 +32,13 @@ def test_matplotlib_and_xcolor_use_the_same_canonical_rgb_values() -> None:
         )
     )
 
-    assert xcolor_values == expected
+    assert {name: xcolor_values[name] for name in expected} == expected
     assert (ROOT / "src/axiomfig/resources/latex/axiomfig-colors.tex").read_text(
         encoding="utf-8"
     ) == render_xcolor(contracts)
 
 
-def test_round03_palettes_are_complete_and_have_stable_axiom_tokens() -> None:
+def test_round04_palettes_are_complete_and_have_stable_axiom_tokens() -> None:
     from axiomfig.colors import palettes
     from axiomfig.config import load_contracts
 
@@ -49,6 +49,9 @@ def test_round03_palettes_are_complete_and_have_stable_axiom_tokens() -> None:
         "tol_muted",
         "axiom_classic",
         "axiom_soft",
+        "axiom_deep",
+        "axiom_warm",
+        "axiom_cool",
         "grayscale",
     }
     required = {
@@ -61,5 +64,21 @@ def test_round03_palettes_are_complete_and_have_stable_axiom_tokens() -> None:
         "AxiomPurple",
         "AxiomGrey",
     }
-    for name in ("axiom_classic", "axiom_soft", "grayscale"):
+    for name in (
+        "axiom_classic",
+        "axiom_soft",
+        "axiom_deep",
+        "axiom_warm",
+        "axiom_cool",
+        "grayscale",
+    ):
         assert set(available[name]) == required
+
+
+def test_all_axiom_palettes_have_palette_qualified_xcolor_names() -> None:
+    from axiomfig.colors import render_xcolor
+
+    source = render_xcolor()
+    for prefix in ("Classic", "Soft", "Deep", "Warm", "Cool"):
+        for suffix in ("Blue", "Cyan", "Green", "Yellow", "Orange", "Red", "Purple", "Grey"):
+            assert f"\\definecolor{{Axiom{prefix}{suffix}}}" in source

@@ -3,7 +3,7 @@ default: sans
 bundle_subdir: fonts
 
 modes:
-  sans: {text: latin-modern-sans, math: latin-modern-math, mono: maple-mono}
+  sans: {text: latin-modern-sans, math: latin-modern-sans, mono: maple-mono}
   serif: {text: xcharter, math: xcharter-math, mono: maple-mono}
 
 families:

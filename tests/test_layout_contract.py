@@ -33,12 +33,12 @@ def test_normal_legend_is_one_row_frameless_and_right_aligned() -> None:
     assert bbox.x1 == pytest.approx(axis.bbox.x1, abs=0.02)
     assert bbox.y0 > axis.bbox.y1
     assert bbox.y1 <= figure.bbox.y1
-    expected_gap_px = 0.7 * figure.dpi / 72.0
+    expected_gap_px = (0.7 * 2.0 / 3.0) * figure.dpi / 72.0
     assert bbox.y0 - axis.bbox.y1 == pytest.approx(expected_gap_px, abs=0.15)
     plt.close(figure)
 
 
-def test_exact_boundary_legend_is_accepted_without_reducing_columns() -> None:
+def test_exact_figure_boundary_legend_is_accepted_without_reducing_columns() -> None:
     figure, axis = plt.subplots(figsize=(4.0, 2.5))
     for index in range(2):
         axis.plot([0, 1], [index, index + 1], label=f"Boundary {index + 1}")
@@ -47,7 +47,7 @@ def test_exact_boundary_legend_is_accepted_without_reducing_columns() -> None:
     width_fraction = probe.get_window_extent(figure.canvas.get_renderer()).width / figure.bbox.width
     probe.remove()
     position = axis.get_position()
-    axis.set_position((position.x0, position.y0, width_fraction, position.height))
+    axis.set_position((1.0 - width_fraction, position.y0, width_fraction, position.height))
 
     legend = template_helpers.place_legend_above(axis)
 
@@ -74,38 +74,76 @@ def test_overflow_reduces_columns_and_irreducible_overflow_errors() -> None:
 
 
 @pytest.mark.parametrize("dpi", [100, 200])
-def test_panel_labels_use_fixed_physical_offsets_and_10_point_bold(dpi: int) -> None:
+def test_panel_labels_use_outer_footprint_offsets_and_11_point_bold(dpi: int) -> None:
     figure, axes = plt.subplots(1, 2, figsize=(6.0, 2.5), dpi=dpi)
     template_helpers.add_panel_labels(axes)
     figure.canvas.draw()
 
-    for axis, label in zip(axes, (axis.texts[0] for axis in axes), strict=True):
+    for axis, label in zip(axes, figure.texts, strict=True):
         bbox = label.get_window_extent(figure.canvas.get_renderer())
         assert bbox.x0 - axis.bbox.x0 == pytest.approx(-2.0 * dpi / 72.0, abs=0.1)
         assert bbox.y0 - axis.bbox.y1 == pytest.approx(2.0 * dpi / 72.0, abs=0.1)
-        assert label.get_fontsize() == 10.0
+        assert label.get_fontsize() == 11.0
         assert label.get_fontweight() == "bold"
     plt.close(figure)
 
 
 def test_multi_panel_data_axes_are_equal_and_colorbar_is_independent() -> None:
-    figure = build_template("multi-panel")
+    figure = build_template("four-panel")
     figure.canvas.draw()
     data_axes = figure.axes[:4]
     colorbar_axis = figure.axes[4]
 
-    widths = [axis.bbox.width for axis in data_axes]
-    heights = [axis.bbox.height for axis in data_axes]
+    outer = [template_helpers.outer_panel_bbox(axis) for axis in data_axes]
+    widths = [bbox.width for bbox in outer]
+    heights = [bbox.height for bbox in outer]
     assert max(widths) - min(widths) < 0.02
     assert max(heights) - min(heights) < 0.02
-    assert data_axes[1].bbox.x0 == pytest.approx(data_axes[3].bbox.x0, abs=0.02)
+    assert outer[1].x0 == pytest.approx(outer[3].x0, abs=0.02)
     assert colorbar_axis.bbox.x0 > data_axes[3].bbox.x1
+    assert colorbar_axis.get_position().x1 <= outer[3].x1 + 0.0001
     assert colorbar_axis.bbox.y0 == pytest.approx(data_axes[3].bbox.y0, abs=0.02)
     assert colorbar_axis.bbox.y1 == pytest.approx(data_axes[3].bbox.y1, abs=0.02)
     assert colorbar_axis.yaxis._major_tick_kw["tickdir"] == "out"
     assert colorbar_axis.yaxis._minor_tick_kw["tickdir"] == "out"
     assert colorbar_axis.yaxis._major_tick_kw["tick1On"] is False
     assert colorbar_axis.yaxis._major_tick_kw["tick2On"] is True
+    plt.close(figure)
+
+
+@pytest.mark.parametrize(
+    ("template", "rows", "columns"),
+    [("four-panel", 2, 2), ("six-panel", 2, 3), ("complex-multi-panel", 3, 2)],
+)
+def test_outer_panel_footprints_are_symmetric(template: str, rows: int, columns: int) -> None:
+    figure = build_template(template)
+    figure.canvas.draw()
+    data_axes = figure.axes[: rows * columns]
+    boxes = [template_helpers.outer_panel_bbox(axis) for axis in data_axes]
+
+    assert max(box.width for box in boxes) - min(box.width for box in boxes) < 0.02
+    assert max(box.height for box in boxes) - min(box.height for box in boxes) < 0.02
+    assert len(figure.texts) == rows * columns
+    plt.close(figure)
+
+
+@pytest.mark.parametrize(
+    "template", ["two-panel", "four-panel", "six-panel", "complex-multi-panel"]
+)
+def test_canonical_panel_labels_follow_outer_footprints_after_family_layout(
+    template: str,
+) -> None:
+    figure = build_template(template)
+    figure.canvas.draw()
+    data_axes = figure.axes[: len(figure.texts)]
+    renderer = figure.canvas.get_renderer()
+    offset_px = 2.0 * figure.dpi / 72.0
+
+    for axis, label in zip(data_axes, figure.texts, strict=True):
+        outer = template_helpers.outer_panel_bbox(axis).transformed(figure.transFigure)
+        label_box = label.get_window_extent(renderer)
+        assert label_box.x0 == pytest.approx(outer.x0 - offset_px, abs=0.15)
+        assert label_box.y0 == pytest.approx(outer.y1 + offset_px, abs=0.15)
     plt.close(figure)
 
 

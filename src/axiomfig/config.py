@@ -102,15 +102,17 @@ def _validate_style(style: Mapping[str, Any]) -> None:
     )
     for surface in ("open", "filled"):
         for level in ("major", "minor"):
-            positive.append(
-                (
-                    style["ticks"][surface][level]["length_pt"],
-                    f"ticks.{surface}.{level}.length_pt",
-                )
-            )
+            token = style["ticks"][surface][level]["length_token"]
+            if token not in {"major", "minor"}:
+                raise ValueError(f"ticks.{surface}.{level}.length_token is invalid")
     positive.extend(
         (
-            (style["ticks"]["open"]["minor_inward_ratio"], "ticks.open.minor_inward_ratio"),
+            (
+                style["ticks"]["geometry"]["minor_to_major_inward_ratio"],
+                "ticks.geometry.minor_to_major_inward_ratio",
+            ),
+            (style["ticks"]["geometry"]["minor_length_pt"], "ticks.geometry.minor_length_pt"),
+            (style["ticks"]["geometry"]["major_length_pt"], "ticks.geometry.major_length_pt"),
             (style["legend"]["handlelength"], "legend.handlelength"),
             (style["panel"]["font_size_pt"], "panel.font_size_pt"),
             (style["plots"]["line_marker"]["marker_size_pt"], "plots.line_marker.marker_size_pt"),
@@ -120,6 +122,8 @@ def _validate_style(style: Mapping[str, Any]) -> None:
             (style["plots"]["boxplot"]["width"], "plots.boxplot.width"),
             (style["plots"]["boxplot"]["combined_width"], "plots.boxplot.combined_width"),
             (style["plots"]["violin"]["width"], "plots.violin.width"),
+            (style["plots"]["bar"]["single_width"], "plots.bar.single_width"),
+            (style["plots"]["bar"]["group_width"], "plots.bar.group_width"),
             (style["rendering"]["dpi"], "rendering.dpi"),
         )
     )
@@ -150,6 +154,8 @@ def _validate_style(style: Mapping[str, Any]) -> None:
         ("plots.boxplot.alpha", style["plots"]["boxplot"]["alpha"]),
         ("plots.violin.alpha", style["plots"]["violin"]["alpha"]),
         ("plots.violin.combined_alpha", style["plots"]["violin"]["combined_alpha"]),
+        ("plots.bar.alpha", style["plots"]["bar"]["alpha"]),
+        ("plots.histogram.alpha", style["plots"]["histogram"]["alpha"]),
     ):
         value = _finite_number(alpha, dotted)
         if not 0.0 <= value <= 1.0:
@@ -224,10 +230,10 @@ def build_rcparams(
         "ytick.major.width": float(stroke["main_stroke_pt"]),
         "patch.linewidth": float(stroke["fill_edge_pt"]),
         "lines.markeredgewidth": float(stroke["fill_edge_pt"]),
-        "xtick.major.size": float(ticks["open"]["major"]["length_pt"]),
-        "ytick.major.size": float(ticks["open"]["major"]["length_pt"]),
-        "xtick.minor.size": float(ticks["open"]["minor"]["length_pt"]),
-        "ytick.minor.size": float(ticks["open"]["minor"]["length_pt"]),
+        "xtick.major.size": float(ticks["geometry"]["major_length_pt"]),
+        "ytick.major.size": float(ticks["geometry"]["major_length_pt"]),
+        "xtick.minor.size": float(ticks["geometry"]["minor_length_pt"]),
+        "ytick.minor.size": float(ticks["geometry"]["minor_length_pt"]),
         "xtick.direction": str(ticks["open"]["major"]["direction"]),
         "ytick.direction": str(ticks["open"]["major"]["direction"]),
         "xtick.top": False,
