@@ -52,7 +52,7 @@ Shared Han glyphs require an explicit regional choice. Use `font_for_language("z
 
 A single ordinary artist may contain one plain-script family plus `$...$` math. Plain Latin and CJK in the same artist are rejected with `FontContractError`; do not depend on fallback order. Segment such content into separate adjacent artists/runs and call `add_language_text` for each `en`, `zh`, or `ja` run using the same mode. The helper assigns one font to one run; it does not parse or expand a mixed string automatically.
 
-`templates/multilingual.py` is the verified pattern. It emits separate English, Simplified Chinese, and Japanese artists, plus a math artist, and is rendered in both modes as gallery `07_multilingual` and `09_serif`.
+`src/axiomfig/resources/templates/multilingual.py` is the verified pattern. It emits separate English, Simplified Chinese, and Japanese artists, plus a math artist, and is rendered in both modes as gallery `07_multilingual` and `09_serif`.
 
 ## Verification boundary
 

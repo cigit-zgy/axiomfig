@@ -26,9 +26,9 @@ Matplotlib exposes the verified Paul Tol `muted` and three-color `colorblind` cy
 
 ```text
 axiomfig.colors.PALETTES
-  -> styles/colors/default.mplstyle
-  -> styles/colors/muted.mplstyle
-  -> styles/colors/colorblind.mplstyle
+  -> src/axiomfig/resources/styles/colors/default.mplstyle
+  -> src/axiomfig/resources/styles/colors/muted.mplstyle
+  -> src/axiomfig/resources/styles/colors/colorblind.mplstyle
   -> src/axiomfig/resources/latex/axiomfig-colors.tex
 ```
 

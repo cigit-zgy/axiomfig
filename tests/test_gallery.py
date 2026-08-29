@@ -19,7 +19,7 @@ from axiomfig.colors import PALETTES
 from axiomfig.contracts import STROKE_WIDTH_PT
 from axiomfig.gallery import GALLERY_SPECS, GEOMETRY_MM, GallerySpec, build_gallery
 from axiomfig.styles import compose_styles
-from axiomfig.templates import PROJECT_ROOT, TEMPLATE_BUILDERS, build_template
+from axiomfig.templates import TEMPLATE_BUILDERS, build_template
 from axiomfig.typography import apply_figure_typography
 from axiomfig.validation import extract_pdf_text, out_of_page_words, validate_gallery
 
@@ -55,7 +55,7 @@ def test_gallery_registry_selects_the_required_serif_and_contract_cases() -> Non
 
 def test_style_contract_template_exercises_integrated_visual_tokens() -> None:
     spec = next(spec for spec in GALLERY_SPECS if spec.stem == "10_style_contract")
-    composed = compose_styles(spec.selection().paths(PROJECT_ROOT / "styles"))
+    composed = compose_styles(spec.selection().paths())
 
     with mpl.rc_context(rc=composed.params):
         figure = build_template(spec.template, typography=spec.typography)

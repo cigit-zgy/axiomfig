@@ -1,6 +1,6 @@
 # Template selection and helper contract
 
-Use the smallest archetype that expresses the scientific comparison. Every entry is a native Matplotlib builder under `templates/`.
+Use the smallest archetype that expresses the scientific comparison. Every entry is a native Matplotlib builder under `src/axiomfig/resources/templates/` and is included in the wheel.
 
 | Intent | Template names | Surface |
 |---|---|---|
@@ -24,13 +24,13 @@ Use these seven modules exactly:
 
 | Layer | Selection | File |
 |---|---|---|
-| base | `publication` (fixed default) | `styles/base/publication.mplstyle` |
-| geometry | `double-column` | `styles/geometry/double-column.mplstyle` |
-| typography | `sans` | `styles/typography/sans.mplstyle` |
-| colors | `default` | `styles/colors/default.mplstyle` |
-| plot | `line` (neutral mixed-figure layer) | `styles/plot/line.mplstyle` |
-| language | `multilingual` | `styles/language/multilingual.mplstyle` |
-| rendering | `vector` | `styles/rendering/vector.mplstyle` |
+| base | `publication` (fixed default) | `src/axiomfig/resources/styles/base/publication.mplstyle` |
+| geometry | `double-column` | `src/axiomfig/resources/styles/geometry/double-column.mplstyle` |
+| typography | `sans` | `src/axiomfig/resources/styles/typography/sans.mplstyle` |
+| colors | `default` | `src/axiomfig/resources/styles/colors/default.mplstyle` |
+| plot | `line` (neutral mixed-figure layer) | `src/axiomfig/resources/styles/plot/line.mplstyle` |
+| language | `multilingual` | `src/axiomfig/resources/styles/language/multilingual.mplstyle` |
+| rendering | `vector` | `src/axiomfig/resources/styles/rendering/vector.mplstyle` |
 
 ```bash
 python scripts/render.py style-contract \

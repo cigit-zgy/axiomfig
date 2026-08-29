@@ -16,7 +16,7 @@ canonical Paul Tol colors -> Matplotlib .mplstyle
                           -> generated LaTeX xcolor definitions
 ```
 
-`src/axiomfig/` remains a thin deterministic layer: style conflict detection, exact font discovery, artist typography, layout/plot helpers, Tectonic execution, gallery orchestration, and artifact validation. Plot grammar remains in runnable files under `templates/`.
+`src/axiomfig/` remains a thin deterministic layer: style conflict detection, exact font discovery, artist typography, layout/plot helpers, Tectonic execution, gallery orchestration, and artifact validation. Canonical native styles and runnable templates live once under `src/axiomfig/resources/`, so the same sources serve checkout scripts and installed commands.
 
 ## Quick start
 
@@ -45,6 +45,8 @@ python scripts/compose_style.py \
 ```
 
 Layer order is fixed: `base -> geometry -> typography -> colors -> plot -> language -> rendering`. Undeclared duplicate keys fail; declared plot tick-direction overrides are deterministic. See [the style contract](references/style-contract.md).
+
+The installed console commands are `axiomfig-compose`, `axiomfig-render`, `axiomfig-validate`, and `axiomfig-gallery`. Relative output and work paths are resolved from the invocation directory; installed commands do not depend on a repository checkout.
 
 ## Frozen visual contracts
 

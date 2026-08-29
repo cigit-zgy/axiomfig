@@ -6,6 +6,7 @@ import pytest
 from axiomfig.styles import StyleConflictError, StyleSelection, compose_styles
 
 ROOT = Path(__file__).resolve().parents[1]
+STYLE_ROOT = ROOT / "src/axiomfig/resources/styles"
 
 
 def test_style_selection_uses_fixed_layer_order() -> None:
@@ -18,9 +19,9 @@ def test_style_selection_uses_fixed_layer_order() -> None:
         rendering="vector",
     )
 
-    paths = selection.paths(ROOT / "styles")
+    paths = selection.paths()
 
-    assert [path.relative_to(ROOT / "styles").as_posix() for path in paths] == [
+    assert [path.relative_to(STYLE_ROOT).as_posix() for path in paths] == [
         "base/publication.mplstyle",
         "geometry/double-column.mplstyle",
         "typography/sans.mplstyle",
@@ -42,7 +43,7 @@ def test_composition_rejects_undeclared_key_conflicts(tmp_path: Path) -> None:
 
 
 def test_every_committed_style_is_loadable() -> None:
-    style_paths = sorted((ROOT / "styles").rglob("*.mplstyle"))
+    style_paths = sorted(STYLE_ROOT.rglob("*.mplstyle"))
 
     assert style_paths
     for path in style_paths:
@@ -61,7 +62,7 @@ def test_plot_style_overrides_are_limited_to_declared_contract_exceptions() -> N
 
     for name, expected_keys in expected_overrides.items():
         params = mpl.rc_params_from_file(
-            ROOT / "styles/plot" / f"{name}.mplstyle",
+            STYLE_ROOT / "plot" / f"{name}.mplstyle",
             fail_on_error=True,
             use_default_template=False,
         )

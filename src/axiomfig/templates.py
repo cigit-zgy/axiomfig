@@ -2,12 +2,10 @@ from __future__ import annotations
 
 import importlib.util
 from collections.abc import Callable
-from pathlib import Path
+from importlib.resources import as_file, files
 from types import ModuleType
 
 from matplotlib.figure import Figure
-
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 TEMPLATE_BUILDERS: dict[str, tuple[str, str]] = {
     "line-single": ("line.py", "build_single"),
@@ -32,13 +30,16 @@ TEMPLATE_BUILDERS: dict[str, tuple[str, str]] = {
 
 
 def _load_module(filename: str) -> ModuleType:
-    path = PROJECT_ROOT / "templates" / filename
-    spec = importlib.util.spec_from_file_location(f"axiomfig_user_template_{path.stem}", path)
-    if spec is None or spec.loader is None:
-        raise ImportError(f"Cannot load template module: {path}")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    resource = files("axiomfig").joinpath("resources", "templates", filename)
+    if not resource.is_file():
+        raise FileNotFoundError(f"Packaged template resource is missing: {filename}")
+    with as_file(resource) as path:
+        spec = importlib.util.spec_from_file_location(f"axiomfig_user_template_{path.stem}", path)
+        if spec is None or spec.loader is None:
+            raise ImportError(f"Cannot load template module: {path}")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
 
 
 def get_template_builder(name: str) -> Callable[..., Figure]:

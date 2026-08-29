@@ -9,6 +9,7 @@ from axiomfig.contracts import FILLED_TICK_PARAMS, OPEN_TICK_PARAMS, STROKE_WIDT
 from axiomfig.styles import apply_tick_contract
 
 ROOT = Path(__file__).resolve().parents[1]
+STYLE_ROOT = ROOT / "src/axiomfig/resources/styles"
 
 
 def test_dev_dependency_group_supplies_setuptools_for_unisolated_wheel_builds() -> None:
@@ -19,7 +20,7 @@ def test_dev_dependency_group_supplies_setuptools_for_unisolated_wheel_builds() 
 
 def test_publication_style_uses_the_central_stroke_for_every_default_visible_stroke() -> None:
     params = mpl.rc_params_from_file(
-        ROOT / "styles/base/publication.mplstyle", fail_on_error=True, use_default_template=False
+        STYLE_ROOT / "base/publication.mplstyle", fail_on_error=True, use_default_template=False
     )
 
     assert STROKE_WIDTH_PT == 0.6

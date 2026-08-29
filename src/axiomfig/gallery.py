@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 
 from axiomfig.rendering import RenderResult, render_figure
 from axiomfig.styles import StyleSelection, compose_styles
-from axiomfig.templates import PROJECT_ROOT, build_template
+from axiomfig.templates import build_template
 from axiomfig.typography import discover_fonts
 from axiomfig.validation import ValidationError, extract_pdf_text, validate_pair
 
@@ -98,8 +98,12 @@ def _prepare_gallery(gallery: Path) -> None:
 
 
 def build_gallery(gallery: Path, *, work_root: Path | None = None) -> list[RenderResult]:
-    gallery = Path(gallery)
-    work_root = Path(work_root) if work_root is not None else PROJECT_ROOT / "tmp" / "gallery"
+    gallery = Path(gallery).expanduser().resolve()
+    work_root = (
+        Path(work_root).expanduser().resolve()
+        if work_root is not None
+        else (Path.cwd() / "tmp" / "gallery").resolve()
+    )
     if work_root.exists():
         shutil.rmtree(work_root)
     work_root.mkdir(parents=True)
@@ -108,7 +112,6 @@ def build_gallery(gallery: Path, *, work_root: Path | None = None) -> list[Rende
     fonts_by_mode = {
         spec.typography: discover_fonts(mode=spec.typography) for spec in GALLERY_SPECS
     }
-    style_root = PROJECT_ROOT / "styles"
     results: list[RenderResult] = []
     manifest: dict[str, object] = {
         "fonts": {
@@ -120,7 +123,7 @@ def build_gallery(gallery: Path, *, work_root: Path | None = None) -> list[Rende
 
     with _deterministic_pdf_environment():
         for spec in GALLERY_SPECS:
-            composed = compose_styles(spec.selection().paths(style_root))
+            composed = compose_styles(spec.selection().paths())
             with mpl.rc_context(rc=composed.params):
                 figure = build_template(spec.template, typography=spec.typography)
                 figure.set_size_inches(composed.params["figure.figsize"], forward=False)
@@ -150,7 +153,10 @@ def build_gallery(gallery: Path, *, work_root: Path | None = None) -> list[Rende
                     "stem": spec.stem,
                     "template": spec.template,
                     "typography": spec.typography,
-                    "style_paths": [str(path.relative_to(PROJECT_ROOT)) for path in composed.paths],
+                    "style_paths": [
+                        f"resources/styles/{path.parent.name}/{path.name}"
+                        for path in composed.paths
+                    ],
                     "tectonic_command": list(result.tectonic_command),
                     "intermediate_pdf": str(result.intermediate_pdf),
                     "pdf_bytes": entry.pdf.size_bytes,

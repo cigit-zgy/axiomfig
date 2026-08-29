@@ -25,13 +25,13 @@ base -> geometry -> typography -> colors -> plot -> language -> rendering
 The exact line/bar/scatter/heatmap acceptance figure is `style-contract`, not `layout-4-panel`. Its one allowed seven-layer selection is `publication + double-column + sans + default + line + multilingual + vector`, resolving respectively to:
 
 ```text
-styles/base/publication.mplstyle
-styles/geometry/double-column.mplstyle
-styles/typography/sans.mplstyle
-styles/colors/default.mplstyle
-styles/plot/line.mplstyle
-styles/language/multilingual.mplstyle
-styles/rendering/vector.mplstyle
+src/axiomfig/resources/styles/base/publication.mplstyle
+src/axiomfig/resources/styles/geometry/double-column.mplstyle
+src/axiomfig/resources/styles/typography/sans.mplstyle
+src/axiomfig/resources/styles/colors/default.mplstyle
+src/axiomfig/resources/styles/plot/line.mplstyle
+src/axiomfig/resources/styles/language/multilingual.mplstyle
+src/axiomfig/resources/styles/rendering/vector.mplstyle
 ```
 
 Render it without substitutions:

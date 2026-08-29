@@ -9,6 +9,7 @@ from pathlib import Path
 import matplotlib as mpl
 from matplotlib.figure import Figure
 
+from axiomfig.styles import LAYER_ORDER, StyleSelection, compose_styles
 from axiomfig.typography import apply_figure_typography, discover_fonts
 
 
@@ -77,10 +78,14 @@ def render_figure(
     discover_fonts(mode=typography)
     tectonic_bin = _resolve_executable(tectonic, "Tectonic")
     pdftoppm_bin = _resolve_executable(pdftoppm, "pdftoppm")
-    output_stem = Path(output_stem)
+    output_stem = Path(output_stem).expanduser().resolve()
     output_stem.parent.mkdir(parents=True, exist_ok=True)
 
-    root = Path(work_root) if work_root is not None else output_stem.parent / "tmp"
+    root = (
+        Path(work_root).expanduser().resolve()
+        if work_root is not None
+        else (output_stem.parent / "tmp").resolve()
+    )
     workdir = root / output_stem.name
     if workdir.exists():
         shutil.rmtree(workdir)
@@ -90,18 +95,12 @@ def render_figure(
     tex_path = workdir / "wrapper.tex"
     tex_path.write_text(standalone_tex(intermediate_pdf.name), encoding="utf-8")
 
-    style_root = Path(__file__).resolve().parents[2] / "styles"
-    style_path = style_root / "typography" / f"{typography}.mplstyle"
-    style_params = mpl.rc_params_from_file(
-        style_path, fail_on_error=True, use_default_template=False
+    selected_paths = dict(
+        zip(LAYER_ORDER, StyleSelection(typography=typography).paths(), strict=True)
     )
-    style_params.update(
-        mpl.rc_params_from_file(
-            style_root / "rendering" / "vector.mplstyle",
-            fail_on_error=True,
-            use_default_template=False,
-        )
-    )
+    style_params = compose_styles(
+        [selected_paths["typography"], selected_paths["rendering"]]
+    ).params
     with mpl.rc_context(rc=style_params), warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         apply_figure_typography(figure, mode=typography)

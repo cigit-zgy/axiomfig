@@ -33,7 +33,12 @@ axiomfig-gallery = "axiomfig.cli:gallery_main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-axiomfig = ["resources/latex/*.sty", "resources/latex/*.tex"]
+axiomfig = [
+  "resources/latex/*.sty",
+  "resources/latex/*.tex",
+  "resources/styles/*/*.mplstyle",
+  "resources/templates/*.py",
+]
 
 [tool.pytest.ini_options]
 addopts = "-ra"

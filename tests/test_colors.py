@@ -7,9 +7,9 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_generated_matplotlib_palette_matches_the_committed_default_style() -> None:
-    assert (ROOT / "styles/colors/default.mplstyle").read_text(encoding="utf-8") == render_mplstyle(
-        "default"
-    )
+    assert (ROOT / "src/axiomfig/resources/styles/colors/default.mplstyle").read_text(
+        encoding="utf-8"
+    ) == render_mplstyle("default")
 
 
 def test_matplotlib_and_xcolor_use_exactly_the_same_canonical_rgb_values() -> None:

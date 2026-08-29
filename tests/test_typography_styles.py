@@ -1,5 +1,4 @@
 import warnings
-from pathlib import Path
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -9,9 +8,8 @@ from axiomfig.typography import discover_fonts, font_for_language
 
 
 def test_sans_and_serif_styles_select_their_complete_text_and_math_families() -> None:
-    root = Path(__file__).resolve().parents[1] / "styles"
-    sans = compose_styles(StyleSelection(typography="sans").paths(root)).params
-    serif = compose_styles(StyleSelection(typography="serif").paths(root)).params
+    sans = compose_styles(StyleSelection(typography="sans").paths()).params
+    serif = compose_styles(StyleSelection(typography="serif").paths()).params
 
     assert sans["font.family"] == ["sans-serif"]
     assert sans["font.sans-serif"] == ["LMSans10", "Noto Sans CJK SC", "Noto Sans CJK JP"]
@@ -27,10 +25,9 @@ def test_sans_and_serif_styles_select_their_complete_text_and_math_families() ->
 
 
 def test_cjk_artists_use_explicit_selected_noto_family_without_glyph_warnings() -> None:
-    root = Path(__file__).resolve().parents[1] / "styles"
     for mode in ("sans", "serif"):
         discover_fonts(mode=mode)
-        params = compose_styles(StyleSelection(typography=mode).paths(root)).params
+        params = compose_styles(StyleSelection(typography=mode).paths()).params
         with mpl.rc_context(rc=params), warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
             figure, axis = plt.subplots()
