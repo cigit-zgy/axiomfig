@@ -356,21 +356,23 @@ def _figure_text_artists(figure: Figure) -> list[Text]:
     return list({id(artist): artist for artist in figure.findobj(match=Text)}.values())
 
 
-def _allowed_explicit_families(language: str | None, mode: str) -> set[str]:
-    contract = FONT_CONTRACTS[mode]
-    families = {FONT_SPECS[contract["math"]].matplotlib_family, "Maple Mono"}
-    if language == "ja":
-        families.add(FONT_SPECS[contract["japanese"]].matplotlib_family)
-    elif language == "zh":
-        families.update(
-            {
-                FONT_SPECS[contract["chinese"]].matplotlib_family,
-                FONT_SPECS[contract["japanese"]].matplotlib_family,
-            }
-        )
-    elif language == "en":
-        families.add(FONT_SPECS[contract["latin"]].matplotlib_family)
-    return families
+def _expected_explicit_path(artist: Text, language: str | None, mode: str) -> str:
+    role = getattr(artist, "_axiomfig_typography_role", language)
+    if language is None:
+        role = "math"
+    if role == "mono" and getattr(artist, "_axiomfig_typography_role", None) != "mono":
+        raise FontContractError("Maple Mono is only allowed through the official mono helper")
+    properties = artist.get_fontproperties()
+    return str(
+        Path(
+            font_for_language(
+                role,
+                mode=mode,
+                weight=properties.get_weight(),
+                style=properties.get_style(),
+            ).get_file()
+        ).resolve()
+    )
 
 
 def apply_figure_typography(figure: Figure, mode: str = "sans") -> Figure:
@@ -379,15 +381,15 @@ def apply_figure_typography(figure: Figure, mode: str = "sans") -> Figure:
         language = _language_for_text(artist.get_text())
         properties = artist.get_fontproperties()
         explicit_file = properties.get_file()
+        artist.set_math_fontfamily("custom")
         if explicit_file is not None:
-            actual_family = font_manager.FontProperties(fname=explicit_file).get_name()
-            if actual_family not in _allowed_explicit_families(language, mode):
+            expected_path = _expected_explicit_path(artist, language, mode)
+            if str(Path(explicit_file).resolve()) != expected_path:
                 raise FontContractError(
-                    f"Explicit font {actual_family!r} is not allowed for {language or 'math'} "
-                    f"in {mode} typography mode"
+                    f"Explicit font {explicit_file!r} is not the exact allowed "
+                    f"{language or 'math'} font for {mode} typography mode"
                 )
             continue
-        artist.set_math_fontfamily("custom")
         if language is not None:
             properties = properties.copy()
             properties.set_file(

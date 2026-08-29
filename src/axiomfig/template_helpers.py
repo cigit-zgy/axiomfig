@@ -173,13 +173,15 @@ def add_language_text(
     text_kwargs = dict(kwargs)
     weight = _resolve_text_alias(text_kwargs, "weight", "fontweight")
     style = _resolve_text_alias(text_kwargs, "style", "fontstyle")
-    axis.text(
+    artist = axis.text(
         x,
         y,
         text,
         fontproperties=font_for_language(language, mode=mode, weight=weight, style=style),
         **text_kwargs,
     )
+    artist._axiomfig_typography_role = language
+    return artist
 
 
 def _resolve_text_alias(kwargs: dict[str, object], short: str, long: str) -> object | None:

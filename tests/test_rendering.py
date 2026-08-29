@@ -168,7 +168,7 @@ def test_typography_pass_rejects_cross_mode_explicit_font_before_render() -> Non
     figure, axis = plt.subplots()
     axis.set_title("Title", fontproperties=font_for_language("en", mode="sans"))
 
-    with pytest.raises(FontContractError, match="not allowed"):
+    with pytest.raises(FontContractError, match="not the exact allowed"):
         apply_figure_typography(figure, mode="serif")
     plt.close(figure)
 
@@ -189,6 +189,6 @@ def test_typography_pass_rejects_dejavu_explicit_font() -> None:
     )
     axis.set_title("Title", fontproperties=dejavu)
 
-    with pytest.raises(FontContractError, match="not allowed"):
+    with pytest.raises(FontContractError, match="not the exact allowed"):
         apply_figure_typography(figure, mode="serif")
     plt.close(figure)
