@@ -1,0 +1,20 @@
+family: diagnostics
+variants:
+  residual:
+    required: [fitted, residual]
+    optional: [trend]
+  bland_altman:
+    required: [mean, difference, agreement_type]
+    optional: [center, limits]
+  calibration:
+    required: [predicted_probability, observed_frequency]
+    optional: [group]
+  roc:
+    required: [false_positive_rate, true_positive_rate]
+    optional: [group, auc]
+  precision_recall:
+    required: [recall, precision]
+    optional: [group, baseline]
+  learning_curve:
+    required: [iteration, metric, series]
+    optional: [target, metric_name]

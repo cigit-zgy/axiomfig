@@ -1,0 +1,5 @@
+family: field
+variants:
+  contour:
+    required: [x, y, field, color_semantics]
+    optional: [levels, colorbar_label, xlabel, ylabel]

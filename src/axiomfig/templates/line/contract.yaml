@@ -1,0 +1,17 @@
+family: line
+variants:
+  single:
+    required: [x, y]
+    optional: [xlabel, ylabel]
+  multi:
+    required: [x, series]
+    optional: [xlabel, ylabel]
+  marker:
+    required: [x, y]
+    optional: [xlabel, ylabel]
+  confidence_band:
+    required: [x, estimate, lower, upper]
+    optional: [uncertainty_type, xlabel, ylabel]
+  errorbar:
+    required: [x, estimate, error, uncertainty_type]
+    optional: [xlabel, ylabel]

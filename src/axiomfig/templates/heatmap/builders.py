@@ -3,9 +3,10 @@ from __future__ import annotations
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
+from matplotlib.colors import TwoSlopeNorm
 from matplotlib.figure import Figure
-from matplotlib.lines import Line2D
 
+from axiomfig.config import load_contracts
 from axiomfig.layout import add_panel_axes, create_panel_grid
 from axiomfig.template_helpers import (
     apply_axis_contract,
@@ -24,7 +25,15 @@ CORRELATION = np.array(
 CORRELATION_LABELS = ["Oxygen", "Ammonium", "Nitrate", "Phosphate"]
 
 
-def _add_matrix(
+def _cmap(color_semantics: str) -> str:
+    contract = load_contracts().style["plots"]["heatmap"]
+    key = f"{color_semantics}_cmap"
+    if key not in contract:
+        raise ValueError(f"unsupported heatmap color semantics: {color_semantics!r}")
+    return str(contract[key])
+
+
+def add_matrix(
     axis: Axes,
     matrix: np.ndarray,
     labels: list[str],
@@ -32,12 +41,21 @@ def _add_matrix(
     annotate: bool,
     vmin: float,
     vmax: float,
+    color_semantics: str,
+    center: float | None = None,
     fmt: str = ".2f",
 ) -> object:
+    norm = None
+    if color_semantics == "diverging":
+        if center is None:
+            raise ValueError("diverging heatmap requires an explicit center")
+        norm = TwoSlopeNorm(vmin=vmin, vcenter=center, vmax=vmax)
     image = axis.imshow(
         matrix,
-        vmin=vmin,
-        vmax=vmax,
+        vmin=None if norm is not None else vmin,
+        vmax=None if norm is not None else vmax,
+        norm=norm,
+        cmap=_cmap(color_semantics),
         aspect="auto",
         rasterized=True,
     )
@@ -63,13 +81,14 @@ def _add_matrix(
 
 
 def add_heatmap(axis: Axes, *, annotate: bool = True) -> object:
-    return _add_matrix(
+    return add_matrix(
         axis,
         CORRELATION,
         CORRELATION_LABELS,
         annotate=annotate,
         vmin=0.0,
         vmax=1.0,
+        color_semantics="sequential",
     )
 
 
@@ -80,19 +99,23 @@ def _heatmap_figure(
     colorbar_label: str,
     vmin: float,
     vmax: float,
+    color_semantics: str,
+    center: float | None = None,
     fmt: str = ".2f",
 ) -> Figure:
     figure = plt.figure()
     layout = create_panel_grid(figure, 1, 1, panel_labels=False)
     axis, colorbar_axis = add_panel_axes(layout, 0, colorbar=True)
     assert colorbar_axis is not None
-    image = _add_matrix(
+    image = add_matrix(
         axis,
         matrix,
         labels,
         annotate=True,
         vmin=vmin,
         vmax=vmax,
+        color_semantics=color_semantics,
+        center=center,
         fmt=fmt,
     )
     colorbar = figure.colorbar(image, cax=colorbar_axis, label=colorbar_label)
@@ -100,17 +123,18 @@ def _heatmap_figure(
     return figure
 
 
-def build_heatmap() -> Figure:
+def build_basic() -> Figure:
     return _heatmap_figure(
         CORRELATION,
         CORRELATION_LABELS,
         colorbar_label="Correlation (-)",
         vmin=0.0,
         vmax=1.0,
+        color_semantics="sequential",
     )
 
 
-def build_correlation_heatmap() -> Figure:
+def build_correlation() -> Figure:
     matrix = CORRELATION * np.array([[1, 1, -1, -1], [1, 1, 1, -1], [-1, 1, 1, 1], [-1, -1, 1, 1]])
     return _heatmap_figure(
         matrix,
@@ -118,10 +142,12 @@ def build_correlation_heatmap() -> Figure:
         colorbar_label="Pearson r",
         vmin=-1.0,
         vmax=1.0,
+        color_semantics="diverging",
+        center=0.0,
     )
 
 
-def build_clustered_heatmap() -> Figure:
+def build_clustered() -> Figure:
     order = np.array([2, 3, 1, 0])
     matrix = CORRELATION[np.ix_(order, order)]
     labels = [CORRELATION_LABELS[index] for index in order]
@@ -131,6 +157,7 @@ def build_clustered_heatmap() -> Figure:
         colorbar_label="Preordered similarity",
         vmin=0.0,
         vmax=1.0,
+        color_semantics="sequential",
     )
     figure.axes[0].set_title("Deterministic cluster order")
     return figure
@@ -144,63 +171,14 @@ def build_confusion_matrix() -> Figure:
         colorbar_label="Count",
         vmin=0.0,
         vmax=50.0,
+        color_semantics="sequential",
         fmt=".0f",
     )
 
 
-def build_mantel_test() -> Figure:
-    figure = plt.figure()
-    grid = figure.add_gridspec(1, 2, width_ratios=(1.1, 0.9), wspace=0.38)
-    matrix_axis = figure.add_subplot(grid[0, 0])
-    link_axis = figure.add_subplot(grid[0, 1])
-    _add_matrix(
-        matrix_axis,
-        CORRELATION[:3, :3],
-        ["COD", "TN", "TP"],
-        annotate=True,
-        vmin=0.0,
-        vmax=1.0,
-    )
-    matrix_axis.set_title("Environmental correlation")
-
-    left = [(0.12, 0.78, "COD"), (0.12, 0.50, "TN"), (0.12, 0.22, "TP")]
-    right = [(0.88, 0.70, "Community"), (0.88, 0.30, "Function")]
-    for x, y, label in left + right:
-        link_axis.scatter([x], [y], s=42, facecolor="white", edgecolor="black", linewidth=0.6)
-        link_axis.text(x, y + 0.08, label, ha="center", va="bottom")
-    links = (
-        (left[0], right[0], 0.61, True),
-        (left[1], right[0], 0.43, False),
-        (left[1], right[1], 0.68, True),
-        (left[2], right[1], 0.35, False),
-    )
-    colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
-    for index, (source, target, correlation, significant) in enumerate(links):
-        link_axis.plot(
-            [source[0], target[0]],
-            [source[1], target[1]],
-            color=colors[index % 2],
-            linewidth=0.6 + 2.0 * correlation,
-            linestyle="-" if significant else ":",
-        )
-        midpoint = ((source[0] + target[0]) / 2, (source[1] + target[1]) / 2)
-        link_axis.text(*midpoint, f"r={correlation:.2f}", ha="center", va="bottom")
-    link_axis.legend(
-        handles=[
-            Line2D([0], [0], color=colors[0], linewidth=1.8, label="p < 0.05"),
-            Line2D(
-                [0],
-                [0],
-                color=colors[1],
-                linewidth=1.4,
-                linestyle=":",
-                label="not significant",
-            ),
-        ],
-        loc="lower center",
-        frameon=False,
-        ncol=1,
-    )
-    link_axis.set(xlim=(0.0, 1.0), ylim=(0.0, 1.0))
-    link_axis.set_axis_off()
-    return figure
+BUILDERS = {
+    "basic": build_basic,
+    "correlation": build_correlation,
+    "clustered": build_clustered,
+    "confusion_matrix": build_confusion_matrix,
+}

@@ -50,8 +50,8 @@ panel:
   format: "({letter})"
   font_size_pt: 11.0
   font_weight: bold
-  left_offset_pt: -2.0
-  top_offset_pt: 2.0
+  left_offset_pt: -1.0
+  top_offset_pt: 1.0
 
 output:
   margin_mode: tight
@@ -120,6 +120,9 @@ plots:
     width: 0.82
     limit_padding_fraction: 0.02
   histogram: { alpha: 0.72, edge_color: black, edge_width_token: fill_edge }
-  heatmap: { cmap: cividis, interpolation: nearest }
+  heatmap:
+    sequential_cmap: cividis
+    diverging_cmap: RdBu_r
+    interpolation: nearest
 
 rendering: { pdf_fonttype: 42, ps_fonttype: 42, dpi: 300, transparent: false }

@@ -77,22 +77,22 @@ def test_overflow_reduces_columns_and_irreducible_overflow_errors() -> None:
 
 
 @pytest.mark.parametrize("dpi", [100, 200])
-def test_panel_labels_use_outer_footprint_offsets_and_11_point_bold(dpi: int) -> None:
+def test_panel_labels_use_primary_frame_offsets_and_11_point_bold(dpi: int) -> None:
     figure, axes = plt.subplots(1, 2, figsize=(6.0, 2.5), dpi=dpi)
     template_helpers.add_panel_labels(axes)
     figure.canvas.draw()
 
     for axis, label in zip(axes, figure.texts, strict=True):
         bbox = label.get_window_extent(figure.canvas.get_renderer())
-        assert bbox.x0 - axis.bbox.x0 == pytest.approx(-2.0 * dpi / 72.0, abs=0.1)
-        assert bbox.y0 - axis.bbox.y1 == pytest.approx(2.0 * dpi / 72.0, abs=0.1)
+        assert bbox.x0 - axis.bbox.x0 == pytest.approx(-1.0 * dpi / 72.0, abs=0.1)
+        assert bbox.y0 - axis.bbox.y1 == pytest.approx(1.0 * dpi / 72.0, abs=0.1)
         assert label.get_fontsize() == 11.0
         assert label.get_fontweight() == "bold"
     plt.close(figure)
 
 
 def test_multi_panel_data_axes_are_equal_and_colorbar_is_independent() -> None:
-    figure = build_template("four-panel")
+    figure = build_template("layouts/grid_2x2")
     figure.canvas.draw()
     data_axes = figure.axes[:4]
     colorbar_axis = figure.axes[4]
@@ -116,7 +116,11 @@ def test_multi_panel_data_axes_are_equal_and_colorbar_is_independent() -> None:
 
 @pytest.mark.parametrize(
     ("template", "rows", "columns"),
-    [("four-panel", 2, 2), ("six-panel", 2, 3), ("complex-multi-panel", 3, 2)],
+    [
+        ("layouts/grid_2x2", 2, 2),
+        ("layouts/grid_2x3", 2, 3),
+        ("layouts/grid_3x2", 3, 2),
+    ],
 )
 def test_registered_outer_footprints_are_exact_and_owned(
     template: str, rows: int, columns: int
@@ -145,7 +149,7 @@ def test_registered_outer_footprints_are_exact_and_owned(
     plt.close(figure)
 
 
-@pytest.mark.parametrize("template", ["four-panel", "six-panel", "complex-multi-panel"])
+@pytest.mark.parametrize("template", ["layouts/grid_2x2", "layouts/grid_2x3", "layouts/grid_3x2"])
 def test_registered_panel_content_is_contained(template: str) -> None:
     from axiomfig.anatomy import validate_figure_anatomy
 
@@ -156,7 +160,11 @@ def test_registered_panel_content_is_contained(template: str) -> None:
 
 @pytest.mark.parametrize(
     ("template", "rows", "columns"),
-    [("four-panel", 2, 2), ("six-panel", 2, 3), ("complex-multi-panel", 3, 2)],
+    [
+        ("layouts/grid_2x2", 2, 2),
+        ("layouts/grid_2x3", 2, 3),
+        ("layouts/grid_3x2", 3, 2),
+    ],
 )
 def test_outer_panel_footprints_are_symmetric(template: str, rows: int, columns: int) -> None:
     figure = build_template(template)
@@ -171,27 +179,33 @@ def test_outer_panel_footprints_are_symmetric(template: str, rows: int, columns:
 
 
 @pytest.mark.parametrize(
-    "template", ["two-panel", "four-panel", "six-panel", "complex-multi-panel"]
+    "template",
+    [
+        "layouts/horizontal_2",
+        "layouts/grid_2x2",
+        "layouts/grid_2x3",
+        "layouts/grid_3x2",
+    ],
 )
-def test_canonical_panel_labels_follow_outer_footprints_after_family_layout(
+def test_canonical_panel_labels_follow_primary_frames_after_family_layout(
     template: str,
 ) -> None:
     figure = build_template(template)
     figure.canvas.draw()
     data_axes = figure.axes[: len(figure.texts)]
     renderer = figure.canvas.get_renderer()
-    offset_px = 2.0 * figure.dpi / 72.0
+    offset_px = figure.dpi / 72.0
 
     for axis, label in zip(data_axes, figure.texts, strict=True):
-        outer = template_helpers.outer_panel_bbox(axis).transformed(figure.transFigure)
         label_box = label.get_window_extent(renderer)
-        assert label_box.x0 == pytest.approx(outer.x0 - offset_px, abs=0.15)
-        assert label_box.y0 == pytest.approx(outer.y1 + offset_px, abs=0.15)
+        assert label_box.x0 == pytest.approx(axis.bbox.x0 - offset_px, abs=0.15)
+        assert label_box.y0 == pytest.approx(axis.bbox.y1 + offset_px, abs=0.15)
     plt.close(figure)
 
 
 @pytest.mark.parametrize(
-    "template", ["single-line", "scatter", "vertical-bar", "violin", "heatmap"]
+    "template",
+    ["line/single", "scatter/simple", "bar/vertical", "distribution/violin", "heatmap/basic"],
 )
 def test_single_panel_layout_keeps_visible_text_inside_the_figure(template: str) -> None:
     params = build_rcparams(load_contracts(), geometry="single-column", typography="sans")
@@ -237,7 +251,7 @@ def test_single_panel_layout_keeps_visible_text_inside_the_figure(template: str)
 def test_tight_output_margin_handles_an_outside_multi_series_legend() -> None:
     params = build_rcparams(load_contracts(), geometry="single-column", typography="sans")
     with mpl.rc_context(rc=params):
-        figure = build_template("multi-line")
+        figure = build_template("line/multi")
         figure.set_size_inches(params["figure.figsize"], forward=False)
         template_helpers.apply_output_margin(figure)
         figure.canvas.draw()

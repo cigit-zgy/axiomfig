@@ -1,0 +1,20 @@
+family: distribution
+variants:
+  histogram:
+    required: [value]
+    optional: [bins, xlabel, ylabel]
+  density:
+    required: [value]
+    optional: [bandwidth, xlabel, ylabel]
+  ecdf:
+    required: [value]
+    optional: [group, xlabel, ylabel]
+  box:
+    required: [value, category]
+    optional: [ylabel]
+  violin:
+    required: [value, category]
+    optional: [ylabel]
+  box_violin:
+    required: [value, category]
+    optional: [ylabel]

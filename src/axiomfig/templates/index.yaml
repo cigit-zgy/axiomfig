@@ -1,0 +1,60 @@
+version: 1
+families:
+  line:
+    variants:
+      single: {geometry: single-column}
+      multi: {geometry: single-column}
+      marker: {geometry: single-column}
+      confidence_band: {geometry: single-column}
+      errorbar: {geometry: single-column}
+  scatter:
+    variants:
+      simple: {geometry: single-column}
+      grouped: {geometry: single-column}
+      regression: {geometry: single-column}
+      parity: {geometry: single-column}
+  bar:
+    variants:
+      vertical: {geometry: single-column}
+      horizontal: {geometry: single-column}
+      grouped: {geometry: single-column}
+      stacked: {geometry: single-column}
+  distribution:
+    variants:
+      histogram: {geometry: single-column}
+      density: {geometry: single-column}
+      ecdf: {geometry: single-column}
+      box: {geometry: single-column}
+      violin: {geometry: single-column}
+      box_violin: {geometry: single-column}
+  heatmap:
+    variants:
+      basic: {geometry: single-column}
+      correlation: {geometry: single-column}
+      clustered: {geometry: single-column}
+      confusion_matrix: {geometry: single-column}
+  estimation:
+    variants:
+      forest: {geometry: single-column}
+      point_interval: {geometry: single-column}
+  diagnostics:
+    variants:
+      residual: {geometry: single-column}
+      bland_altman: {geometry: single-column}
+      calibration: {geometry: single-column}
+      roc: {geometry: single-column}
+      precision_recall: {geometry: single-column}
+      learning_curve: {geometry: single-column}
+  association:
+    variants:
+      mantel: {geometry: onehalf-column}
+  field:
+    variants:
+      contour: {geometry: single-column}
+layouts:
+  layouts:
+    variants:
+      horizontal_2: {geometry: double-column}
+      grid_2x2: {geometry: double-column}
+      grid_2x3: {geometry: double-column}
+      grid_3x2: {geometry: double-column}

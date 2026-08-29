@@ -19,7 +19,7 @@ from axiomfig.template_helpers import (
     reference_line_kwargs,
     series_style,
 )
-from axiomfig.templates.surfaces import add_heatmap
+from axiomfig.templates.heatmap import add_heatmap
 
 
 def _line_panel(axis: Axes) -> None:
@@ -28,11 +28,11 @@ def _line_panel(axis: Axes) -> None:
     spread = 0.045 + 0.025 * np.exp(-x / 4.0)
     color = plt.rcParams["axes.prop_cycle"].by_key()["color"][0]
     axis.fill_between(x, mean - spread, mean + spread, **confidence_interval_kwargs(color))
-    axis.plot(x, mean, label="Hybrid model", **series_style(0, include_marker=False))
+    axis.plot(x, mean, label="Hybrid", **series_style(0, include_marker=False))
     axis.plot(
         x,
         0.9 * (1.0 - np.exp(-x / 4.0)),
-        label="Mechanistic model",
+        label="Mechanistic",
         **series_style(1, include_marker=False),
     )
     axis.set(xlabel="Time (d)", ylabel="Response (-)")
@@ -45,18 +45,8 @@ def _line_panel(axis: Axes) -> None:
 def _bar_panel(axis: Axes) -> None:
     positions = np.arange(3)
     width = bar_width(2)
-    first = axis.bar(
-        positions - width / 2,
-        [0.72, 0.67, 0.61],
-        width,
-        label="Mechanistic",
-    )
-    second = axis.bar(
-        positions + width / 2,
-        [0.84, 0.76, 0.71],
-        width,
-        label="Hybrid",
-    )
+    first = axis.bar(positions - width / 2, [0.72, 0.67, 0.61], width, label="Mechanistic")
+    second = axis.bar(positions + width / 2, [0.84, 0.76, 0.71], width, label="Hybrid")
     axis.set_xticks(positions, ["COD", "N", "P"])
     axis.set(ylabel="Score (-)")
     apply_axis_contract(axis, surface="open")
@@ -120,17 +110,25 @@ def _build_grid(rows: int, columns: int, *, heatmap: bool) -> Figure:
     return figure
 
 
-def build_two_panel() -> Figure:
+def build_horizontal_2() -> Figure:
     return _build_grid(1, 2, heatmap=False)
 
 
-def build_four_panel() -> Figure:
+def build_grid_2x2() -> Figure:
     return _build_grid(2, 2, heatmap=True)
 
 
-def build_six_panel() -> Figure:
+def build_grid_2x3() -> Figure:
     return _build_grid(2, 3, heatmap=False)
 
 
-def build_complex_multi_panel() -> Figure:
+def build_grid_3x2() -> Figure:
     return _build_grid(3, 2, heatmap=True)
+
+
+BUILDERS = {
+    "horizontal_2": build_horizontal_2,
+    "grid_2x2": build_grid_2x2,
+    "grid_2x3": build_grid_2x3,
+    "grid_3x2": build_grid_3x2,
+}

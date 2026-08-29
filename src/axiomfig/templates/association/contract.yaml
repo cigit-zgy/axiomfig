@@ -1,0 +1,5 @@
+family: association
+variants:
+  mantel:
+    required: [correlation_matrix, mantel_links, significance]
+    optional: [matrix_labels, node_labels, strength_label]

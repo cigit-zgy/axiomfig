@@ -1,0 +1,14 @@
+family: layouts
+variants:
+  horizontal_2:
+    required: [panels]
+    optional: [shared_legend]
+  grid_2x2:
+    required: [panels]
+    optional: [shared_legend, shared_colorbar]
+  grid_2x3:
+    required: [panels]
+    optional: [shared_legend, shared_colorbar]
+  grid_3x2:
+    required: [panels]
+    optional: [shared_legend, shared_colorbar]

@@ -25,7 +25,7 @@ def test_figure_anatomy_rejects_auxiliary_axes_outside_its_footprint() -> None:
     from axiomfig.anatomy import FigureAnatomyError, validate_figure_anatomy
     from axiomfig.layout import get_figure_layout
 
-    figure = build_template("four-panel")
+    figure = build_template("layouts/grid_2x2")
     layout = get_figure_layout(figure)
     assert layout is not None
     heatmap = layout.panels[-1]
@@ -43,7 +43,7 @@ def test_figure_anatomy_rejects_figure_level_ornament_overflow() -> None:
     from axiomfig.anatomy import FigureAnatomyError, validate_figure_anatomy
     from axiomfig.layout import register_figure_ornament
 
-    figure = build_template("two-panel")
+    figure = build_template("layouts/horizontal_2")
     overflow = figure.text(1.25, 1.25, "overflow", transform=figure.transFigure)
     register_figure_ornament(figure, overflow)
 

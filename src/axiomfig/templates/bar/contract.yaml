@@ -1,0 +1,14 @@
+family: bar
+variants:
+  vertical:
+    required: [category, value]
+    optional: [value_labels, ylabel]
+  horizontal:
+    required: [category, value]
+    optional: [value_labels, xlabel]
+  grouped:
+    required: [category, value, group]
+    optional: [error, uncertainty_type, value_labels]
+  stacked:
+    required: [category, value, component]
+    optional: [value_labels, ylabel]

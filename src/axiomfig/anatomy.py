@@ -112,10 +112,14 @@ def validate_figure_anatomy(figure: object, *, tolerance_pt: float = 0.25) -> No
             issues.append(f"panel {panel.index} label has no measurable bbox")
             continue
         label_boxes.append(label_bbox)
-        if abs(label_bbox.x0 - (footprint.x0 + expected_dx)) > tolerance:
+        assert panel.primary_axes is not None
+        primary_bbox = panel.primary_axes.bbox
+        if abs(label_bbox.x0 - (primary_bbox.x0 + expected_dx)) > tolerance:
             issues.append(f"panel {panel.index} label x anchor is incorrect")
-        if abs(label_bbox.y0 - (footprint.y1 + expected_dy)) > tolerance:
+        if abs(label_bbox.y0 - (primary_bbox.y1 + expected_dy)) > tolerance:
             issues.append(f"panel {panel.index} label y anchor is incorrect")
+        if not _inside(label_bbox, footprint, tolerance):
+            issues.append(f"panel {panel.index} label outside panel footprint")
         if not _inside(label_bbox, output, tolerance):
             issues.append(f"panel {panel.index} label outside output boundary")
 

@@ -1,0 +1,14 @@
+family: scatter
+variants:
+  simple:
+    required: [x, y]
+    optional: [xlabel, ylabel]
+  grouped:
+    required: [x, y, group]
+    optional: [xlabel, ylabel]
+  regression:
+    required: [x, y, fitted]
+    optional: [fit_label, xlabel, ylabel]
+  parity:
+    required: [observed, predicted]
+    optional: [identity_limits, xlabel, ylabel]

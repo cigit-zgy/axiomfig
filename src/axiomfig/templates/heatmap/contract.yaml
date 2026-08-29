@@ -1,0 +1,14 @@
+family: heatmap
+variants:
+  basic:
+    required: [matrix, row_labels, column_labels, color_semantics]
+    optional: [annotations, colorbar_label]
+  correlation:
+    required: [matrix, labels, center]
+    optional: [annotations, colorbar_label]
+  clustered:
+    required: [matrix, labels, order, color_semantics]
+    optional: [annotations, colorbar_label]
+  confusion_matrix:
+    required: [matrix, class_labels]
+    optional: [annotations, colorbar_label]

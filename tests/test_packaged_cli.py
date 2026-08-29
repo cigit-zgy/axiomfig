@@ -22,7 +22,7 @@ def _run(command: list[str], *, cwd: Path, env: dict[str, str] | None = None) ->
 
 
 @pytest.mark.e2e
-def test_clean_wheel_installs_package_resources_and_four_template_families(
+def test_clean_wheel_installs_resources_and_canonical_template_taxonomy(
     tmp_path: Path,
 ) -> None:
     wheelhouse = tmp_path / "wheelhouse"
@@ -71,10 +71,30 @@ def test_clean_wheel_installs_package_resources_and_four_template_families(
     assert "axiomfig/resources/latex/axiomfig.sty" in names
     assert "axiomfig/resources/latex/axiomfig-colors.tex" in names
     assert not any("share/axiomfig/fonts/" in name for name in names)
-    assert "axiomfig/templates/curves.py" in names
-    assert "axiomfig/templates/distributions.py" in names
-    assert "axiomfig/templates/surfaces.py" in names
-    assert "axiomfig/templates/panels.py" in names
+    assert "axiomfig/templates/index.yaml" in names
+    for family in (
+        "line",
+        "scatter",
+        "bar",
+        "distribution",
+        "heatmap",
+        "estimation",
+        "diagnostics",
+        "association",
+        "field",
+        "layouts",
+    ):
+        assert f"axiomfig/templates/{family}/builders.py" in names
+        assert f"axiomfig/templates/{family}/contract.yaml" in names
+    assert (
+        not {
+            "axiomfig/templates/curves.py",
+            "axiomfig/templates/distributions.py",
+            "axiomfig/templates/surfaces.py",
+            "axiomfig/templates/panels.py",
+        }
+        & names
+    )
     assert not any(name.endswith(".mplstyle") for name in names)
     assert "axiomfig/styles.py" not in names
     assert "axiomfig/templates.py" not in names
@@ -98,7 +118,10 @@ def test_clean_wheel_installs_package_resources_and_four_template_families(
                 "from axiomfig.templates import TEMPLATE_BUILDERS; "
                 "from importlib.resources import files; "
                 "assert load_contracts().style['stroke']['main_stroke_pt'] == 0.8; "
-                "assert len(TEMPLATE_BUILDERS) == 36; "
+                "from axiomfig.templates.registry import public_template_specs; "
+                "assert len(TEMPLATE_BUILDERS) == 37; "
+                "assert len(public_template_specs()) == 33; "
+                "assert files('axiomfig.templates').joinpath('index.yaml').is_file(); "
                 "from axiomfig.typography import discover_fonts; "
                 "assert discover_fonts('serif')['text'].family == 'XCharter'; "
                 "root = files('axiomfig').joinpath('resources'); "

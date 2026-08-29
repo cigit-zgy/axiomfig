@@ -114,8 +114,8 @@ def test_bar_scatter_and_violin_use_face_only_alpha_and_opaque_edges() -> None:
 
 
 def test_confidence_interval_and_boxplot_keep_opaque_edges() -> None:
-    ci = build_template("line-ci").axes[0].collections[0]
-    box_axis = build_template("boxplot").axes[0]
+    ci = build_template("line/confidence_band").axes[0].collections[0]
+    box_axis = build_template("distribution/box").axes[0]
     box = box_axis.patches[0]
 
     assert ci.get_alpha() is None
@@ -163,7 +163,7 @@ def test_violin_geometry_has_deterministic_headroom() -> None:
     plt.close(figure)
 
 
-@pytest.mark.parametrize("name", ["vertical-bar", "violin"])
+@pytest.mark.parametrize("name", ["bar/vertical", "distribution/violin"])
 def test_bar_and_violin_use_open_numeric_ticks_and_no_category_marks(name: str) -> None:
     figure = build_template(name)
     axis = figure.axes[0]
@@ -191,8 +191,8 @@ def test_plot_artist_defaults_are_consumed_from_style_tokens() -> None:
     from axiomfig.config import load_contracts
 
     plots = load_contracts().style["plots"]
-    line_marker = build_template("line-marker").axes[0].lines[0]
-    ci_axis = build_template("line-ci").axes[0]
+    line_marker = build_template("line/marker").axes[0].lines[0]
+    ci_axis = build_template("line/confidence_band").axes[0]
     violin_axis = build_template("violin").axes[0]
 
     assert line_marker.get_markersize() == plots["line_marker"]["marker_size_pt"]
@@ -204,7 +204,7 @@ def test_plot_artist_defaults_are_consumed_from_style_tokens() -> None:
     plt.close(violin_axis.figure)
 
 
-@pytest.mark.parametrize("name", ["line-marker", "regression-scatter", "errorbar"])
+@pytest.mark.parametrize("name", ["line/marker", "scatter/regression", "line/errorbar"])
 def test_marker_examples_keep_data_strictly_inside_axes(name: str) -> None:
     figure = build_template(name)
     axis = figure.axes[0]

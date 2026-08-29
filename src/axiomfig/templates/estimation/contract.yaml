@@ -1,0 +1,8 @@
+family: estimation
+variants:
+  forest:
+    required: [label, estimate, interval, uncertainty_type]
+    optional: [reference, xlabel]
+  point_interval:
+    required: [label, estimate, interval, uncertainty_type]
+    optional: [group, xlabel]

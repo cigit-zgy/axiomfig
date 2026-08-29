@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
+from matplotlib.font_manager import FontProperties
 from matplotlib.gridspec import GridSpec, SubplotSpec
 from matplotlib.transforms import Bbox
 
@@ -69,15 +70,12 @@ def _physical_grid_parameters(
     style = load_contracts().style
     width_pt, height_pt = _figure_size_pt(figure)
     padding = float(style["output"]["padding_pt"])
-    panel = style["panel"]
     layout = style["layout"]["multi_panel"]
     horizontal_gap = float(layout["horizontal_gap_pt"])
     vertical_gap = float(layout["vertical_gap_pt"])
     left_margin = padding
     top_margin = padding
-    if panel_labels:
-        left_margin += max(0.0, -float(panel["left_offset_pt"]))
-        top_margin += max(0.0, float(panel["top_offset_pt"])) + float(panel["font_size_pt"])
+    del panel_labels
     available_width = width_pt - left_margin - padding - horizontal_gap * (columns - 1)
     available_height = height_pt - padding - top_margin - vertical_gap * (rows - 1)
     if available_width <= 0 or available_height <= 0:
@@ -192,6 +190,22 @@ def _axis_overhang_pt(axis: Axes, renderer: object) -> tuple[float, float, float
     )
 
 
+def _panel_label_height_pt(figure: Figure, renderer: object, count: int) -> float:
+    contract = load_contracts().style["panel"]
+    properties = FontProperties(
+        size=float(contract["font_size_pt"]), weight=str(contract["font_weight"])
+    )
+    heights = [
+        renderer.get_text_width_height_descent(  # type: ignore[attr-defined]
+            str(contract["format"]).format(letter=chr(ord("a") + index)),
+            properties,
+            ismath=False,
+        )[1]
+        for index in range(count)
+    ]
+    return max(heights, default=0.0) * 72.0 / figure.dpi
+
+
 def _set_position_pt(axis: Axes, bbox: Bbox, insets: tuple[float, float, float, float]) -> None:
     figure_width, figure_height = _figure_size_pt(axis.figure)
     left, right, bottom, top = insets
@@ -213,6 +227,9 @@ def solve_panel_layout(figure: Figure) -> None:
     size_pt = _figure_size_pt(figure)
     if layout.solved_size_pt == size_pt:
         return
+    style = load_contracts().style
+    colorbar_width = float(style["layout"]["multi_panel"]["colorbar_width_pt"])
+    figure_width, figure_height = size_pt
     for legend in tuple(layout.legends):
         legend.remove()
     layout.legends.clear()
@@ -227,7 +244,7 @@ def solve_panel_layout(figure: Figure) -> None:
         for auxiliary in panel.auxiliary_axes:
             auxiliary.set_position(
                 Bbox.from_extents(
-                    footprint.x1 - footprint.width * 0.08,
+                    footprint.x1 - colorbar_width / figure_width,
                     footprint.y0,
                     footprint.x1,
                     footprint.y1,
@@ -235,7 +252,6 @@ def solve_panel_layout(figure: Figure) -> None:
             )
     figure.canvas.draw()
     renderer = figure.canvas.get_renderer()
-    style = load_contracts().style
     padding = float(style["layout"]["multi_panel"]["containment_padding_pt"])
     ordinary = [panel for panel in layout.panels if not panel.auxiliary_axes]
     ordinary_overhangs = [
@@ -253,6 +269,14 @@ def solve_panel_layout(figure: Figure) -> None:
     ]
     common_bottom = max(value[2] for value in primary_overhangs) + padding
     common_top = max(value[3] for value in primary_overhangs) + padding
+    if layout.panel_labels:
+        panel_contract = style["panel"]
+        label_gutter = (
+            _panel_label_height_pt(figure, renderer, len(layout.panels))
+            + max(0.0, float(panel_contract["top_offset_pt"]))
+            + padding
+        )
+        common_top = max(common_top, label_gutter)
 
     from axiomfig.ornaments import requested_legend_height_pt
 
@@ -262,9 +286,7 @@ def solve_panel_layout(figure: Figure) -> None:
     if legend_height:
         common_top += legend_height + float(style["legend"]["top_gap_pt"])
 
-    colorbar_width = float(style["layout"]["multi_panel"]["colorbar_width_pt"])
     colorbar_gap = float(style["layout"]["multi_panel"]["colorbar_gap_pt"])
-    figure_width, figure_height = size_pt
     for panel, overhang in zip(layout.panels, primary_overhangs, strict=True):
         assert panel.primary_axes is not None
         footprint = panel.bbox()

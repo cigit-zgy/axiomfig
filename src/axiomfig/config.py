@@ -268,7 +268,7 @@ def build_rcparams(
         "legend.frameon": bool(contracts.style["legend"]["frame"]),
         "legend.handlelength": float(contracts.style["legend"]["handlelength"]),
         "axes.prop_cycle": cycler(color=tuple(color_map.values())),
-        "image.cmap": str(contracts.style["plots"]["heatmap"]["cmap"]),
+        "image.cmap": str(contracts.style["plots"]["heatmap"]["sequential_cmap"]),
         "image.interpolation": str(contracts.style["plots"]["heatmap"]["interpolation"]),
         "mathtext.fontset": "custom",
         "mathtext.rm": str(math_family["matplotlib_family"]),

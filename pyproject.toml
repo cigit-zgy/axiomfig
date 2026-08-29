@@ -39,6 +39,8 @@ axiomfig = [
   "resources/fonts/*.otf",
   "resources/fonts/*.ttf",
   "resources/fonts/licenses/*",
+  "templates/index.yaml",
+  "templates/*/contract.yaml",
 ]
 
 [tool.setuptools.data-files]
