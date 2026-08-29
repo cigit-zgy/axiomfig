@@ -6,9 +6,10 @@ import warnings
 from dataclasses import dataclass
 from pathlib import Path
 
+import matplotlib as mpl
 from matplotlib.figure import Figure
 
-from axiomfig.typography import discover_fonts
+from axiomfig.typography import apply_figure_typography, discover_fonts
 
 
 class RenderError(RuntimeError):
@@ -88,8 +89,19 @@ def render_figure(
     tex_path = workdir / "wrapper.tex"
     tex_path.write_text(standalone_tex(intermediate_pdf.name), encoding="utf-8")
 
-    with warnings.catch_warnings(record=True) as caught:
+    style_root = Path(__file__).resolve().parents[2] / "styles"
+    style_path = style_root / "typography" / f"{typography}.mplstyle"
+    style_params = mpl.rc_params_from_file(style_path, fail_on_error=True, use_default_template=False)
+    style_params.update(
+        mpl.rc_params_from_file(
+            style_root / "rendering" / "vector.mplstyle",
+            fail_on_error=True,
+            use_default_template=False,
+        )
+    )
+    with mpl.rc_context(rc=style_params), warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
+        apply_figure_typography(figure, mode=typography)
         figure.savefig(intermediate_pdf, format="pdf")
     glyph_warnings = [str(item.message) for item in caught if "Glyph" in str(item.message)]
     if glyph_warnings:

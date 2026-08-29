@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import re
 import tempfile
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -8,6 +9,8 @@ from pathlib import Path
 
 from fontTools.ttLib import TTCollection, TTFont
 from matplotlib import font_manager
+from matplotlib.figure import Figure
+from matplotlib.text import Text
 
 
 class FontContractError(RuntimeError):
@@ -261,3 +264,50 @@ def font_for_language(language: str, mode: str = "sans") -> font_manager.FontPro
         raise ValueError(f"Unsupported language code: {language}") from exc
     font = discover_fonts(mode=mode)[role]
     return font_manager.FontProperties(fname=font.path)
+
+
+_MATH_SPAN = re.compile(r"\$.*?\$")
+_HAN = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]")
+_JAPANESE = re.compile(r"[\u3040-\u30ff\u31f0-\u31ff]")
+_LATIN = re.compile(r"[A-Za-z]")
+
+
+def _language_for_text(text: str) -> str | None:
+    plain = _MATH_SPAN.sub("", text)
+    has_cjk = bool(_HAN.search(plain) or _JAPANESE.search(plain))
+    if has_cjk and _LATIN.search(plain):
+        raise FontContractError(
+            "Mixed plain scripts require the segmented multilingual helper "
+            "(add_language_text) so each run has an exact font family"
+        )
+    if _JAPANESE.search(plain):
+        return "ja"
+    if _HAN.search(plain):
+        return "zh"
+    return "en" if plain else None
+
+
+def _figure_text_artists(figure: Figure) -> list[Text]:
+    artists: list[Text] = list(figure.texts)
+    for axis in figure.axes:
+        artists.extend((axis.title, axis._left_title, axis._right_title))
+        artists.extend((axis.xaxis.label, axis.yaxis.label))
+        artists.extend(axis.get_xticklabels(which="both"))
+        artists.extend(axis.get_yticklabels(which="both"))
+        artists.extend(axis.texts)
+        legend = axis.get_legend()
+        if legend is not None:
+            artists.extend(legend.get_texts())
+    return list({id(artist): artist for artist in artists}.values())
+
+
+def apply_figure_typography(figure: Figure, mode: str = "sans") -> Figure:
+    """Assign exact regional fonts to all ordinary figure text before rendering."""
+    for artist in _figure_text_artists(figure):
+        if artist.get_fontproperties().get_file() is not None:
+            continue
+        language = _language_for_text(artist.get_text())
+        if language is not None:
+            artist.set_fontproperties(font_for_language(language, mode=mode))
+            artist.set_math_fontfamily("custom")
+    return figure
