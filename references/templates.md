@@ -1,20 +1,39 @@
-# Template selection
+# Template selection and helper contract
 
-Use the smallest archetype that expresses the scientific comparison. Every entry is a real native Matplotlib builder under `templates/`.
+Use the smallest archetype that expresses the scientific comparison. Every entry is a native Matplotlib builder under `templates/`.
 
-| Intent | Template names |
-|---|---|
-| trajectory or response over an ordered axis | `line-single`, `line-multi`, `line-marker`, `line-ci` |
-| association, groups, or agreement | `scatter-basic`, `scatter-grouped`, `scatter-parity` |
-| discrete magnitude comparison | `bar-vertical`, `bar-grouped` |
-| distribution comparison | `boxplot`, `violin` |
-| matrix magnitude and structure | `heatmap` |
-| predictive performance and error | `model-evaluation`, `residual` |
-| related panels | `layout-2-panel`, `layout-4-panel` |
-| CJK/math pipeline check | `multilingual` |
+| Intent | Template names | Surface |
+|---|---|---|
+| trajectory or ordered response | `line-single`, `line-multi`, `line-marker`, `line-ci` | open |
+| association, groups, agreement | `scatter-basic`, `scatter-grouped`, `scatter-parity` | open |
+| discrete magnitude comparison | `bar-vertical`, `bar-grouped` | filled |
+| distribution comparison | `boxplot`, `violin` | filled |
+| matrix magnitude and structure | `heatmap` | filled |
+| predictive performance and error | `model-evaluation`, `residual` | mixed by axes |
+| related panels | `layout-2-panel`, `layout-4-panel` | per axes |
+| multilingual family probe | `multilingual` | open |
+| deterministic acceptance panel | `style-contract` | per axes |
 
-Choose parity only when both axes represent comparable observed and predicted quantities, and include the 1:1 reference. Use residual plots to expose magnitude-dependent error. Use a heatmap for an actual matrix; do not turn unrelated categorical values into a pseudo-matrix.
+Choose parity only when both axes represent comparable observed and predicted quantities and include the 1:1 reference. Use residual plots to expose magnitude-dependent error. Use a heatmap for an actual matrix. Confidence bands represent supplied or computed uncertainty, not decoration; labels include units.
 
-Keep source data and statistical meaning intact. Confidence intervals come from supplied or computed uncertainty, not a decorative band. Axis labels include units. High-density scatter or heatmap image artists may be rasterized locally while axes and text remain vector.
+## Required thin helpers
 
-Legend location and annotations depend on the data and therefore remain template decisions. Font size, linewidth, marker size, palette, tick geometry, figure width, and export settings remain style decisions.
+```python
+from axiomfig.template_helpers import (
+    add_bar_value_labels,
+    add_panel_labels,
+    apply_axis_contract,
+    apply_scatter_contract,
+    place_legend_above,
+)
+```
+
+- Every axes calls `apply_axis_contract(axis, surface="open" | "filled")`. Linear axes get one minor tick per major interval; log locators are preserved.
+- Every scatter collection passes through `apply_scatter_contract(collection)` for black `0.6 pt` edges.
+- Every bar container passes through `add_bar_value_labels(axis, containers, decimals=2)`. It applies black `0.6 pt` edges, `2 pt` label padding, fixed trailing-zero precision, and reserves headroom for vertical or horizontal bars. `decimals` must be non-negative.
+- Multi-panel templates call `add_panel_labels(axes)` once; single-panel templates omit panel labels.
+- Legends that have labels call `place_legend_above(axis)`. The helper measures width, prefers one row, reduces columns only when needed, aligns to the right spine, and fails if it cannot remain inside the figure.
+
+Read [layout.md](layout.md) for physical offsets and containment limits. High-density scatter or image artists may be rasterized locally, but axes and text remain vector-first.
+
+Templates may change data, labels, units, annotations, data-justified limits, and scientific content. They do not set contract fonts, sizes, stroke widths, palettes, tick geometry, panel offsets, physical figure size, or export settings.

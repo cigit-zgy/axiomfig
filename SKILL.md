@@ -1,33 +1,33 @@
 ---
 name: axiomfig
-description: Use when creating, revising, or validating publication-quality scientific figures with Matplotlib, especially when deterministic styles, multilingual CJK typography, Tectonic PDF rendering, or journal-width geometry matter.
+description: Use when creating, revising, or validating publication-quality scientific figures with Matplotlib, especially when deterministic styles, multilingual CJK typography, Tectonic PDF wrapping, or journal-width geometry matter.
 ---
 
 # AxiomFig
 
 ## Core contract
 
-AxiomFig is deterministic-first: the agent chooses a tested template and style modules, then maps real data and scientific meaning into them. Do not improvise font families, point sizes, line widths, tick geometry, figure width, palettes, or export settings inside a template.
+AxiomFig is deterministic-first. Choose a tested template and exactly one style module per layer, then map real data and scientific meaning into that contract. Do not improvise fonts, stroke widths, ticks, layout offsets, palettes, figure geometry, or export settings inside a template.
 
 ## Workflow
 
-1. Identify the scientific comparison and figure archetype. Read [references/templates.md](references/templates.md) when choosing among line, scatter/parity, bar, distribution, heatmap, model-evaluation, and layout templates.
-2. Select exactly one module per layer in this order: `base + geometry + typography + colors + plot + language + rendering`. Read [references/style-contract.md](references/style-contract.md) before changing or adding a module.
-3. Run `python scripts/check_fonts.py`. A missing exact font is a hard failure; do not substitute another family.
-4. Copy or adapt the closest native Matplotlib template. Change data, labels, units, legend placement, annotations, and plot-specific content only. Templates must not mutate contract `rcParams`.
-5. Render through `python scripts/render.py <template> --output <stem> [style options]`. The formal PDF must pass through Tectonic. PNG is rasterized from that final PDF, not rendered by a separate style path.
-6. Run `python scripts/validate.py <output-directory>` and visually inspect the PDF rasterization. Read [references/rendering-validation.md](references/rendering-validation.md) for the evidence required.
+1. Choose the closest native Matplotlib builder in [references/templates.md](references/templates.md).
+2. Compose `base -> geometry -> typography -> colors -> plot -> language -> rendering`. Read [references/style-contract.md](references/style-contract.md) for ownership, `0.6 pt` strokes, and open-versus-filled tick rules.
+3. Select one complete typography mode: `sans` (default) or `serif`. Run `python scripts/check_fonts.py`; for `serif`, CJK, math, mono, ordinary-artist handling, or mixed-script segmentation, read and follow [references/typography.md](references/typography.md).
+4. Use the deterministic helpers for panel labels, legends, bars, and scatter. Read [references/layout.md](references/layout.md) only for layout work and [references/colors.md](references/colors.md) only for palette or xcolor work.
+5. Render with `python scripts/render.py <template> --output <stem> [style options]`. The formal PDF passes through Tectonic; the PNG is rasterized from that PDF.
+6. Run `python scripts/validate.py <output-directory>` and inspect the rendered page. Use [references/rendering-validation.md](references/rendering-validation.md) for evidence and the `01`-`10` acceptance gallery.
 
-For multilingual content, explicitly map Chinese text to `zh` and Japanese text to `ja`; read [references/typography.md](references/typography.md). Never rely on font fallback to choose regional CJK glyphs.
+## Scientific LaTeX boundary
 
-## User preference changes
+The packaged standalone LaTeX layer provides generated xcolor definitions plus `siunitx`, `mhchem`, `amsmath`, and `unicode-math`; read [references/latex.md](references/latex.md) before using it. It is verified for TeX-native documents only. Matplotlib label text is already embedded before the wrapper reaches Tectonic, so native `\qty` or `\ce` expansion inside plot labels is **TECHNICALLY BLOCKED / DEFERRED** and must not be claimed.
 
-If the user explicitly changes a visual preference, update the owning `.mplstyle` module, its reference contract, and tests. Do not apply a hidden one-off `rcParams` override. Undeclared cross-layer key conflicts must fail composition.
+## Preference changes
 
-## Output boundary
+When the user changes a visual preference, update the owning style/helper, its reference contract, and behavioral tests. Do not hide a one-off `rcParams` override. Undeclared cross-layer key conflicts must fail composition.
 
-Write user deliverables to the requested directory. Reserve `gallery/` for the repository's final PDF/PNG demonstration pairs; put TeX, logs, intermediate PDFs, and caches under `tmp/`.
+## Output and completion
 
-## Completion gate
+Write deliverables to the requested directory. Reserve `gallery/` for final `01`-`10` PDF/PNG pairs and `tmp/` for TeX, logs, intermediates, and caches.
 
-Complete only when the source template runs, style modules load without undeclared conflicts, Tectonic exits successfully, the PDF is one parseable page at the intended physical size, fonts are embedded/subset, the PNG exists, required multilingual text is present, logs contain no missing-font/glyph diagnostics, and rendered pages show no tofu, clipping, overlap, or unreadable labels.
+Complete only when the source runs, styles compose, exact fonts resolve, Tectonic succeeds, the one-page PDF has the intended physical size and embedded/subset non-Type-3 fonts, the PNG exists, and visual inspection finds no missing glyphs, tofu, clipping, overlap, or unreadable labels.

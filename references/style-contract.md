@@ -1,6 +1,6 @@
 # Deterministic style contract
 
-## Composition
+## Composition and ownership
 
 The fixed order is:
 
@@ -8,36 +8,48 @@ The fixed order is:
 base -> geometry -> typography -> colors -> plot -> language -> rendering
 ```
 
-Later layers may override earlier layers only when `src/axiomfig/styles.py` declares the exact key and layer pair. Version 0.1 permits one override: `language` changes `font.family` after `typography` so the explicit multilingual family list is active. Every other duplicate rcParam is an error.
+`StyleSelection.paths()` resolves one file per layer; `compose_styles()` fails on duplicate rcParams unless `src/axiomfig/styles.py` declares the exact layer pair and key. `ALLOWED_OVERRIDES` permits base-to-plot `xtick.direction`/`ytick.direction` changes and a typography-to-language `font.family` change; the current multilingual module preserves the selected family and sets only `font.stretch`. Templates own data transforms, labels, units, annotations, justified limits, and panel arrangement; they do not set contract rcParams or physical width.
 
 | Layer | Owns |
 |---|---|
-| base | point sizes, axes/tick/legend geometry, face colors, layout |
-| geometry | `figure.figsize` only |
-| typography | Latin/math family and MathText mapping |
-| colors | `axes.prop_cycle` only |
-| plot | line/marker/patch/image properties specific to an archetype |
-| language | ordered multilingual family list |
-| rendering | PDF font type, preview DPI, output format and transparency |
-
-Templates own data transforms, plot calls, labels, units, legend placement, annotations, axis limits justified by data, and multi-panel arrangement. They must not set contract rcParams or physical figure width.
+| base | point sizes, central strokes, axes/tick/legend geometry, faces, layout |
+| geometry | `figure.figsize` |
+| typography | one complete Latin/math/CJK/mono mode |
+| colors | `axes.prop_cycle` |
+| plot | archetype-specific marker, patch, image, and filled-surface tick properties |
+| language | multilingual metadata; templates still segment language runs explicitly |
+| rendering | PDF font type, preview DPI, output format, transparency |
 
 ## Geometry
 
-The presets keep base typography in physical points rather than scaling it with figure width.
+Typography remains in physical points rather than scaling with width.
 
 | Preset | Width | Default height | Inches |
 |---|---:|---:|---:|
-| single-column | 90 mm | 67.5 mm | 3.543307 x 2.657480 |
-| onehalf-column | 140 mm | 105 mm | 5.511811 x 4.133858 |
-| double-column | 190 mm | 142.5 mm | 7.480315 x 5.610236 |
+| `single-column` | 90 mm | 67.5 mm | 3.543307 x 2.657480 |
+| `onehalf-column` | 140 mm | 105 mm | 5.511811 x 4.133858 |
+| `double-column` | 190 mm | 142.5 mm | 7.480315 x 5.610236 |
 
-## Axes, ticks, lines, and panels
+## Tick contract
 
-Publication base text is 8.5 pt; tick and legend text is 7.5 pt. Axes are 0.55 pt. Major ticks are 3.2 pt and point `inout`; minor ticks are 1.6 pt and remain visible. Plot styles own restrained data-line and marker-edge widths. Legends have no frame unless a future explicit module says otherwise.
+Call `apply_axis_contract(axis, surface="open")` for line and scatter axes and `surface="filled"` for bar, distribution, heatmap, image, or matrix axes.
 
-Single-panel templates do not add `(a)`. Multi-panel helpers add bold `(a)`, `(b)`, and subsequent labels with one anchor and offset.
+| Surface | Major | Minor | Linear minor locator |
+|---|---|---|---|
+| open | `inout` | `in` | `AutoMinorLocator(2)` |
+| filled | `out` | `out` | `AutoMinorLocator(2)` |
 
-## Color
+`AutoMinorLocator(2)` yields exactly one minor tick between adjacent major ticks. The helper does not replace a logarithmic axis locator; log axes retain mathematical minor-tick semantics while adopting the selected direction.
 
-`default` is Paul Tol bright, `muted` is Paul Tol muted, and `colorblind` is Paul Tol high-contrast. The high-contrast scheme is preferred when monochrome separation matters. The hexadecimal values follow [Paul Tol's current official scheme definitions](https://sronpersonalpages.nl/~pault/). Do not interpolate qualitative palettes.
+## Unified strokes
+
+`axiomfig.contracts.STROKE_WIDTH_PT` is `0.6`. The publication style applies it to spines, data lines, major/minor ticks, marker edges, patch/bar edges, boxplot boxes/caps/medians/whiskers, and the defaults inherited by error bars, cap lines, reference lines, and annotation strokes. Bar and scatter helpers reassert the same token at artist level.
+
+Use color, alpha, linestyle, or fill for hierarchy. Override the width only when the user explicitly requests it; do not create a second hidden baseline inside a template.
+
+## Related contracts
+
+- Read [layout.md](layout.md) for panel-label and legend geometry.
+- Read [colors.md](colors.md) for Paul Tol tokens and xcolor generation.
+- Read [typography.md](typography.md) before selecting or applying a font family.
+- Read [templates.md](templates.md) for helper ownership by archetype.
