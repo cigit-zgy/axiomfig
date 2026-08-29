@@ -4,6 +4,8 @@
 
 `axiomfig.colors.PALETTES` is the only maintained color source. The values are Paul Tol qualitative schemes expressed as six-digit uppercase HTML RGB. Do not hand-edit generated `.mplstyle` or xcolor files and do not treat xcolor's built-in names as a validated scientific palette.
 
+An unqualified AxiomFig “default palette” or “canonical qualitative palette” means `PALETTES["default"]`, the Paul Tol bright scheme. The other canonical-source entries are explicit alternatives, not competing defaults: select `muted` with `--colors muted` or the three-color high-contrast scheme with `--colors colorblind`. If the user does not request an alternative, use `--colors default`.
+
 The default bright palette is:
 
 | Token | HTML |
@@ -16,7 +18,7 @@ The default bright palette is:
 | `AxiomPurple` | `AA3377` |
 | `AxiomGrey` | `BBBBBB` |
 
-Matplotlib also exposes the verified Paul Tol `muted` and three-color `colorblind` cycles. Qualitative colors are discrete; do not interpolate them into a continuous map.
+Matplotlib exposes the verified Paul Tol `muted` and three-color `colorblind` cycles only as those explicit opt-ins. Qualitative colors are discrete; do not interpolate them into a continuous map. The generated xcolor file mirrors `PALETTES["default"]`, not every opt-in palette.
 
 ## Generated consumers
 

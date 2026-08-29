@@ -16,6 +16,31 @@ Use the smallest archetype that expresses the scientific comparison. Every entry
 
 Choose parity only when both axes represent comparable observed and predicted quantities and include the 1:1 reference. Use residual plots to expose magnitude-dependent error. Use a heatmap for an actual matrix. Confidence bands represent supplied or computed uncertainty, not decoration; labels include units.
 
+## Exact mixed 2 x 2 recipe
+
+For one figure containing line, grouped bar, scatter, and heatmap panels, select the `style-contract` template. Do not start from `layout-4-panel`: its fourth panel is a violin plot, so adapting it would re-open plot/module decisions already frozen in `style-contract`.
+
+Use these seven modules exactly:
+
+| Layer | Selection | File |
+|---|---|---|
+| base | `publication` (fixed default) | `styles/base/publication.mplstyle` |
+| geometry | `double-column` | `styles/geometry/double-column.mplstyle` |
+| typography | `sans` | `styles/typography/sans.mplstyle` |
+| colors | `default` | `styles/colors/default.mplstyle` |
+| plot | `line` (neutral mixed-figure layer) | `styles/plot/line.mplstyle` |
+| language | `multilingual` | `styles/language/multilingual.mplstyle` |
+| rendering | `vector` | `styles/rendering/vector.mplstyle` |
+
+```bash
+python scripts/render.py style-contract \
+  --output "$PWD/tmp/style-contract/style-contract" \
+  --geometry double-column --typography sans --colors default \
+  --plot line --language multilingual --rendering vector
+```
+
+One figure can compose only one plot layer, so `line` is the neutral selection here; it does not pretend that every panel is open-surface. The template deterministically calls `apply_axis_contract(..., surface="open")` for line/scatter and `surface="filled"` for bar/heatmap, applies bar/scatter artist helpers, places measured legends, adds uniform panel labels, and leaves the colorbar support axes outside the data-axes tick contract. There is no per-panel `.mplstyle` guessing.
+
 ## Required thin helpers
 
 ```python

@@ -18,7 +18,7 @@ The wrapper deliberately does not load the packaged `axiomfig.sty`: plot text ha
 ## Commands
 
 ```bash
-python scripts/render.py line-ci --output tmp/demo/line \
+python scripts/render.py line-ci --output "$PWD/tmp/demo/line" \
   --geometry single-column --typography sans --colors default --plot line
 python scripts/validate.py tmp/demo
 python scripts/generate_colors.py --check
@@ -58,13 +58,13 @@ The checks are deliberately split; do not report the generic validator as the fu
 |---|---|
 | `validate_pair()` | PDF exists, parses as one page, has a non-empty PNG partner, keeps text within the page, embeds/subsets every font, and has no Type 3 fonts; optional caller-supplied width/height and Tectonic log checks |
 | `validate_gallery()` / `python scripts/validate.py` | runs the generic pair checks over existing PDFs; an API caller may supply `expected_stems`, but the CLI does not reconstruct artifacts or supply the frozen set, dimensions, render logs, or multilingual strings |
-| `build_gallery.py` plus gallery E2E tests | reconstructs `01`-`10`, supplies each spec's dimensions and fresh render log, checks required multilingual text, enforces the exact set after building, and tests reproducible PDF/PNG hashes and expected font families |
+| `build_gallery.py` plus gallery E2E tests | reconstructs `01`-`10`, supplies each spec's dimensions and fresh render log, checks required multilingual text, enforces the exact set after building, and automatically tests reproducible PDF/PNG hashes and expected font families |
 | `check_latex.py` | separately verifies TeX-native `siunitx`/`mhchem`/math extraction and requires embedded, subset, Unicode-mapped, non-Type-3 Latin Modern text/math fonts |
 
 The gallery builder uses `SOURCE_DATE_EPOCH=0` for deterministic PDF metadata and records hashes, style paths, commands, dimensions, and font rows in the ignored manifest. The xcolor/Matplotlib RGB equality belongs to `generate_colors.py --check` and `tests/test_colors.py`, not to the standalone typesetting probe.
 
-Poppler can report `Mismatch between font type and embedded font file` for Matplotlib CFF OpenType subsets. This warning is recorded rather than hidden. Generic figure validation still requires `emb=yes`, `sub=yes`, and no Type 3 fonts; gallery E2E adds expected-family and extracted-content checks plus visual inspection. The standalone probe separately requires `uni=yes`.
+Poppler can report `Mismatch between font type and embedded font file` for Matplotlib CFF OpenType subsets. This warning is recorded rather than hidden. Generic figure validation still requires `emb=yes`, `sub=yes`, and no Type 3 fonts; automated gallery E2E adds expected-family and extracted-content checks. The standalone probe separately requires `uni=yes`.
 
 ## Visual gate
 
-Open every final rasterization at normal and enlarged scale. Check family uniformity, math/text baselines, Chinese/Japanese glyph shapes, tofu, clipping, overlap, panel-label distance/alignment, legend containment/right alignment, open-versus-filled tick direction, marker/bar edges, heatmap/colorbar spacing, and whitespace. Subjective aesthetics are a human gate, not an automated PASS.
+After the automated build/E2E tier passes, a human must open every final rasterization at normal and enlarged scale. Check family uniformity, math/text baselines, Chinese/Japanese glyph shapes, tofu, clipping, overlap, panel-label distance/alignment, legend containment/right alignment, open-versus-filled tick direction, marker/bar edges, heatmap/colorbar spacing, and whitespace. This visual gate is required but is not executed or certified by pytest, `validate_gallery()`, or `pdffonts`; subjective aesthetics must never be reported as an automated PASS.

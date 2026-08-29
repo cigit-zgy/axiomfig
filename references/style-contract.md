@@ -20,6 +20,31 @@ base -> geometry -> typography -> colors -> plot -> language -> rendering
 | language | multilingual metadata; templates still segment language runs explicitly |
 | rendering | PDF font type, preview DPI, output format, transparency |
 
+## Frozen mixed-panel selection
+
+The exact line/bar/scatter/heatmap acceptance figure is `style-contract`, not `layout-4-panel`. Its one allowed seven-layer selection is `publication + double-column + sans + default + line + multilingual + vector`, resolving respectively to:
+
+```text
+styles/base/publication.mplstyle
+styles/geometry/double-column.mplstyle
+styles/typography/sans.mplstyle
+styles/colors/default.mplstyle
+styles/plot/line.mplstyle
+styles/language/multilingual.mplstyle
+styles/rendering/vector.mplstyle
+```
+
+Render it without substitutions:
+
+```bash
+python scripts/render.py style-contract \
+  --output "$PWD/tmp/style-contract/style-contract" \
+  --geometry double-column --typography sans --colors default \
+  --plot line --language multilingual --rendering vector
+```
+
+`line` is the neutral single plot layer for this mixed figure. The `style-contract` builder, not additional plot modules or agent judgment, owns per-data-axes differences: open ticks for line/scatter, filled ticks and labels for bars, filled ticks for heatmap, black bar/scatter edges, responsive legends, and uniform panel labels. Matplotlib's colorbar is support axes and keeps its own locator/ticks. See [templates.md](templates.md) for the helper mapping.
+
 ## Geometry
 
 Typography remains in physical points rather than scaling with width.

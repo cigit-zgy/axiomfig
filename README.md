@@ -27,7 +27,7 @@ brew install tectonic poppler
 python -m pip install -e . --group dev
 
 python scripts/check_fonts.py
-python scripts/render.py line-ci --output tmp/demo/line \
+python scripts/render.py line-ci --output "$PWD/tmp/demo/line" \
   --geometry single-column --typography sans \
   --colors default --plot line
 python scripts/validate.py tmp/demo
@@ -52,7 +52,7 @@ Layer order is fixed: `base -> geometry -> typography -> colors -> plot -> langu
 - Every default visible stroke uses the central `0.6 pt` token, including spines, lines, ticks, marker/bar edges, error bars, caps, and reference strokes.
 - Panel labels align to the left spine at a uniform `2 pt` physical gap. Legends start in one row above the axes, right-align to the right spine, and reduce columns only when measured width requires it.
 - Bars have black `0.6 pt` edges and fixed-precision labels (`decimals=2` by default). Scatter markers have black `0.6 pt` edges.
-- Default colors come from the canonical Paul Tol qualitative palette. Matplotlib styles and default LaTeX xcolor definitions are generated from the same Python source.
+- Unqualified AxiomFig color use means the canonical `default` Paul Tol bright qualitative palette. `muted` and `colorblind` are explicit opt-ins. Matplotlib styles and default LaTeX xcolor definitions are generated from the same Python source.
 - A figure selects one complete `sans` or `serif` family. Titles, labels, ticks, legends, panel labels, annotations, math, Chinese, and Japanese follow that mode; Maple Mono is reserved for code/identifier roles.
 
 The exact helper APIs and limits are routed from [SKILL.md](SKILL.md) to [layout](references/layout.md), [colors](references/colors.md), [typography](references/typography.md), and [templates](references/templates.md).
