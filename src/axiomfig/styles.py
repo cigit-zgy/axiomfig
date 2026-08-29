@@ -16,7 +16,6 @@ class StyleConflictError(ValueError):
 
 LAYER_ORDER = ("base", "geometry", "typography", "colors", "plot", "language", "rendering")
 ALLOWED_OVERRIDES = {
-    ("typography", "language"): {"font.family"},
     ("base", "plot"): {"xtick.direction", "ytick.direction"},
 }
 

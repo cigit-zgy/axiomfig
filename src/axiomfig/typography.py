@@ -353,29 +353,43 @@ def _language_for_text(text: str) -> str | None:
 
 
 def _figure_text_artists(figure: Figure) -> list[Text]:
-    artists: list[Text] = list(figure.texts)
-    for axis in figure.axes:
-        artists.extend((axis.title, axis._left_title, axis._right_title))
-        artists.extend((axis.xaxis.label, axis.yaxis.label))
-        artists.extend(axis.get_xticklabels(which="both"))
-        artists.extend(axis.get_yticklabels(which="both"))
-        artists.extend(axis.texts)
-        legend = axis.get_legend()
-        if legend is not None:
-            artists.append(legend.get_title())
-            artists.extend(legend.get_texts())
-    return list({id(artist): artist for artist in artists}.values())
+    return list({id(artist): artist for artist in figure.findobj(match=Text)}.values())
+
+
+def _allowed_explicit_families(language: str | None, mode: str) -> set[str]:
+    contract = FONT_CONTRACTS[mode]
+    families = {FONT_SPECS[contract["math"]].matplotlib_family, "Maple Mono"}
+    if language == "ja":
+        families.add(FONT_SPECS[contract["japanese"]].matplotlib_family)
+    elif language == "zh":
+        families.update(
+            {
+                FONT_SPECS[contract["chinese"]].matplotlib_family,
+                FONT_SPECS[contract["japanese"]].matplotlib_family,
+            }
+        )
+    elif language == "en":
+        families.add(FONT_SPECS[contract["latin"]].matplotlib_family)
+    return families
 
 
 def apply_figure_typography(figure: Figure, mode: str = "sans") -> Figure:
     """Assign exact regional fonts to all ordinary figure text before rendering."""
     for artist in _figure_text_artists(figure):
-        if artist.get_fontproperties().get_file() is not None:
-            continue
         language = _language_for_text(artist.get_text())
+        properties = artist.get_fontproperties()
+        explicit_file = properties.get_file()
+        if explicit_file is not None:
+            actual_family = font_manager.FontProperties(fname=explicit_file).get_name()
+            if actual_family not in _allowed_explicit_families(language, mode):
+                raise FontContractError(
+                    f"Explicit font {actual_family!r} is not allowed for {language or 'math'} "
+                    f"in {mode} typography mode"
+                )
+            continue
         artist.set_math_fontfamily("custom")
         if language is not None:
-            properties = artist.get_fontproperties().copy()
+            properties = properties.copy()
             properties.set_file(
                 font_for_language(
                     language,

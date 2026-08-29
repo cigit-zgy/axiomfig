@@ -2,9 +2,10 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pytest
+from matplotlib import font_manager
 
 from axiomfig.rendering import RenderError, render_figure, standalone_tex
-from axiomfig.typography import FontContractError, apply_figure_typography
+from axiomfig.typography import FontContractError, apply_figure_typography, font_for_language
 from axiomfig.validation import inspect_pdf, validate_pair
 
 
@@ -147,4 +148,47 @@ def test_render_pipeline_embeds_bold_italic_variant_for_semibold_numeric_weight(
     entry = validate_pair(result.pdf, result.png, tectonic_log=result.log)
 
     assert any(expected_variant in row for row in entry.fonts)
+    plt.close(figure)
+
+
+@pytest.mark.e2e
+def test_render_pipeline_assigns_serif_font_to_figure_level_legend(tmp_path: Path) -> None:
+    figure, axis = plt.subplots(figsize=(3.543307, 2.65748))
+    line = axis.plot([0, 1], [0, 1])[0]
+    figure.legend([line], ["Model estimate"])
+
+    result = render_figure(figure, tmp_path / "figure-legend", typography="serif")
+    entry = validate_pair(result.pdf, result.png, tectonic_log=result.log)
+
+    assert any("LMRoman10-Regular" in row for row in entry.fonts)
+    plt.close(figure)
+
+
+def test_typography_pass_rejects_cross_mode_explicit_font_before_render() -> None:
+    figure, axis = plt.subplots()
+    axis.set_title("Title", fontproperties=font_for_language("en", mode="sans"))
+
+    with pytest.raises(FontContractError, match="not allowed"):
+        apply_figure_typography(figure, mode="serif")
+    plt.close(figure)
+
+
+def test_typography_pass_rejects_mixed_script_even_with_explicit_font() -> None:
+    figure, axis = plt.subplots()
+    axis.set_title("Title 硝化效率", fontproperties=font_for_language("en", mode="sans"))
+
+    with pytest.raises(FontContractError, match="segmented multilingual helper"):
+        apply_figure_typography(figure, mode="sans")
+    plt.close(figure)
+
+
+def test_typography_pass_rejects_dejavu_explicit_font() -> None:
+    figure, axis = plt.subplots()
+    dejavu = font_manager.FontProperties(
+        fname=font_manager.findfont(font_manager.FontProperties(family=["DejaVu Sans"]))
+    )
+    axis.set_title("Title", fontproperties=dejavu)
+
+    with pytest.raises(FontContractError, match="not allowed"):
+        apply_figure_typography(figure, mode="serif")
     plt.close(figure)
