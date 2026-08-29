@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import matplotlib as mpl
 import pytest
 
 from axiomfig import typography
@@ -57,6 +58,16 @@ def test_font_discovery_rejects_cross_family_fallback(monkeypatch: pytest.Monkey
 
     with pytest.raises(FontContractError, match="expected 'Required Test Family'"):
         discover_fonts({"latin": "Required Test Family"})
+
+
+def test_font_discovery_does_not_mutate_rcparams() -> None:
+    keys = ("font.family", "font.sans-serif", "font.serif", "mathtext.rm", "mathtext.tt")
+    before = {key: mpl.rcParams[key] for key in keys}
+
+    discover_fonts(mode="sans")
+    discover_fonts(mode="serif")
+
+    assert {key: mpl.rcParams[key] for key in keys} == before
 
 
 @pytest.mark.parametrize(
