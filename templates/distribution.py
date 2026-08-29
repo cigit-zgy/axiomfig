@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.figure import Figure
 
+from axiomfig.template_helpers import apply_axis_contract
+
 
 def _samples() -> list[np.ndarray]:
     rng = np.random.default_rng(47)
@@ -18,6 +20,7 @@ def build_boxplot() -> Figure:
     figure, axis = plt.subplots()
     axis.boxplot(_samples(), tick_labels=["ASM", "Neural ODE", "Hybrid ODE"], patch_artist=True)
     axis.set(xlabel="Model", ylabel="Normalized score (-)")
+    apply_axis_contract(axis, surface="filled")
     return figure
 
 
@@ -30,6 +33,7 @@ def build_violin() -> Figure:
         body.set_alpha(0.72)
     axis.set_xticks([1, 2, 3], ["ASM", "Neural ODE", "Hybrid ODE"])
     axis.set(xlabel="Model", ylabel="Normalized score (-)")
+    apply_axis_contract(axis, surface="filled")
     return figure
 
 

@@ -68,3 +68,14 @@ def test_model_evaluation_panels_share_geometry() -> None:
     assert left.y0 == pytest.approx(right.y0, abs=0.01)
     assert left.height == pytest.approx(right.height, abs=0.01)
     plt.close(figure)
+
+
+@pytest.mark.parametrize("name", ["bar-vertical", "bar-grouped", "heatmap"])
+def test_filled_templates_use_outward_major_and_minor_ticks(name: str) -> None:
+    figure = build_template(name)
+    for axis in figure.axes[:1]:
+        assert axis.xaxis._major_tick_kw["tickdir"] == "out"
+        assert axis.xaxis._minor_tick_kw["tickdir"] == "out"
+        assert axis.yaxis._major_tick_kw["tickdir"] == "out"
+        assert axis.yaxis._minor_tick_kw["tickdir"] == "out"
+    plt.close(figure)

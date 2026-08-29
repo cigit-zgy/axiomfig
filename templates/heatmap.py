@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.figure import Figure
 
+from axiomfig.template_helpers import apply_axis_contract
+
 
 def build_heatmap() -> Figure:
     matrix = np.array(
@@ -21,6 +23,7 @@ def build_heatmap() -> Figure:
     image = axis.imshow(matrix, vmin=0.0, vmax=1.0, aspect="equal", rasterized=True)
     axis.set_xticks(range(4), labels)
     axis.set_yticks(range(4), labels)
+    apply_axis_contract(axis, surface="filled")
     for row in range(4):
         for column in range(4):
             color = "white" if matrix[row, column] < 0.5 else "black"

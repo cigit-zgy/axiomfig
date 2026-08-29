@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.figure import Figure
 
-from axiomfig.template_helpers import add_language_text
+from axiomfig.template_helpers import add_language_text, apply_axis_contract, place_legend_above
 
 
 def build_multilingual() -> Figure:
@@ -15,7 +15,8 @@ def build_multilingual() -> Figure:
     figure, axis = plt.subplots()
     axis.plot(x, efficiency, label="Model estimate")
     axis.set(xlabel="Time (h)", ylabel="Efficiency (-)", ylim=(0.4, 1.0))
-    axis.legend(loc="lower right")
+    apply_axis_contract(axis)
+    place_legend_above(axis)
 
     add_language_text(axis, 0.04, 0.92, "Nitrification efficiency", "en", transform=axis.transAxes)
     add_language_text(axis, 0.04, 0.82, "硝化效率", "zh", transform=axis.transAxes)

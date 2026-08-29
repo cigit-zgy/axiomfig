@@ -6,9 +6,8 @@ from pathlib import Path
 
 import matplotlib as mpl
 from matplotlib.axes import Axes
-from matplotlib.ticker import AutoMinorLocator
 
-from axiomfig.contracts import FILLED_TICK_PARAMS, OPEN_TICK_PARAMS
+from axiomfig.template_helpers import apply_axis_contract
 
 
 class StyleConflictError(ValueError):
@@ -62,12 +61,7 @@ def apply_tick_contract(axes: Axes, *, filled: bool) -> None:
     Linear axes receive one minor tick per major interval. Logarithmic axes
     retain Matplotlib's mathematically meaningful minor locator.
     """
-    policy = FILLED_TICK_PARAMS if filled else OPEN_TICK_PARAMS
-    for axis in (axes.xaxis, axes.yaxis):
-        if axis.get_scale() == "linear":
-            axis.set_minor_locator(AutoMinorLocator(2))
-    axes.tick_params(axis="both", which="major", direction=policy["major"])
-    axes.tick_params(axis="both", which="minor", direction=policy["minor"])
+    apply_axis_contract(axes, surface="filled" if filled else "open")
 
 
 def _layer_name(path: Path) -> str:
