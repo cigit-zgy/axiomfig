@@ -1,77 +1,178 @@
 # AxiomFig
 
-AxiomFig is a deterministic-first Agent Skill for publication-quality scientific figures. Scientific meaning stays in a small set of native Matplotlib builders; all reusable visual decisions come from three YAML contracts and thin helpers.
+AxiomFig is a deterministic scientific-figure system and Agent Skill for publication-oriented,
+mostly 2D graphics. An LLM supplies scientific intent, data mapping, template choice, and explicit
+scientific semantics; AxiomFig owns geometry, typography, colors, strokes, ticks, legends, panel
+layout, colorbars, PDF production, and validation.
 
-![Sans Mantel contract](gallery/sans/association/mantel.png)
+![Sans Mantel template](gallery/sans/association/mantel.png)
 
-![Serif correlation contract](gallery/serif/heatmap/correlation.png)
+![Serif correlation template](gallery/serif/heatmap/correlation.png)
 
-## Architecture
+## Why deterministic-first
+
+Visual properties that can be derived consistently should not consume Agent tokens or become
+one-off Matplotlib decisions. The v1 execution path is:
 
 ```text
-templates/index.yaml -> family contract -> explicit builder ─┐
-styles/style.yaml ───────────────────────────────────────────┤
-styles/fonts.yaml ───────────────────────────────────────────┼-> deterministic runtime
-styles/colors.yaml ──────────────────────────────────────────┘  -> validated PDF + PNG
+scientific request
+  -> minimal Figure Intent
+  -> Template Knowledge route when selection is unclear
+  -> compact Template Registry + one family contract
+  -> canonical builder
+  -> deterministic style/layout/rendering runtime
+  -> runtime validator
+  -> publication-size PDF + PNG preview
 ```
 
-The three canonical sources have exclusive responsibilities:
+`styles/style.yaml`, `styles/fonts.yaml`, and `styles/colors.yaml` are the only visual configuration
+sources. Templates own plot grammar and scientific roles, not font size, stroke, spacing, palette
+values, or ornament coordinates. The implementation follows explicit Figure/Axes/Artist ownership,
+physical units, constrained layout, semantic color, coherent typography, and vector-first QA.
 
-- `style.yaml`: geometry, physical font sizes, strokes, ticks, nice axes, legends, panels, plot defaults, and rendering;
-- `fonts.yaml`: exact Latin/math/mono families, files, sources, licenses, redistribution status, and optional system fonts;
-- `colors.yaml`: canonical scientific palettes.
+## Installation
 
-There are no `.mplstyle` layers. Thirty-three public templates are organized into nine scientific families; four registered layout capabilities remain separate from plot taxonomy. The small [registry](src/axiomfig/templates/index.yaml) drives discovery and Gallery generation. See the [template contract](references/template-contract.md) and [taxonomy](references/template-taxonomy.md).
-
-Runtime LaTeX files and redistributable fonts/licenses live only under `src/axiomfig/resources/` and remain available through `importlib.resources` after wheel installation.
-
-## Quick start
-
-Requirements are Python 3.11+, Tectonic, Poppler, PyYAML, and the exact fonts selected by the typography contract.
+Python 3.11+ is required. Formal PDF output additionally needs Tectonic and Poppler.
 
 ```bash
 brew install tectonic poppler
-python -m pip install -e .
-
-python scripts/check_fonts.py
-python scripts/render.py line/single --output "$PWD/tmp/demo/line-single" \
-  --geometry single-column --typography sans
-python scripts/validate.py tmp/demo
+python -m pip install .
 ```
 
-Installed commands are `axiomfig-render`, `axiomfig-validate`, and `axiomfig-gallery`.
+For development:
 
-## Frozen visual contract
+```bash
+python -m pip install -e ".[dev]"
+```
 
-- Physical widths are 90, 140, and 190 mm at default 4:3; point sizes do not scale with width.
-- `main_stroke = 0.8 pt`; black filled-geometry edges use `fill_edge = 0.6 pt`.
-- Open continuous axes use major `inout`, minor `in`, and one minor per major interval. The minor is `1.854 pt`; the major parameter is derived from the measured `inout` projection and φ ratio. Filled surfaces/colorbars reuse these lengths with `out`; categorical axes keep labels but no tick marks.
-- Nice linear axes target 5–7 majors with steps limited to `1`, `2`, `2.5`, or `5 × 10^n`, half-step minors, and snapped limits.
-- Single-series figures omit legends. Multi-series legends are Figure-level Ornaments with explicit zero border padding, a physical top gap, measured `N..1` columns, and collision/boundary validation.
-- Panel labels are bold `(a)`, `(b)`, … at `11 pt`, anchored `-1/+1 pt` from the Primary Axes frame upper-left. Their gutter remains inside equal registered Outer Panel Footprints. A colorbar is contained Auxiliary Axes and never expands its footprint or compresses a peer panel.
-- Filled geometry stores transparency only in face RGBA; black `0.6 pt` edges remain opaque. Scatter uses face alpha `0.55` and `36 pt²` markers. Bars use exact width `0.60`, or total group width `0.76`, and show two-decimal values.
-- Multi-series identity redundantly cycles color, line style, and marker. The first four line styles are solid, dash-dot, dotted, and long-dash; reference lines default to dash-dot.
-- Registered grids use a one-measurement physical layout solve and runtime anatomy validation. Single panels retain the fixed-page output solver; both preserve 90/140/190 mm geometry and the canonical `1.5 pt` output padding.
-- `sans` uses bundled Latin Modern Sans for text and Matplotlib math; `serif` uses bundled XCharter + XCharter Math; both use bundled Maple Mono. CJK/Japanese work is deferred.
+The wheel bundles redistributable Latin/math/mono fonts and license notices, LaTeX resources,
+styles, template contracts, the Knowledge index, and the Evaluation corpus. It does not require the
+repository root after installation.
 
-See [SKILL.md](SKILL.md), [the style contract](references/style-contract.md), [typography](references/typography.md), [layout](references/layout-contract.md), [validation](references/validation-contract.md), and [the template contract](references/template-contract.md).
+## Quick start with Figure Intent
 
-## LaTeX boundary
+Figure Intent maps scientific roles to CSV columns or JSON keys and omits derivable visual values:
 
-[The LaTeX contract](references/latex-contract.md) records exact allowed syntax for `siunitx`, `mhchem`, `amsmath`, `unicode-math`, and `xcolor`. `gallery/technical/latex/` contains two genuinely Tectonic-native references. The Matplotlib renderer still embeds plot text before Tectonic wraps the intermediate PDF, so TeX-native macro expansion inside Matplotlib labels remains **DEFERRED**.
+```yaml
+template: scatter.parity
+data:
+  observed: observed
+  predicted: predicted
+geometry: single-column
+typography: sans
+```
 
-## Gallery and validation
+```bash
+axiomfig-intent examples/parity-intent.yaml \
+  --data examples/parity-data.csv \
+  --output output/parity
+```
 
-The committed English-only Gallery is an exact projection of the public registry. `gallery/sans/` and `gallery/serif/` each contain 33 family-organized PDF/PNG pairs; `gallery/technical/latex/` adds two Tectonic-native pairs. The total is 68 pairs and 136 final artifacts, with no numeric flat filenames or layout examples presented as plot types.
+This produces and validates `output/parity.pdf` and `output/parity.png`. See the
+[Figure Intent contract](references/figure-intent.md). Twelve representative v1 templates accept
+external mapped data. Every public template can render a deterministic canonical example; an
+unadapted data-bearing request fails explicitly rather than ignoring data.
+
+```bash
+axiomfig-render association/mantel --output output/mantel \
+  --geometry onehalf-column --typography serif
+axiomfig-validate output
+```
+
+Installed commands are `axiomfig-intent`, `axiomfig-render`, `axiomfig-validate`, and
+`axiomfig-gallery`.
+
+## Template system
+
+The compact [registry](src/axiomfig/templates/index.yaml) exposes 55 public variants across 13
+families:
+
+| Family | Count | Scope |
+|---|---:|---|
+| line | 7 | trends, markers, bands, error bars, steps, areas |
+| scatter | 6 | simple/grouped relationships, regression, parity, bubbles, hexbin |
+| bar | 6 | vertical/horizontal, grouped/stacked/normalized, dot |
+| distribution | 8 | histogram, density, ECDF, box, violin, strip, raincloud |
+| heatmap | 5 | basic, annotated, correlation, preordered cluster, confusion matrix |
+| estimation | 3 | point intervals, forest, coefficients |
+| diagnostics | 8 | residual, QQ, agreement, calibration, ROC/PR, learning, importance |
+| ordination | 4 | PCA scores/biplot, PCoA, NMDS for precomputed coordinates |
+| association | 2 | Mantel and sparse correlation network |
+| flow | 1 | dependency-free Sankey |
+| field | 2 | contour and quiver |
+| omics | 2 | volcano and enrichment dot |
+| survival | 1 | Kaplan–Meier with censoring |
+
+Four registered `layouts` capabilities are composition tools, not plot families. Registry,
+contracts, explicit builder maps, and Gallery coverage must agree exactly. Read the
+[template contract](references/template-contract.md), [taxonomy](references/template-taxonomy.md),
+and [journal-informed census](references/journal-plot-taxonomy.md).
+
+## Progressive disclosure for Agents
+
+[`SKILL.md`](SKILL.md) is the routing entry point. A normal request reads the Skill, the 90-line
+registry, and one selected family contract. If the plot choice is unclear, the Agent reads the
+15-line [Knowledge index](references/template-knowledge/index.yaml) and only its routed topic.
+Builder source and the entire Knowledge Base are not normal prompt context.
+
+Current approximate prompt-side sizes are measured by the Evaluation suite: Skill 3,858 bytes,
+Registry 2,895 bytes, selected scatter contract 509 bytes, and representative Figure Intent 75
+bytes. The combined byte/4 estimate is about 1,835 tokens.
+
+## Deterministic visual contract
+
+- widths are 90, 140, and 190 mm at default 4:3; physical point sizes do not scale;
+- `main_stroke = 0.8 pt`; filled geometry uses an opaque black `fill_edge = 0.6 pt`;
+- open continuous axes use major `inout`, minor `in`, one half-step minor, and deterministic nice
+  limits; filled surfaces use outward ticks and categorical marks are suppressed;
+- single-series legends are omitted; multi-series legends are measured outside top-right ornaments;
+- equal Outer Panel Footprints own Primary/Auxiliary Axes; colorbars remain contained;
+- bold 11 pt panel labels anchor `-1/+1 pt` from the Primary Axes frame upper-left;
+- qualitative, sequential, diverging, and cyclic colormap semantics come from `colors.yaml`;
+- PDF is the formal output; PNG is rasterized from that PDF.
+
+## Gallery, validation, and evaluation
+
+Gallery is generated only from the public registry. `gallery/sans/` and `gallery/serif/` each
+contain 55 PDF/PNG pairs with identical family trees; `gallery/technical/latex/` contains two
+Tectonic-native pairs. There are 112 pairs and 224 final artifacts, with no numeric flat names or
+orphan examples.
+
+Runtime validation covers anatomy and ownership, unequal panels, clipping and overflow, colorbar
+containment, legend/panel-label/annotation collisions, physical PDF geometry, embedded subset fonts,
+Type 3 rejection, and text page boundaries. The deterministic Evaluation corpus contains 24
+scientific requests spanning 14 intent categories and checks routing, Figure Intent, render success,
+repeatability, prompt-side size, and mixed-panel composition.
 
 ```bash
 python scripts/generate_colors.py --check
 python scripts/check_fonts.py
-python scripts/build_gallery.py
-python scripts/validate.py gallery
+python scripts/check_latex.py
+python scripts/validate_skill.py
 python -m pytest -q
 ruff check .
 ruff format --check .
 ```
 
-Tests cover deterministic normal, boundary, and overflow/error behavior. The real-PDF E2E covers the canonical registry projection and rejects missing/orphan artifacts. Completion still requires human inspection of final PNGs for strokes, ticks, categorical axes, marker/bar/violin edges, labels, legends, panel symmetry, colorbar layout, clipping, and sans/serif consistency.
+## Typography and LaTeX boundary
+
+`sans` uses bundled Latin Modern Sans; `serif` uses bundled XCharter and XCharter Math; both use
+bundled Maple Mono. Arial, Times New Roman, SimSun, and Yu Gothic remain optional system-font
+metadata with `bundled: false`. Matplotlib embeds plot text before the separate Tectonic wrapper;
+only `gallery/technical/latex/` is genuinely TeX-native. See [typography](references/typography.md)
+and the exact [LaTeX contract](references/latex-contract.md).
+
+## v1 limitations
+
+Full CJK/Japanese typography, TeX-native Matplotlib labels, arbitrary external-data adapters for all
+55 variants, animation, interactive dashboards, a large 3D suite, microscopy/image processing,
+chemical structure drawing, and GIS are outside v1. Statistical calculations such as Mantel,
+ordination, adjusted p-values, confidence intervals, and survival estimates remain separate from
+visualization and must be supplied explicitly.
+
+## Development and release readiness
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md). Fast CI runs install, Ruff,
+non-E2E tests, Skill validation, deterministic routing evaluation, and a headless render on Python
+3.11/3.12. Local release validation additionally requires Tectonic/Poppler, full Gallery E2E, font
+and LaTeX probes, isolated wheel installation, fresh-clone workflow tests, and final visual review.

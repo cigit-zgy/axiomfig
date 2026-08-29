@@ -42,13 +42,12 @@ def test_release_support_files_exist_and_no_production_local_paths() -> None:
 
     production = [ROOT / "src", ROOT / "scripts", ROOT / "README.md", ROOT / "SKILL.md"]
     matches = []
+    local_prefix = "/Users/" + "wenv/"
     for target in production:
         paths = target.rglob("*") if target.is_dir() else (target,)
         for path in paths:
             if path.suffix not in {".py", ".md", ".yaml", ".yml", ".toml", ".sh"}:
                 continue
-            if path.is_file() and "/Users/wenv/" in path.read_text(
-                encoding="utf-8", errors="ignore"
-            ):
+            if path.is_file() and local_prefix in path.read_text(encoding="utf-8", errors="ignore"):
                 matches.append(path)
     assert not matches

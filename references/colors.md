@@ -2,6 +2,11 @@
 
 `styles/colors.yaml` is the only maintained palette source. `axiomfig.colors.palettes()` returns its validated mappings, and `render_xcolor()` generates both repository/package LaTeX color files. Do not maintain RGB lists in Python, templates, `.mplstyle`, or prose.
 
+The same source owns semantic Matplotlib colormaps: qualitative `tab10`, sequential `cividis`,
+diverging `RdBu_r`, and cyclic `twilight`. Templates request the scientific semantic role through
+`semantic_colormap()` and never hard-code a map name. Diverging data still requires an explicit
+meaningful center; a colormap token does not infer scientific meaning.
+
 The canonical palette set is:
 
 - `tol_bright` and `tol_muted`: exact qualitative schemes published by Paul Tol;
