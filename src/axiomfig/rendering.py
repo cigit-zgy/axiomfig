@@ -31,6 +31,7 @@ def standalone_tex(intermediate_name: str) -> str:
     return (
         "\\documentclass[border=0pt]{standalone}\n"
         "\\usepackage{graphicx}\n"
+        "% Figure text is already embedded; package macros are not expanded here.\n"
         "\\begin{document}\n"
         f"\\includegraphics{{{intermediate_name}}}\n"
         "\\end{document}\n"
