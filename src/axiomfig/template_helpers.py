@@ -142,7 +142,15 @@ def add_language_text(
     mode: str = "sans",
     **kwargs: object,
 ) -> None:
-    axis.text(x, y, text, fontproperties=font_for_language(language, mode=mode), **kwargs)
+    weight = kwargs.get("fontweight")
+    style = kwargs.get("fontstyle")
+    axis.text(
+        x,
+        y,
+        text,
+        fontproperties=font_for_language(language, mode=mode, weight=weight, style=style),
+        **kwargs,
+    )
 
 
 def close_secondary_spines(figure: Figure) -> Figure:

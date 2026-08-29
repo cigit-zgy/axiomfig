@@ -253,7 +253,35 @@ def discover_fonts(
 def _latin_variant_path(mode: str, weight: str | int | None, style: str | None) -> str:
     family = FONT_CONTRACTS[mode]["latin"]
     spec = FONT_SPECS[family]
-    is_bold = weight in {"bold", "heavy", "black", 700, 800, 900}
+    normalized_weight = str(weight).lower().replace("-", "").replace(" ", "")
+    regular_weights = {"none", "normal", "regular", "book", "400"}
+    bold_weights = {
+        "bold",
+        "semibold",
+        "demibold",
+        "demi",
+        "extrabold",
+        "ultrabold",
+        "heavy",
+        "black",
+    }
+    if isinstance(weight, int):
+        if weight == 400:
+            is_bold = False
+        elif weight >= 600:
+            is_bold = True
+        else:
+            raise FontContractError(
+                f"Unsupported Latin weight {weight!r}; no exact variant file is available"
+            )
+    elif normalized_weight in regular_weights:
+        is_bold = False
+    elif normalized_weight in bold_weights:
+        is_bold = True
+    else:
+        raise FontContractError(
+            f"Unsupported Latin weight {weight!r}; no exact variant file is available"
+        )
     is_italic = style in {"italic", "oblique"}
     suffix = {
         (False, False): "regular",
@@ -290,7 +318,7 @@ def font_for_language(
     if language == "en":
         return font_manager.FontProperties(fname=_latin_variant_path(mode, weight, style))
     font = discover_fonts(mode=mode)[role]
-    if weight not in {None, "normal", 400} or style not in {None, "normal"}:
+    if weight not in {None, "normal", "regular", 400} or style not in {None, "normal"}:
         raise FontContractError(
             f"Exact {language} bold/italic variant is unavailable; refusing regular fallback"
         )

@@ -4,6 +4,7 @@ import matplotlib as mpl
 import pytest
 
 from axiomfig import typography
+from axiomfig.template_helpers import add_language_text
 from axiomfig.typography import FontContractError, discover_fonts, font_for_language
 
 
@@ -87,3 +88,20 @@ def test_language_font_mapping_uses_the_selected_mode(
     mode: str, language: str, expected: str
 ) -> None:
     assert font_for_language(language, mode=mode).get_name() == expected
+
+
+@pytest.mark.parametrize("weight", ["light", "medium", 500])
+def test_latin_weights_without_an_exact_file_hard_fail(weight: str | int) -> None:
+    with pytest.raises(FontContractError, match="Unsupported Latin weight"):
+        font_for_language("en", weight=weight)
+
+
+@pytest.mark.parametrize("mode", ["sans", "serif"])
+@pytest.mark.parametrize("language", ["zh", "ja"])
+def test_explicit_cjk_helper_rejects_nonregular_weight(mode: str, language: str) -> None:
+    import matplotlib.pyplot as plt
+
+    figure, axis = plt.subplots()
+    with pytest.raises(FontContractError, match="refusing regular fallback"):
+        add_language_text(axis, 0.5, 0.5, "硝化效率", language, mode=mode, fontweight="bold")
+    plt.close(figure)
