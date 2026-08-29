@@ -1,5 +1,0 @@
-pdf.fonttype: 42
-ps.fonttype: 42
-savefig.format: pdf
-savefig.dpi: 300
-savefig.transparent: False

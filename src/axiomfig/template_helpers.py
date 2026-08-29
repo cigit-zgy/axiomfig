@@ -6,122 +6,143 @@ from typing import Literal
 import matplotlib as mpl
 from matplotlib.axes import Axes
 from matplotlib.collections import PathCollection
+from matplotlib.colorbar import Colorbar
 from matplotlib.container import BarContainer
 from matplotlib.figure import Figure
 from matplotlib.legend import Legend
-from matplotlib.ticker import AutoMinorLocator
+from matplotlib.ticker import AutoMinorLocator, MultipleLocator
 from matplotlib.transforms import ScaledTranslation
 
-from axiomfig.contracts import FILLED_TICK_PARAMS, OPEN_TICK_PARAMS, STROKE_WIDTH_PT
-from axiomfig.typography import apply_figure_typography, font_for_language
+from axiomfig.config import load_contracts
+from axiomfig.contracts import FILL_EDGE_PT, MAIN_STROKE_PT, nice_linear_axis
+from axiomfig.typography import font_for_language
 
 PANEL_LABEL_GID = "axiomfig-panel-label"
 
 
-def apply_axis_contract(axis: Axes, surface: Literal["open", "filled"] = "open") -> None:
-    """Apply deterministic ticks for an open or filled plotting surface."""
-    try:
-        policy = {"open": OPEN_TICK_PARAMS, "filled": FILLED_TICK_PARAMS}[surface]
-    except KeyError as exc:
-        raise ValueError("surface must be 'open' or 'filled'") from exc
+def apply_single_panel_layout(figure: Figure) -> None:
+    margins = load_contracts().style["layout"]["single_panel"]["margins"]
+    figure.subplots_adjust(**{key: float(value) for key, value in margins.items()})
 
+
+def apply_axis_contract(axis: Axes, surface: Literal["open", "filled"] = "open") -> None:
+    contracts = load_contracts()
+    if surface not in {"open", "filled"}:
+        raise ValueError("surface must be 'open' or 'filled'")
+    policy = contracts.style["ticks"][surface]
     for coordinate_axis in (axis.xaxis, axis.yaxis):
         if coordinate_axis.get_scale() == "linear":
             coordinate_axis.set_minor_locator(AutoMinorLocator(2))
-    axis.tick_params(axis="both", which="major", direction=policy["major"])
-    axis.tick_params(axis="both", which="minor", direction=policy["minor"])
+    axis.tick_params(
+        axis="both",
+        which="major",
+        direction=str(policy["major"]["direction"]),
+        length=float(policy["major"]["length_pt"]),
+        width=MAIN_STROKE_PT,
+        top=False,
+        right=False,
+        labeltop=False,
+        labelright=False,
+    )
+    axis.tick_params(
+        axis="both",
+        which="minor",
+        direction=str(policy["minor"]["direction"]),
+        length=float(policy["minor"]["length_pt"]),
+        width=MAIN_STROKE_PT,
+        top=False,
+        right=False,
+    )
 
 
-def add_panel_labels(
-    axes: Iterable[Axes], gap_pt: float = 2.0, mode: Literal["sans", "serif"] | None = None
+def apply_categorical_axis(axis: Axes, coordinate: Literal["x", "y"] = "x") -> None:
+    axis.tick_params(axis=coordinate, which="both", length=0.0)
+
+
+def apply_colorbar_contract(colorbar: Colorbar) -> None:
+    policy = load_contracts().style["ticks"]["filled"]
+    axis = colorbar.ax
+    if colorbar.orientation == "vertical":
+        axis.yaxis.set_minor_locator(AutoMinorLocator(2))
+        axis.tick_params(
+            axis="y",
+            which="major",
+            direction=str(policy["major"]["direction"]),
+            length=float(policy["major"]["length_pt"]),
+            width=MAIN_STROKE_PT,
+            left=False,
+            right=True,
+            labelleft=False,
+            labelright=True,
+        )
+        axis.tick_params(
+            axis="y",
+            which="minor",
+            direction=str(policy["minor"]["direction"]),
+            length=float(policy["minor"]["length_pt"]),
+            width=MAIN_STROKE_PT,
+            left=False,
+            right=True,
+        )
+    else:
+        axis.xaxis.set_minor_locator(AutoMinorLocator(2))
+        axis.tick_params(
+            axis="x",
+            which="major",
+            direction=str(policy["major"]["direction"]),
+            length=float(policy["major"]["length_pt"]),
+            width=MAIN_STROKE_PT,
+            bottom=True,
+            top=False,
+            labelbottom=True,
+            labeltop=False,
+        )
+        axis.tick_params(
+            axis="x",
+            which="minor",
+            direction=str(policy["minor"]["direction"]),
+            length=float(policy["minor"]["length_pt"]),
+            width=MAIN_STROKE_PT,
+            bottom=True,
+            top=False,
+        )
+
+
+def apply_nice_linear_axis(
+    axis: Axes, data_min: float, data_max: float, *, coordinate: Literal["x", "y"] = "x"
 ) -> None:
-    """Place sequential panel labels at a uniform physical offset above each axes."""
+    result = nice_linear_axis(data_min, data_max)
+    coordinate_axis = axis.xaxis if coordinate == "x" else axis.yaxis
+    if coordinate_axis.get_scale() != "linear":
+        return
+    coordinate_axis.set_major_locator(MultipleLocator(result.major_step))
+    coordinate_axis.set_minor_locator(MultipleLocator(result.minor_step))
+    (axis.set_xlim if coordinate == "x" else axis.set_ylim)(result.lower, result.upper)
+
+
+def add_panel_labels(axes: Iterable[Axes]) -> None:
+    contract = load_contracts().style["panel"]
     for index, axis in enumerate(axes):
-        offset = ScaledTranslation(0.0, gap_pt / 72.0, axis.figure.dpi_scale_trans)
-        transform = axis.transAxes + offset
+        offset = ScaledTranslation(
+            float(contract["left_offset_pt"]) / 72.0,
+            float(contract["top_offset_pt"]) / 72.0,
+            axis.figure.dpi_scale_trans,
+        )
         label = axis.text(
             0.0,
             1.0,
-            f"({chr(ord('a') + index)})",
-            transform=transform,
+            str(contract["format"]).format(letter=chr(ord("a") + index)),
+            transform=axis.transAxes + offset,
             ha="left",
             va="bottom",
-            fontweight="bold",
+            fontsize=float(contract["font_size_pt"]),
+            fontweight=str(contract["font_weight"]),
             clip_on=False,
         )
         label.set_gid(PANEL_LABEL_GID)
-        apply_figure_typography(axis.figure, mode=_layout_typography_mode(mode))
-        legend = axis.get_legend()
-        if legend is not None:
-            axis.figure.canvas.draw()
-            if _legend_overlaps_panel_label(axis, legend):
-                raise ValueError(
-                    "legend cannot fit above the axes without overlapping a panel label"
-                )
 
 
-def place_legend_above(
-    axis: Axes, gap_pt: float = 2.0, mode: Literal["sans", "serif"] | None = None
-) -> Legend | None:
-    """Place a frameless legend above an axes, measured before choosing its columns."""
-    handles, labels = axis.get_legend_handles_labels()
-    if not handles:
-        return None
-
-    figure = axis.figure
-    typography_mode = _layout_typography_mode(mode)
-    apply_figure_typography(figure, mode=typography_mode)
-    figure.canvas.draw()
-    transform = axis.transAxes + ScaledTranslation(0.0, gap_pt / 72.0, figure.dpi_scale_trans)
-    legend: Legend | None = None
-    fits_without_collision = False
-    for ncol in range(len(handles), 0, -1):
-        legend = axis.legend(
-            handles,
-            labels,
-            ncol=ncol,
-            loc="lower right",
-            bbox_to_anchor=(1.0, 1.0),
-            bbox_transform=transform,
-            frameon=False,
-            borderaxespad=0.0,
-        )
-        apply_figure_typography(figure, mode=typography_mode)
-        figure.canvas.draw()
-        if legend.get_window_extent(
-            figure.canvas.get_renderer()
-        ).width <= axis.bbox.width and not _legend_overlaps_panel_label(axis, legend):
-            fits_without_collision = True
-            break
-    if legend is None:  # pragma: no cover - non-empty handles always enter the loop.
-        raise RuntimeError("legend creation did not produce a legend")
-    if not fits_without_collision:
-        raise ValueError("legend cannot fit above the axes without overlapping a panel label")
-    legend_bbox = legend.get_window_extent(figure.canvas.get_renderer())
-    overflow = legend_bbox.y1 - figure.bbox.y1
-    if overflow > 0:
-        top = figure.subplotpars.top - overflow / figure.bbox.height
-        if top <= figure.subplotpars.bottom:
-            raise ValueError("legend cannot fit above the axes within the figure bounds")
-        figure.subplots_adjust(top=top)
-        figure.canvas.draw()
-    final_bbox = legend.get_window_extent(figure.canvas.get_renderer())
-    tolerance = 1e-6
-    exceeds_axes_width = final_bbox.width > axis.bbox.width + tolerance
-    exceeds_figure = (
-        final_bbox.x0 < figure.bbox.x0 - tolerance
-        or final_bbox.x1 > figure.bbox.x1 + tolerance
-        or final_bbox.y0 < figure.bbox.y0 - tolerance
-        or final_bbox.y1 > figure.bbox.y1 + tolerance
-    )
-    if exceeds_axes_width or exceeds_figure:
-        raise ValueError("legend cannot fit above the axes within the figure bounds")
-    if _legend_overlaps_panel_label(axis, legend):
-        raise ValueError("legend cannot fit above the axes without overlapping a panel label")
-    return legend
-
-
-def _legend_overlaps_panel_label(axis: Axes, legend: Legend) -> bool:
+def _panel_collision(axis: Axes, legend: Legend) -> bool:
     renderer = axis.figure.canvas.get_renderer()
     legend_bbox = legend.get_window_extent(renderer)
     return any(
@@ -131,11 +152,65 @@ def _legend_overlaps_panel_label(axis: Axes, legend: Legend) -> bool:
     )
 
 
-def _layout_typography_mode(mode: Literal["sans", "serif"] | None) -> Literal["sans", "serif"]:
-    if mode is not None:
-        return mode
-    family = mpl.rcParams["font.family"]
-    return "serif" if "serif" in family else "sans"
+def place_legend_above(axis: Axes) -> Legend | None:
+    handles, labels = axis.get_legend_handles_labels()
+    existing = axis.get_legend()
+    if len(handles) <= 1:
+        if existing is not None:
+            existing.remove()
+        return None
+
+    contract = load_contracts().style["legend"]
+    figure = axis.figure
+    figure.canvas.draw()
+    transform = axis.transAxes + ScaledTranslation(
+        0.0, float(contract["gap_pt"]) / 72.0, figure.dpi_scale_trans
+    )
+    legend: Legend | None = None
+    tolerance = 0.5
+    for ncol in range(len(handles), 0, -1):
+        legend = axis.legend(
+            handles,
+            labels,
+            ncol=ncol,
+            loc="lower right",
+            bbox_to_anchor=(1.0, 1.0),
+            bbox_transform=transform,
+            frameon=False,
+            handlelength=float(contract["handlelength"]),
+            borderaxespad=0.0,
+        )
+        figure.canvas.draw()
+        bbox = legend.get_window_extent(figure.canvas.get_renderer())
+        if bbox.width <= axis.bbox.width + tolerance and not _panel_collision(axis, legend):
+            break
+    else:  # pragma: no cover - the loop always has at least one candidate.
+        legend = None
+    if legend is None:
+        raise ValueError("legend cannot fit above the axes")
+    bbox = legend.get_window_extent(figure.canvas.get_renderer())
+    if bbox.width > axis.bbox.width + tolerance:
+        legend.remove()
+        raise ValueError("legend cannot fit above the axes")
+
+    overflow = bbox.y1 - figure.bbox.y1
+    if overflow > 0:
+        top = figure.subplotpars.top - overflow / figure.bbox.height
+        if top <= figure.subplotpars.bottom:
+            legend.remove()
+            raise ValueError("legend cannot fit above the axes")
+        figure.subplots_adjust(top=top)
+        figure.canvas.draw()
+    bbox = legend.get_window_extent(figure.canvas.get_renderer())
+    if (
+        bbox.x0 < figure.bbox.x0 - tolerance
+        or bbox.x1 > figure.bbox.x1 + tolerance
+        or bbox.y1 > figure.bbox.y1 + tolerance
+        or _panel_collision(axis, legend)
+    ):
+        legend.remove()
+        raise ValueError("legend cannot fit above the axes")
+    return legend
 
 
 def _reserve_bar_label_headroom(axis: Axes, containers: list[BarContainer]) -> None:
@@ -143,38 +218,45 @@ def _reserve_bar_label_headroom(axis: Axes, containers: list[BarContainer]) -> N
     if not patches:
         return
     orientation = containers[0].orientation
-    if orientation == "horizontal":
-        endpoints = [patch.get_x() + patch.get_width() for patch in patches]
-        lower, upper = axis.get_xlim()
-        span = max(abs(upper - lower), max(abs(value) for value in endpoints), 1.0)
-        padding = span * 0.05
-        axis.set_xlim(min(lower, min(endpoints) - padding), max(upper, max(endpoints) + padding))
-    else:
-        endpoints = [patch.get_y() + patch.get_height() for patch in patches]
-        lower, upper = axis.get_ylim()
-        span = max(abs(upper - lower), max(abs(value) for value in endpoints), 1.0)
-        padding = span * 0.05
-        axis.set_ylim(min(lower, min(endpoints) - padding), max(upper, max(endpoints) + padding))
+    endpoints = (
+        [patch.get_x() + patch.get_width() for patch in patches]
+        if orientation == "horizontal"
+        else [patch.get_y() + patch.get_height() for patch in patches]
+    )
+    lower, upper = axis.get_xlim() if orientation == "horizontal" else axis.get_ylim()
+    span = max(abs(upper - lower), max(abs(value) for value in endpoints), 1.0)
+    padded = (min(lower, min(endpoints) - span * 0.05), max(upper, max(endpoints) + span * 0.05))
+    (axis.set_xlim if orientation == "horizontal" else axis.set_ylim)(*padded)
 
 
 def add_bar_value_labels(axis: Axes, containers: Iterable[BarContainer], decimals: int = 2) -> None:
-    """Style bars and add fixed-precision, padded value labels with headroom."""
     if decimals < 0:
         raise ValueError("decimals must be non-negative")
-    bar_containers = list(containers)
-    _reserve_bar_label_headroom(axis, bar_containers)
-    for container in bar_containers:
+    selected = list(containers)
+    _reserve_bar_label_headroom(axis, selected)
+    for container in selected:
         for patch in container.patches:
             patch.set_edgecolor("black")
-            patch.set_linewidth(STROKE_WIDTH_PT)
-        labels = [f"{value:.{decimals}f}" for value in container.datavalues]
-        axis.bar_label(container, labels=labels, padding=2.0)
+            patch.set_linewidth(FILL_EDGE_PT)
+        axis.bar_label(
+            container,
+            labels=[f"{value:.{decimals}f}" for value in container.datavalues],
+            padding=2.0,
+        )
 
 
 def apply_scatter_contract(collection: PathCollection) -> None:
-    """Give scatter markers the shared black, 0.6 pt edge treatment."""
-    collection.set_edgecolor("black")
-    collection.set_linewidth(STROKE_WIDTH_PT)
+    contract = load_contracts().style["plots"]["scatter"]
+    collection.set_edgecolor(str(contract["edge_color"]))
+    collection.set_linewidth(FILL_EDGE_PT)
+    collection.set_alpha(float(contract["alpha"]))
+    collection.set_sizes([float(contract["marker_size_pt2"])])
+
+
+def apply_violin_contract(parts: dict[str, object]) -> None:
+    for body in parts["bodies"]:  # type: ignore[index]
+        body.set_edgecolor("black")
+        body.set_linewidth(FILL_EDGE_PT)
 
 
 def add_language_text(
@@ -186,31 +268,20 @@ def add_language_text(
     mode: str = "sans",
     **kwargs: object,
 ) -> None:
-    text_kwargs = dict(kwargs)
-    weight = _resolve_text_alias(text_kwargs, "weight", "fontweight")
-    style = _resolve_text_alias(text_kwargs, "style", "fontstyle")
-    artist = axis.text(
+    axis.text(
         x,
         y,
         text,
-        fontproperties=font_for_language(language, mode=mode, weight=weight, style=style),
-        **text_kwargs,
+        fontproperties=font_for_language(language, mode=mode),
+        **kwargs,
     )
-    artist._axiomfig_typography_role = language
-    return artist
 
 
-def _resolve_text_alias(kwargs: dict[str, object], short: str, long: str) -> object | None:
-    short_value = kwargs.pop(short, None)
-    long_value = kwargs.pop(long, None)
-    if short_value is not None and long_value is not None and short_value != long_value:
-        raise ValueError(
-            f"Conflicting text aliases: {short}={short_value!r}, {long}={long_value!r}"
-        )
-    return short_value if short_value is not None else long_value
+def apply_contract_context(
+    *, geometry: str = "single-column", typography: str = "sans"
+) -> mpl.rc_context:
+    from axiomfig.config import build_rcparams
 
-
-def close_secondary_spines(figure: Figure) -> Figure:
-    for axis in figure.axes:
-        axis.tick_params(which="both", top=True, right=True)
-    return figure
+    return mpl.rc_context(
+        rc=build_rcparams(load_contracts(), geometry=geometry, typography=typography)
+    )

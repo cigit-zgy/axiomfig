@@ -1,3 +1,0 @@
-# The selected typography module owns the complete family. Templates select
-# SC and JP explicitly for regional glyphs, never by fallback order.
-font.stretch: normal

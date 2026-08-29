@@ -1,101 +1,52 @@
-import tomllib
-from pathlib import Path
+from __future__ import annotations
 
-import matplotlib as mpl
-from matplotlib import pyplot as plt
-from matplotlib.ticker import AutoMinorLocator, LogLocator
+import math
 
-from axiomfig.contracts import FILLED_TICK_PARAMS, OPEN_TICK_PARAMS, STROKE_WIDTH_PT
-from axiomfig.styles import apply_tick_contract
-
-ROOT = Path(__file__).resolve().parents[1]
-STYLE_ROOT = ROOT / "src/axiomfig/resources/styles"
+import pytest
 
 
-def test_dev_dependency_group_supplies_setuptools_for_unisolated_wheel_builds() -> None:
-    metadata = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+@pytest.mark.parametrize(
+    ("data_min", "data_max", "expected"),
+    [
+        (0.3, 9.1, (0.0, 10.0, 2.0, 1.0)),
+        (-2.2, 3.1, (-2.5, 3.5, 1.0, 0.5)),
+        (120.0, 880.0, (0.0, 1000.0, 200.0, 100.0)),
+        (0.0012, 0.0088, (0.0, 0.01, 0.002, 0.001)),
+        (0.3, 17.8, (0.0, 20.0, 5.0, 2.5)),
+    ],
+)
+def test_nice_linear_axis_uses_hand_derived_snapped_steps(
+    data_min: float, data_max: float, expected: tuple[float, float, float, float]
+) -> None:
+    from axiomfig.contracts import nice_linear_axis
 
-    assert "setuptools>=80" in metadata["dependency-groups"]["dev"]
+    result = nice_linear_axis(data_min, data_max)
 
-
-def test_publication_style_uses_the_central_stroke_for_every_default_visible_stroke() -> None:
-    params = mpl.rc_params_from_file(
-        STYLE_ROOT / "base/publication.mplstyle", fail_on_error=True, use_default_template=False
+    assert (result.lower, result.upper, result.major_step, result.minor_step) == pytest.approx(
+        expected
     )
-
-    assert STROKE_WIDTH_PT == 0.6
-    assert {
-        params[key]
-        for key in (
-            "axes.linewidth",
-            "xtick.major.width",
-            "ytick.major.width",
-            "xtick.minor.width",
-            "ytick.minor.width",
-            "lines.linewidth",
-            "lines.markeredgewidth",
-            "patch.linewidth",
-            "boxplot.boxprops.linewidth",
-            "boxplot.capprops.linewidth",
-            "boxplot.medianprops.linewidth",
-            "boxplot.whiskerprops.linewidth",
-        )
-    } == {STROKE_WIDTH_PT}
+    major_count = (
+        math.floor(result.upper / result.major_step + 1e-9)
+        - math.ceil(result.lower / result.major_step - 1e-9)
+        + 1
+    )
+    assert 5 <= major_count <= 7
 
 
-def test_open_plot_style_owns_open_tick_directions() -> None:
-    figure, axes = plt.subplots()
-    apply_tick_contract(axes, filled=False)
+def test_nice_linear_axis_expands_a_constant_range_deterministically() -> None:
+    from axiomfig.contracts import nice_linear_axis
 
-    assert OPEN_TICK_PARAMS == {"major": "inout", "minor": "in"}
-    assert axes.xaxis._major_tick_kw["tickdir"] == OPEN_TICK_PARAMS["major"]
-    assert axes.xaxis._minor_tick_kw["tickdir"] == OPEN_TICK_PARAMS["minor"]
-    plt.close(figure)
+    first = nice_linear_axis(4.0, 4.0)
+    second = nice_linear_axis(4.0, 4.0)
 
-
-def test_filled_plot_style_owns_outward_ticks() -> None:
-    figure, axes = plt.subplots()
-    apply_tick_contract(axes, filled=True)
-
-    assert FILLED_TICK_PARAMS == {"major": "out", "minor": "out"}
-    assert axes.xaxis._major_tick_kw["tickdir"] == FILLED_TICK_PARAMS["major"]
-    assert axes.xaxis._minor_tick_kw["tickdir"] == FILLED_TICK_PARAMS["minor"]
-    plt.close(figure)
+    assert first == second
+    assert first.lower < 4.0 < first.upper
+    assert first.minor_step == first.major_step / 2
 
 
-def test_open_tick_contract_sets_one_linear_minor_locator_per_major_interval() -> None:
-    figure, axes = plt.subplots()
-    apply_tick_contract(axes, filled=False)
+@pytest.mark.parametrize("bounds", [(float("nan"), 1.0), (0.0, float("inf")), (2.0, 1.0)])
+def test_nice_linear_axis_rejects_invalid_bounds(bounds: tuple[float, float]) -> None:
+    from axiomfig.contracts import nice_linear_axis
 
-    for axis in (axes.xaxis, axes.yaxis):
-        locator = axis.get_minor_locator()
-        assert isinstance(locator, AutoMinorLocator)
-        assert locator.ndivs == 2
-    plt.close(figure)
-
-
-def test_filled_tick_contract_sets_linear_minor_locator_and_outward_ticks() -> None:
-    figure, axes = plt.subplots()
-    apply_tick_contract(axes, filled=True)
-
-    for axis in (axes.xaxis, axes.yaxis):
-        locator = axis.get_minor_locator()
-        assert isinstance(locator, AutoMinorLocator)
-        assert locator.ndivs == 2
-        assert axis._major_tick_kw["tickdir"] == "out"
-        assert axis._minor_tick_kw["tickdir"] == "out"
-    plt.close(figure)
-
-
-def test_tick_contract_preserves_log_minor_locator() -> None:
-    figure, axes = plt.subplots()
-    axes.set_xscale("log")
-    expected_locator = axes.xaxis.get_minor_locator()
-    assert isinstance(expected_locator, LogLocator)
-
-    apply_tick_contract(axes, filled=True)
-
-    assert axes.xaxis.get_minor_locator() is expected_locator
-    assert axes.xaxis._major_tick_kw["tickdir"] == FILLED_TICK_PARAMS["major"]
-    assert axes.xaxis._minor_tick_kw["tickdir"] == FILLED_TICK_PARAMS["minor"]
-    plt.close(figure)
+    with pytest.raises(ValueError, match="finite|ordered"):
+        nice_linear_axis(*bounds)

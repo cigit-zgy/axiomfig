@@ -1,4 +1,4 @@
-"""Generate AxiomFig color artifacts from the canonical Paul Tol source."""
+"""Generate the LaTeX xcolor artifact from canonical colors.yaml."""
 
 from __future__ import annotations
 
@@ -9,21 +9,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from axiomfig.colors import PALETTES, render_mplstyle, render_xcolor  # noqa: E402
+from axiomfig.colors import render_xcolor  # noqa: E402
 
 
 def artifacts() -> dict[Path, str]:
     """Return all generated color artifact paths and their expected contents."""
-    generated = {ROOT / "src/axiomfig/resources/latex/axiomfig-colors.tex": render_xcolor()}
-    generated.update(
-        {
-            ROOT / "src/axiomfig/resources/styles/colors" / f"{name}.mplstyle": render_mplstyle(
-                name
-            )
-            for name in PALETTES
-        }
-    )
-    return generated
+    return {ROOT / "src/axiomfig/resources/latex/axiomfig-colors.tex": render_xcolor()}
 
 
 def main() -> int:

@@ -186,10 +186,10 @@ def validate_gallery(
     expected_stems: Iterable[str] | None = None,
 ) -> list[GalleryEntry]:
     gallery = Path(gallery)
-    pdfs = sorted(gallery.glob("*.pdf"))
+    pdfs = sorted(gallery.rglob("*.pdf"))
     if expected_stems is not None:
         expected = {f"{stem}.pdf" for stem in expected_stems}
-        actual = {path.name for path in pdfs}
+        actual = {path.relative_to(gallery).as_posix() for path in pdfs}
         if actual != expected:
             raise ValidationError(
                 f"gallery PDF set mismatch; missing={sorted(expected - actual)}, "

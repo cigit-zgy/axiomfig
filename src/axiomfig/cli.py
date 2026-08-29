@@ -6,9 +6,9 @@ from pathlib import Path
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-from axiomfig.gallery import GALLERY_SPECS, build_gallery
+from axiomfig.config import build_rcparams, load_contracts
+from axiomfig.gallery import GALLERY_MODES, GALLERY_SPECS, build_gallery
 from axiomfig.rendering import render_figure
-from axiomfig.styles import StyleSelection, compose_styles, write_composed_style
 from axiomfig.templates import TEMPLATE_BUILDERS, build_template
 from axiomfig.typography import discover_fonts
 from axiomfig.validation import validate_gallery, validate_pair
@@ -17,31 +17,6 @@ from axiomfig.validation import validate_gallery, validate_pair
 def _selection_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--geometry", default="single-column")
     parser.add_argument("--typography", default="sans")
-    parser.add_argument("--colors", default="default")
-    parser.add_argument("--plot", default="line")
-    parser.add_argument("--language", default="multilingual")
-    parser.add_argument("--rendering", default="vector")
-
-
-def _selection(namespace: argparse.Namespace) -> StyleSelection:
-    return StyleSelection(
-        geometry=namespace.geometry,
-        typography=namespace.typography,
-        colors=namespace.colors,
-        plot=namespace.plot,
-        language=namespace.language,
-        rendering=namespace.rendering,
-    )
-
-
-def compose_main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Compose deterministic AxiomFig style modules")
-    _selection_arguments(parser)
-    parser.add_argument("--output", type=Path, required=True)
-    args = parser.parse_args(argv)
-    path = write_composed_style(_selection(args).paths(), args.output.expanduser().resolve())
-    print(path)
-    return 0
 
 
 def render_main(argv: list[str] | None = None) -> int:
@@ -55,11 +30,17 @@ def render_main(argv: list[str] | None = None) -> int:
     discover_fonts(mode=args.typography)
     output = args.output.expanduser().resolve()
     work_root = args.work_root.expanduser().resolve()
-    composed = compose_styles(_selection(args).paths())
-    with mpl.rc_context(rc=composed.params):
-        figure = build_template(args.template, typography=args.typography)
-        figure.set_size_inches(composed.params["figure.figsize"], forward=False)
-        result = render_figure(figure, output, work_root=work_root, typography=args.typography)
+    params = build_rcparams(load_contracts(), geometry=args.geometry, typography=args.typography)
+    with mpl.rc_context(rc=params):
+        figure = build_template(args.template)
+        figure.set_size_inches(params["figure.figsize"], forward=False)
+        result = render_figure(
+            figure,
+            output,
+            work_root=work_root,
+            typography=args.typography,
+            geometry=args.geometry,
+        )
         plt.close(figure)
     validate_pair(result.pdf, result.png, tectonic_log=result.log)
     print(result.pdf)
@@ -88,7 +69,7 @@ def gallery_main(argv: list[str] | None = None) -> int:
     gallery = args.gallery.expanduser().resolve()
     work_root = args.work_root.expanduser().resolve()
     results = build_gallery(gallery, work_root=work_root)
-    expected = [spec.stem for spec in GALLERY_SPECS]
+    expected = [f"{mode}/{spec.stem}" for mode in GALLERY_MODES for spec in GALLERY_SPECS]
     validate_gallery(gallery, expected_stems=expected)
     for result in results:
         print(f"PASS {result.pdf.name} + {result.png.name}")

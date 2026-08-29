@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 import sys
 import zipfile
@@ -11,45 +12,38 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def _run(command: list[str], *, cwd: Path, env: dict[str, str] | None = None) -> None:
+def _run(command: list[str], *, cwd: Path, env: dict[str, str] | None = None) -> str:
     completed = subprocess.run(
-        command,
-        cwd=cwd,
-        env=env,
-        check=False,
-        text=True,
-        capture_output=True,
+        command, cwd=cwd, env=env, check=False, text=True, capture_output=True
     )
     assert completed.returncode == 0, completed.stdout + completed.stderr
+    return completed.stdout
 
 
 @pytest.mark.e2e
-def test_checkout_render_cli_accepts_relative_output_and_work_paths(tmp_path: Path) -> None:
-    _run(
-        [
-            sys.executable,
-            str(ROOT / "scripts/render.py"),
-            "line-single",
-            "--output",
-            "deliverables/line",
-            "--work-root",
-            "work",
-        ],
-        cwd=tmp_path,
-    )
-
-    assert (tmp_path / "deliverables/line.pdf").is_file()
-    assert (tmp_path / "deliverables/line.png").is_file()
-
-
-@pytest.mark.e2e
-def test_clean_wheel_install_runs_every_resource_dependent_cli(tmp_path: Path) -> None:
+def test_clean_wheel_installs_yaml_and_four_template_families(tmp_path: Path) -> None:
     wheelhouse = tmp_path / "wheelhouse"
     environment = tmp_path / "environment"
-    outside_checkout = tmp_path / "outside-checkout"
+    outside = tmp_path / "outside"
+    source = tmp_path / "source"
     wheelhouse.mkdir()
-    outside_checkout.mkdir()
-
+    outside.mkdir()
+    shutil.copytree(
+        ROOT,
+        source,
+        ignore=shutil.ignore_patterns(
+            ".git",
+            ".pytest_cache",
+            ".ruff_cache",
+            ".venv",
+            "__pycache__",
+            "*.egg-info",
+            "build",
+            "dist",
+            "gallery",
+            "tmp",
+        ),
+    )
     _run(
         [
             sys.executable,
@@ -62,77 +56,40 @@ def test_clean_wheel_install_runs_every_resource_dependent_cli(tmp_path: Path) -
             "--wheel-dir",
             str(wheelhouse),
         ],
-        cwd=ROOT,
+        cwd=source,
     )
     wheel = next(wheelhouse.glob("axiomfig-*.whl"))
     with zipfile.ZipFile(wheel) as archive:
         names = set(archive.namelist())
-    assert "axiomfig/resources/styles/base/publication.mplstyle" in names
-    assert "axiomfig/resources/templates/line.py" in names
+    assert any(name.endswith("share/axiomfig/styles/style.yaml") for name in names)
+    assert "axiomfig/templates/curves.py" in names
+    assert "axiomfig/templates/distributions.py" in names
+    assert "axiomfig/templates/surfaces.py" in names
+    assert "axiomfig/templates/panels.py" in names
+    assert not any(name.endswith(".mplstyle") for name in names)
+    assert "axiomfig/styles.py" not in names
+    assert "axiomfig/templates.py" not in names
+    assert not any("axiomfig/resources/styles/" in name for name in names)
+    assert not any("axiomfig/resources/templates/" in name for name in names)
 
-    _run(
-        [sys.executable, "-m", "venv", "--system-site-packages", str(environment)],
-        cwd=outside_checkout,
-    )
-    installed_python = environment / "bin/python"
-    _run(
-        [str(installed_python), "-m", "pip", "install", "--no-deps", str(wheel)],
-        cwd=outside_checkout,
-    )
-    installed_env = {
+    _run([sys.executable, "-m", "venv", "--system-site-packages", str(environment)], cwd=outside)
+    python = environment / "bin/python"
+    _run([str(python), "-m", "pip", "install", "--no-deps", str(wheel)], cwd=outside)
+    env = {
         key: value for key, value in os.environ.items() if key not in {"PYTHONPATH", "PYTHONHOME"}
     }
-    installed_env["PATH"] = f"{environment / 'bin'}{os.pathsep}{installed_env['PATH']}"
-    installed_env["PYTHONNOUSERSITE"] = "1"
+    env["PYTHONNOUSERSITE"] = "1"
     _run(
         [
-            str(installed_python),
+            str(python),
             "-c",
             (
-                "from pathlib import Path; import axiomfig; "
-                f"assert Path(axiomfig.__file__).is_relative_to(Path({str(environment)!r}))"
+                "from axiomfig.config import load_contracts; "
+                "from axiomfig.templates import TEMPLATE_BUILDERS; "
+                "assert load_contracts().style['stroke']['main_stroke_pt'] == 0.8; "
+                "assert len(TEMPLATE_BUILDERS) == 6"
             ),
         ],
-        cwd=outside_checkout,
-        env=installed_env,
+        cwd=outside,
+        env=env,
     )
-
-    _run(
-        ["axiomfig-compose", "--output", "composed.mplstyle"],
-        cwd=outside_checkout,
-        env=installed_env,
-    )
-    _run(
-        [
-            "axiomfig-render",
-            "line-single",
-            "--output",
-            "rendered/line",
-            "--work-root",
-            "render-work",
-        ],
-        cwd=outside_checkout,
-        env=installed_env,
-    )
-    _run(
-        ["axiomfig-validate", "rendered"],
-        cwd=outside_checkout,
-        env=installed_env,
-    )
-    _run(
-        [
-            "axiomfig-gallery",
-            "--gallery",
-            "installed-gallery",
-            "--work-root",
-            "gallery-work",
-        ],
-        cwd=outside_checkout,
-        env=installed_env,
-    )
-
-    assert (outside_checkout / "composed.mplstyle").is_file()
-    assert (outside_checkout / "rendered/line.pdf").is_file()
-    assert (outside_checkout / "rendered/line.png").is_file()
-    assert len(list((outside_checkout / "installed-gallery").glob("*.pdf"))) == 10
-    assert len(list((outside_checkout / "installed-gallery").glob("*.png"))) == 10

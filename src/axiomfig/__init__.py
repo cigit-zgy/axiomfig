@@ -1,5 +1,5 @@
 """AxiomFig deterministic scientific-figure mechanics."""
 
-from axiomfig.styles import StyleSelection
+from axiomfig.config import Contracts, build_rcparams, load_contracts
 
-__all__ = ["StyleSelection"]
+__all__ = ["Contracts", "build_rcparams", "load_contracts"]

@@ -1,0 +1,74 @@
+version: 1
+
+geometry:
+  single-column: { width_mm: 90.0, aspect: 1.3333333333333333 }
+  onehalf-column: { width_mm: 140.0, aspect: 1.3333333333333333 }
+  double-column: { width_mm: 190.0, aspect: 1.3333333333333333 }
+
+typography:
+  default: sans
+  sizes_pt: { base: 8.0, small: 7.0, label: 8.0, title: 9.0, panel: 10.0 }
+
+stroke: { main_stroke_pt: 0.8, fill_edge_pt: 0.6 }
+
+ticks:
+  open:
+    major: { direction: inout, length_pt: 4.0 }
+    minor: { direction: in, length_pt: 1.236 }
+    minor_inward_ratio: 0.618
+  filled:
+    major: { direction: out, length_pt: 4.0 }
+    minor: { direction: out, length_pt: 2.0 }
+  categorical: { length_pt: 0.0 }
+
+axes:
+  nice_linear:
+    target_major_ticks: [5, 7]
+    step_mantissas: [1.0, 2.0, 2.5, 5.0]
+    minor_divisor: 2.0
+    whole_step_blank_fraction: 0.25
+  top_tick_labels: false
+  right_tick_labels: false
+
+legend:
+  single_series: none
+  location: outside-top-right
+  gap_pt: 2.0
+  handlelength: 1.0
+  frame: false
+  prefer_single_row: true
+
+panel:
+  format: "({letter})"
+  font_size_pt: 10.0
+  font_weight: bold
+  left_offset_pt: -2.0
+  top_offset_pt: 2.0
+
+layout:
+  single_panel:
+    margins: { left: 0.20, right: 0.89, bottom: 0.20, top: 0.84 }
+    colorbar_width_ratio: 0.055
+    colorbar_wspace: 0.10
+  multi_panel:
+    margins: { left: 0.12, right: 0.92, bottom: 0.11, top: 0.88 }
+    width_ratios: [1.0, 1.0, 0.055]
+    wspace: 0.42
+    hspace: 0.45
+
+plots:
+  line: { linewidth_token: main_stroke }
+  scatter:
+    marker_size_pt2: 28.0
+    alpha: 0.55
+    edge_color: black
+    edge_width_token: fill_edge
+  bar:
+    edge_color: black
+    edge_width_token: fill_edge
+    value_labels: true
+    decimals: 2
+  violin: { edge_color: black, edge_width_token: fill_edge, limit_padding_fraction: 0.02 }
+  heatmap: { cmap: cividis, interpolation: nearest }
+
+rendering: { pdf_fonttype: 42, ps_fonttype: 42, dpi: 300, transparent: false }

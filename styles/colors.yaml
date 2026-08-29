@@ -1,0 +1,26 @@
+version: 1
+default: default
+
+palettes:
+  default:
+    AxiomBlue: "#4477AA"
+    AxiomRed: "#EE6677"
+    AxiomGreen: "#228833"
+    AxiomYellow: "#CCBB44"
+    AxiomCyan: "#66CCEE"
+    AxiomPurple: "#AA3377"
+    AxiomGrey: "#BBBBBB"
+  colorblind:
+    AxiomBlue: "#004488"
+    AxiomYellow: "#DDAA33"
+    AxiomRed: "#BB5566"
+  muted:
+    AxiomRed: "#CC6677"
+    AxiomPurple: "#332288"
+    AxiomYellow: "#DDCC77"
+    AxiomGreen: "#117733"
+    AxiomCyan: "#88CCEE"
+    AxiomWine: "#882255"
+    AxiomTeal: "#44AA99"
+    AxiomOlive: "#999933"
+    AxiomMagenta: "#AA4499"

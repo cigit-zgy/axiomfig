@@ -1,87 +1,72 @@
 # AxiomFig
 
-AxiomFig is a deterministic-first Agent Skill for publication-quality scientific figures. The agent interprets data and scientific intent, selects a native Matplotlib template, composes tested style modules, and runs one rendering and validation pipeline. Visual choices that can be fixed are encoded as styles and thin helpers instead of being re-invented per plot.
+AxiomFig is a deterministic-first Agent Skill for publication-quality scientific figures. Scientific meaning stays in a small set of native Matplotlib builders; all reusable visual decisions come from three YAML contracts and thin helpers.
 
-![Four-panel deterministic contract](gallery/10_style_contract.png)
+![Sans multi-panel contract](gallery/sans/06_multi_panel.png)
 
 ## Architecture
 
 ```text
-scientific intent -> native template -> composed .mplstyle modules
-                  -> deterministic helpers -> Matplotlib vector PDF
-                  -> standalone includegraphics wrapper -> Tectonic final PDF
-                  -> Poppler preview + validation
-
-canonical Paul Tol colors -> Matplotlib .mplstyle
-                          -> generated LaTeX xcolor definitions
+styles/style.yaml ─┐
+styles/fonts.yaml ─┼─> thin YAML loader -> rcParams/tokens -> template family
+styles/colors.yaml ┘                              -> Matplotlib vector PDF
+                                                   -> Tectonic final PDF
+                                                   -> Poppler preview PNG
 ```
 
-`src/axiomfig/` remains a thin deterministic layer: style conflict detection, exact font discovery, artist typography, layout/plot helpers, Tectonic execution, gallery orchestration, and artifact validation. Canonical native styles and runnable templates live once under `src/axiomfig/resources/`, so the same sources serve checkout scripts and installed commands.
+The three canonical sources have exclusive responsibilities:
+
+- `style.yaml`: geometry, physical font sizes, strokes, ticks, nice axes, legends, panels, plot defaults, and rendering;
+- `fonts.yaml`: exact Latin/math/mono families, files, sources, licenses, redistribution status, and optional system fonts;
+- `colors.yaml`: canonical scientific palettes.
+
+There are no `.mplstyle` layers. The public templates are grouped into four modules under `src/axiomfig/templates/` and expose only `line`, `scatter`, `bar`, `violin`, `heatmap`, and `multi-panel`.
 
 ## Quick start
 
-Requirements are Python 3.11+, Tectonic, Poppler, and the exact fonts selected by the typography contract. AxiomFig uses standard Python package metadata and does not require a particular environment manager.
+Requirements are Python 3.11+, Tectonic, Poppler, PyYAML, and the exact fonts selected by the typography contract.
 
 ```bash
 brew install tectonic poppler
-python -m pip install -e . --group dev
+python -m pip install -e .
 
 python scripts/check_fonts.py
-python scripts/render.py line-ci --output "$PWD/tmp/demo/line" \
-  --geometry single-column --typography sans \
-  --colors default --plot line
+python scripts/render.py line --output "$PWD/tmp/demo/line" \
+  --geometry single-column --typography sans
 python scripts/validate.py tmp/demo
 ```
 
-`check_fonts.py` checks the default `sans` contract. The full gallery and test suite exercise both `sans` and `serif`; exact families and explicit serif validation are in [the typography contract](references/typography.md).
+Installed commands are `axiomfig-render`, `axiomfig-validate`, and `axiomfig-gallery`.
 
-Compose an inspectable style without rendering:
+## Frozen visual contract
 
-```bash
-python scripts/compose_style.py \
-  --geometry double-column --typography serif --colors muted \
-  --plot line --language multilingual --rendering vector \
-  --output tmp/composed.mplstyle
-```
+- Physical widths are 90, 140, and 190 mm at default 4:3; point sizes do not scale with width.
+- `main_stroke = 0.8 pt`; black filled-geometry edges use `fill_edge = 0.6 pt`.
+- Open continuous axes use major `inout`, minor `in`, and one minor per major interval. Filled surfaces use major/minor `out`; categorical axes keep labels but no tick marks.
+- Nice linear axes target 5–7 majors with steps limited to `1`, `2`, `2.5`, or `5 × 10^n`, half-step minors, and snapped limits.
+- Single-series figures omit legends. Multi-series legends sit outside top-right, prefer one row, align to the right spine, and reduce columns only on measured overflow.
+- Panel labels are bold `(a)`, `(b)`, … at `10 pt` with fixed point offsets. Ordinary panel boxes remain identical; colorbars occupy dedicated layout slots.
+- Scatter uses black `0.6 pt` edges, alpha `0.55`, and `28 pt²` markers. Bars and violins use black `0.6 pt` edges; bars show two-decimal values.
+- `sans` uses Latin Modern Sans; `serif` uses Latin Modern Roman; both use Latin Modern Math and Maple Mono. CJK/Japanese work is deferred.
 
-Layer order is fixed: `base -> geometry -> typography -> colors -> plot -> language -> rendering`. Undeclared duplicate keys fail; declared plot tick-direction overrides are deterministic. See [the style contract](references/style-contract.md).
+See [SKILL.md](SKILL.md), [the style contract](references/style-contract.md), [typography](references/typography.md), [layout](references/layout.md), and [template families](references/templates.md).
 
-The installed console commands are `axiomfig-compose`, `axiomfig-render`, `axiomfig-validate`, and `axiomfig-gallery`. Relative output and work paths are resolved from the invocation directory; installed commands do not depend on a repository checkout.
+## LaTeX boundary
 
-## Frozen visual contracts
-
-- Linear open surfaces use one minor tick between adjacent major ticks, major `inout`, minor `in`; filled surfaces use major/minor `out`. Log axes retain their mathematical locator.
-- Every default visible stroke uses the central `0.6 pt` token, including spines, lines, ticks, marker/bar edges, error bars, caps, and reference strokes.
-- Panel labels align to the left spine at a uniform `2 pt` physical gap. Legends start in one row above the axes, right-align to the right spine, and reduce columns only when measured width requires it.
-- Bars have black `0.6 pt` edges and fixed-precision labels (`decimals=2` by default). Scatter markers have black `0.6 pt` edges.
-- Unqualified AxiomFig color use means the canonical `default` Paul Tol bright qualitative palette. `muted` and `colorblind` are explicit opt-ins. Matplotlib styles and default LaTeX xcolor definitions are generated from the same Python source.
-- A figure selects one complete `sans` or `serif` family. Titles, labels, ticks, legends, panel labels, annotations, math, Chinese, and Japanese follow that mode; Maple Mono is reserved for code/identifier roles.
-
-The exact helper APIs and limits are routed from [SKILL.md](SKILL.md) to [layout](references/layout.md), [colors](references/colors.md), [typography](references/typography.md), and [templates](references/templates.md).
-
-## LaTeX and Tectonic boundary
-
-The wheel packages `axiomfig.sty` and a generated `axiomfig-colors.tex`. Color generation and tests verify that the xcolor definitions exactly match the canonical Matplotlib palette. A separate standalone Tectonic probe verifies `siunitx`, `mhchem`, and math semantics with embedded, subset, Unicode-mapped, non-Type-3 fonts:
-
-```bash
-python scripts/check_latex.py
-```
-
-This does not make Matplotlib-internal label strings TeX-native. In the production renderer, text is already shaped into `intermediate.pdf`; the outer wrapper only includes that graphic. Matplotlib 3.10.9 rejects `tectonic` as a PGF TeX system, MathText rejects `\qty`, and the wrapper cannot retroactively expand `\qty` or `\ce`. Native label macro expansion is therefore **TECHNICALLY BLOCKED / DEFERRED**. See [the LaTeX contract](references/latex.md).
+[The LaTeX contract](references/latex-contract.md) records exact allowed syntax for `siunitx`, `mhchem`, `amsmath`, `unicode-math`, and `xcolor`. The stable renderer embeds Matplotlib text before Tectonic wraps the intermediate PDF, so TeX-native macro expansion inside plot labels remains **DEFERRED**.
 
 ## Gallery and validation
 
-The committed gallery contains exactly ten final PDF/PNG pairs: `01_line` through `08_multi_panel`, plus `09_serif` and the four-panel `10_style_contract` acceptance figure. Intermediates remain under ignored `tmp/`.
+The committed Gallery contains matching English-only suites under `gallery/sans/` and `gallery/serif/`, each with six PDF/PNG pairs from `01_line` through `06_multi_panel`.
 
 ```bash
 python scripts/generate_colors.py --check
 python scripts/check_fonts.py
-python scripts/check_latex.py
 python scripts/build_gallery.py
-python scripts/validate.py
+python scripts/validate.py gallery
 python -m pytest -q
 ruff check .
 ruff format --check .
 ```
 
-Automated checks cover deterministic mechanics and PDF evidence. Visual quality still requires opening the rasterized gallery and checking family uniformity, CJK glyphs, panel/legend geometry, tick directions, clipping, overlap, and whitespace. See [rendering and validation](references/rendering-validation.md).
+Tests cover deterministic normal, boundary, and overflow/error behavior. The one real-PDF E2E covers the canonical Gallery. Completion still requires human inspection of every final PNG for strokes, ticks, categorical axes, marker/bar/violin edges, labels, legends, panel symmetry, colorbar layout, clipping, and sans/serif consistency.

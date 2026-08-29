@@ -14,6 +14,7 @@ dependencies = [
   "numpy>=2.2",
   "pillow>=11.3",
   "pypdf>=6.0",
+  "pyyaml>=6.0",
 ]
 
 [dependency-groups]
@@ -24,7 +25,6 @@ dev = [
 ]
 
 [project.scripts]
-axiomfig-compose = "axiomfig.cli:compose_main"
 axiomfig-render = "axiomfig.cli:render_main"
 axiomfig-validate = "axiomfig.cli:validate_main"
 axiomfig-gallery = "axiomfig.cli:gallery_main"
@@ -36,9 +36,10 @@ where = ["src"]
 axiomfig = [
   "resources/latex/*.sty",
   "resources/latex/*.tex",
-  "resources/styles/*/*.mplstyle",
-  "resources/templates/*.py",
 ]
+
+[tool.setuptools.data-files]
+"share/axiomfig/styles" = ["styles/style.yaml", "styles/fonts.yaml", "styles/colors.yaml"]
 
 [tool.pytest.ini_options]
 addopts = "-ra"

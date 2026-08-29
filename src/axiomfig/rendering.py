@@ -9,7 +9,7 @@ from pathlib import Path
 import matplotlib as mpl
 from matplotlib.figure import Figure
 
-from axiomfig.styles import LAYER_ORDER, StyleSelection, compose_styles
+from axiomfig.config import build_rcparams, load_contracts
 from axiomfig.typography import apply_figure_typography, discover_fonts
 
 
@@ -74,10 +74,11 @@ def render_figure(
     pdftoppm: str = "pdftoppm",
     preview_dpi: int = 300,
     typography: str = "sans",
+    geometry: str = "single-column",
 ) -> RenderResult:
-    discover_fonts(mode=typography)
     tectonic_bin = _resolve_executable(tectonic, "Tectonic")
     pdftoppm_bin = _resolve_executable(pdftoppm, "pdftoppm")
+    discover_fonts(mode=typography)
     output_stem = Path(output_stem).expanduser().resolve()
     output_stem.parent.mkdir(parents=True, exist_ok=True)
 
@@ -95,12 +96,7 @@ def render_figure(
     tex_path = workdir / "wrapper.tex"
     tex_path.write_text(standalone_tex(intermediate_pdf.name), encoding="utf-8")
 
-    selected_paths = dict(
-        zip(LAYER_ORDER, StyleSelection(typography=typography).paths(), strict=True)
-    )
-    style_params = compose_styles(
-        [selected_paths["typography"], selected_paths["rendering"]]
-    ).params
+    style_params = build_rcparams(load_contracts(), geometry=geometry, typography=typography)
     with mpl.rc_context(rc=style_params), warnings.catch_warnings():
         warnings.filterwarnings("ignore", message="Glyph .* missing from font")
         figure.canvas.draw()
