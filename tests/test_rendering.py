@@ -112,3 +112,21 @@ def test_render_pipeline_uses_exact_math_for_pure_math_artist(
 
     assert any(expected_math in row for row in entry.fonts)
     plt.close(figure)
+
+
+@pytest.mark.e2e
+@pytest.mark.parametrize(
+    ("mode", "expected_bold"),
+    [("sans", "LMSans10-Bold"), ("serif", "LMRoman10-Bold")],
+)
+def test_render_pipeline_embeds_exact_bold_latin_artist_variant(
+    tmp_path: Path, mode: str, expected_bold: str
+) -> None:
+    figure, axis = plt.subplots(figsize=(3.543307, 2.65748))
+    axis.text(0.0, 1.0, "(a)", transform=axis.transAxes, fontweight="bold")
+
+    result = render_figure(figure, tmp_path / mode, typography=mode)
+    entry = validate_pair(result.pdf, result.png, tectonic_log=result.log)
+
+    assert any(expected_bold in row for row in entry.fonts)
+    plt.close(figure)

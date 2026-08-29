@@ -250,7 +250,32 @@ def discover_fonts(
     return resolved
 
 
-def font_for_language(language: str, mode: str = "sans") -> font_manager.FontProperties:
+def _latin_variant_path(mode: str, weight: str | int | None, style: str | None) -> str:
+    family = FONT_CONTRACTS[mode]["latin"]
+    spec = FONT_SPECS[family]
+    is_bold = weight in {"bold", "heavy", "black", 700, 800, 900}
+    is_italic = style in {"italic", "oblique"}
+    suffix = {
+        (False, False): "regular",
+        (True, False): "bold",
+        (False, True): "oblique" if mode == "sans" else "italic",
+        (True, True): "boldoblique" if mode == "sans" else "bolditalic",
+    }[is_bold, is_italic]
+    filename = f"{'lmsans10' if mode == 'sans' else 'lmroman10'}-{suffix}.otf"
+    for root in _font_search_roots():
+        path = root / filename
+        if path.is_file():
+            return _register_exact_font(path, spec.matplotlib_family)
+    raise FontContractError(f"Required Latin font variant is missing: {filename}")
+
+
+def font_for_language(
+    language: str,
+    mode: str = "sans",
+    *,
+    weight: str | int | None = None,
+    style: str | None = None,
+) -> font_manager.FontProperties:
     role_by_language = {
         "en": "latin",
         "zh": "chinese",
@@ -262,7 +287,13 @@ def font_for_language(language: str, mode: str = "sans") -> font_manager.FontPro
         role = role_by_language[language]
     except KeyError as exc:
         raise ValueError(f"Unsupported language code: {language}") from exc
+    if language == "en":
+        return font_manager.FontProperties(fname=_latin_variant_path(mode, weight, style))
     font = discover_fonts(mode=mode)[role]
+    if weight not in {None, "normal", 400} or style not in {None, "normal"}:
+        raise FontContractError(
+            f"Exact {language} bold/italic variant is unavailable; refusing regular fallback"
+        )
     return font_manager.FontProperties(fname=font.path)
 
 
@@ -311,6 +342,13 @@ def apply_figure_typography(figure: Figure, mode: str = "sans") -> Figure:
         artist.set_math_fontfamily("custom")
         if language is not None:
             properties = artist.get_fontproperties().copy()
-            properties.set_file(font_for_language(language, mode=mode).get_file())
+            properties.set_file(
+                font_for_language(
+                    language,
+                    mode=mode,
+                    weight=properties.get_weight(),
+                    style=properties.get_style(),
+                ).get_file()
+            )
             artist.set_fontproperties(properties)
     return figure
