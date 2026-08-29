@@ -11,21 +11,21 @@
 | Panel-owned Artist | Local annotation, value/direct label, or other artist assigned to one panel |
 | Figure-level Ornament | Legend or other content owned by the Figure rather than one panel |
 
-Every registered panel has one Primary Axes. A heatmap adds its colorbar as Auxiliary Axes. The complete primary/auxiliary/local content bbox must remain inside the footprint; only the documented panel-label gutter may lie just outside it.
+Every registered panel has one Primary Axes. A heatmap adds its colorbar as Auxiliary Axes. The complete primary/auxiliary/local content bbox and reserved panel-label gutter must remain inside the footprint.
 
 ## 2. Physical solve
 
-The engine converts the fixed page size to points using `72 pt = 1 inch` and `25.4 mm = 1 inch`. It creates equal GridSpec cells using YAML-owned physical horizontal and vertical gaps. The panel-label gutter and output padding are reserved before cells are created.
+The engine converts the fixed page size to points using `72 pt = 1 inch` and `25.4 mm = 1 inch`. It creates equal GridSpec cells using YAML-owned physical horizontal and vertical gaps. Output padding bounds the equal footprints; the measured panel-label gutter is reserved inside each footprint during the solve.
 
-After templates add data and request ornaments, the engine performs one measurement pass. It measures axis-decoration overhangs and requested one-row legend height, calculates common ordinary-panel insets, and sets final axes bboxes once. It does not iterate positions until a rendered image looks acceptable.
+After templates add data and request ornaments, the engine performs one measurement pass. It measures axis-decoration overhangs, the panel-label height, and the first collision-free `N..1` legend candidate, calculates common ordinary-panel insets, and sets final axes bboxes once. Colorbar overhang is measured at its final physical width. It does not iterate positions until a rendered image looks acceptable.
 
 All ordinary panels in a regular grid receive the same Primary Axes width and height. A heatmap uses its measured label inset plus fixed colorbar gap/width inside the same equal footprint. Its narrower Primary Axes is intentional and cannot alter the footprint.
 
 ## 3. Panel labels
 
-Labels are `(a)`, `(b)`, `(c)`, …, 11 pt bold. The anchor is the Outer Panel Footprint upper-left corner, followed by the single `panel.left_offset_pt`/`panel.top_offset_pt` ScaledTranslation. It never uses `ax.transAxes`, the Primary Axes bbox, colorbar geometry, or a legend bbox.
+Labels are `(a)`, `(b)`, `(c)`, …, 11 pt bold. The semantic anchor is the Primary Axes spine rectangle upper-left, followed by the single `panel.left_offset_pt=-1 pt` and `panel.top_offset_pt=+1 pt` ScaledTranslation. The label remains panel-owned and occupies the reserved footprint gutter; it does not determine or move PrimaryAxes geometry after placement.
 
-The Round 04 instability was lifecycle-related: legends were measured before labels existed, a legend could mutate global subplot top, and family layout moved panels later. Round 05 finalizes footprint geometry first, then creates labels and legends, and forbids ornament code from changing global subplot geometry.
+Round 05 anchored labels to the footprint and stabilized lifecycle, but the visible frame gap still included tick/axis-label insets. Round 06 retains that lifecycle and footprint ownership while switching only the semantic anchor to the final PrimaryAxes frame.
 
 ## 4. Legends
 

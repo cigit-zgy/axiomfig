@@ -153,7 +153,7 @@ def test_redundant_series_cycle_and_reference_line_are_ordered() -> None:
 
 
 def test_violin_geometry_has_deterministic_headroom() -> None:
-    figure = build_template("violin")
+    figure = build_template("distribution/violin")
     axis = figure.axes[0]
     body_top = max(
         path.vertices[:, 1].max() for body in axis.collections for path in body.get_paths()
@@ -175,7 +175,7 @@ def test_bar_and_violin_use_open_numeric_ticks_and_no_category_marks(name: str) 
 
 
 def test_heatmap_uses_outward_ticks_on_image_and_colorbar() -> None:
-    figure = build_template("heatmap")
+    figure = build_template("heatmap/basic")
 
     for axis in figure.axes:
         assert axis.yaxis._major_tick_kw["tickdir"] == "out"
@@ -193,7 +193,7 @@ def test_plot_artist_defaults_are_consumed_from_style_tokens() -> None:
     plots = load_contracts().style["plots"]
     line_marker = build_template("line/marker").axes[0].lines[0]
     ci_axis = build_template("line/confidence_band").axes[0]
-    violin_axis = build_template("violin").axes[0]
+    violin_axis = build_template("distribution/violin").axes[0]
 
     assert line_marker.get_markersize() == plots["line_marker"]["marker_size_pt"]
     assert line_marker.get_markeredgecolor() == plots["line_marker"]["edge_color"]
@@ -232,7 +232,7 @@ def test_errorbar_left_ticks_use_one_locator_and_the_same_central_geometry(mode:
 
     params = build_rcparams(load_contracts(), typography=mode)
     with mpl.rc_context(rc=params):
-        figure = build_template("errorbar")
+        figure = build_template("line/errorbar")
         axis = figure.axes[0]
         figure.canvas.draw()
         major_length, minor_length = tick_lengths()

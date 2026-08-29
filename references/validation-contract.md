@@ -23,7 +23,7 @@ Checks run in display coordinates after `canvas.draw()`. The tolerance is a phys
 
 ## 3. Ownership behavior
 
-Panel content is validated against only its own footprint. A panel label uses the explicitly reserved label gutter. A legend is validated against the Figure boundary and all data axes/labels because it is Figure-owned. Moving an Auxiliary Axes beyond its panel or registering an out-of-page Figure ornament produces an issue-specific runtime failure.
+Panel content is validated against only its own footprint. A panel label is anchored to the Primary Axes frame and uses the explicitly reserved label gutter inside that footprint. A legend is validated against the Figure boundary and all data axes/labels because it is Figure-owned. Moving an Auxiliary Axes beyond its panel or registering an out-of-page Figure ornament produces an issue-specific runtime failure.
 
 ## 4. Test boundary
 
