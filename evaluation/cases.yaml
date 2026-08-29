@@ -1,0 +1,122 @@
+version: 1
+cases:
+  - id: trend_single
+    scientific_intent: trend
+    request: Show one ordered process trajectory.
+    expected_template: line.single
+    figure_intent: {template: line.single, data: {x: time, y: response}}
+  - id: trend_multi
+    scientific_intent: trend
+    request: Compare three model trajectories over time.
+    expected_template: line.multi
+    figure_intent: {template: line.multi, data: {x: time, series: models}}
+  - id: trend_uncertainty
+    scientific_intent: uncertainty
+    request: Show an estimate with a precomputed confidence band.
+    expected_template: line.confidence_band
+    figure_intent: {template: line.confidence_band, data: {x: time, estimate: mean, lower: lower, upper: upper}}
+  - id: relationship_simple
+    scientific_intent: relationship
+    request: Show the relationship between two continuous measurements.
+    expected_template: scatter.simple
+    figure_intent: {template: scatter.simple, data: {x: loading, y: response}}
+  - id: relationship_parity
+    scientific_intent: relationship
+    request: Compare observed and predicted concentrations against identity.
+    expected_template: scatter.parity
+    figure_intent: {template: scatter.parity, data: {observed: observed, predicted: predicted}}
+  - id: comparison_grouped
+    scientific_intent: comparison
+    request: Compare categorical scores for two models.
+    expected_template: bar.grouped
+    figure_intent: {template: bar.grouped, data: {category: metric, value: score, group: model}}
+  - id: distribution_violin
+    scientific_intent: distribution
+    request: Compare complete score distributions across groups.
+    expected_template: distribution.violin
+    figure_intent: {template: distribution.violin, data: {value: score, category: model}}
+  - id: distribution_raincloud
+    scientific_intent: distribution
+    request: Show density and individual observations together.
+    expected_template: distribution.raincloud
+    figure_intent: {template: distribution.raincloud, data: {value: score, category: model}}
+  - id: matrix_correlation
+    scientific_intent: matrix
+    request: Show a signed correlation matrix centered on zero.
+    expected_template: heatmap.correlation
+    figure_intent: {template: heatmap.correlation, data: {matrix: correlation, labels: variables}, semantics: {center: 0}}
+  - id: matrix_annotated
+    scientific_intent: matrix
+    request: Show a positive response matrix with exact cell values.
+    expected_template: heatmap.annotated
+    figure_intent: {template: heatmap.annotated, data: {matrix: values, row_labels: rows, column_labels: columns, annotations: labels}, semantics: {color_semantics: sequential}}
+  - id: estimation_forest
+    scientific_intent: uncertainty
+    request: Compare effects and their 95 percent confidence intervals.
+    expected_template: estimation.forest
+    figure_intent: {template: estimation.forest, data: {label: term, estimate: estimate, interval: interval}, semantics: {uncertainty_type: 95% CI}}
+  - id: estimation_coefficient
+    scientific_intent: comparison
+    request: Compare model coefficients with explicit standard errors.
+    expected_template: estimation.coefficient
+    figure_intent: {template: estimation.coefficient, data: {term: term, estimate: estimate, interval: interval}, semantics: {uncertainty_type: SE}}
+  - id: diagnostic_residual
+    scientific_intent: model_evaluation
+    request: Diagnose residual behavior against fitted values.
+    expected_template: diagnostics.residual
+    figure_intent: {template: diagnostics.residual, data: {fitted: fitted, residual: residual}}
+  - id: diagnostic_qq
+    scientific_intent: model_evaluation
+    request: Assess residual normality with a quantile comparison.
+    expected_template: diagnostics.qq
+    figure_intent: {template: diagnostics.qq, data: {theoretical_quantile: theoretical, sample_quantile: sample}, semantics: {reference_distribution: normal}}
+  - id: diagnostic_calibration
+    scientific_intent: model_evaluation
+    request: Compare predicted probability with observed frequency.
+    expected_template: diagnostics.calibration
+    figure_intent: {template: diagnostics.calibration, data: {predicted_probability: predicted, observed_frequency: observed}}
+  - id: diagnostic_roc
+    scientific_intent: model_evaluation
+    request: Compare true-positive and false-positive rates.
+    expected_template: diagnostics.roc
+    figure_intent: {template: diagnostics.roc, data: {false_positive_rate: fpr, true_positive_rate: tpr}}
+  - id: ordination_scores
+    scientific_intent: ordination
+    request: Show precomputed PCA sample scores and explained variance.
+    expected_template: ordination.pca_scores
+    figure_intent: {template: ordination.pca_scores, data: {coordinates: scores}, semantics: {explained_variance: [46.2, 21.4]}}
+  - id: ordination_biplot
+    scientific_intent: ordination
+    request: Show precomputed PCA scores together with feature loadings.
+    expected_template: ordination.pca_biplot
+    figure_intent: {template: ordination.pca_biplot, data: {coordinates: scores, loadings: loadings}, semantics: {explained_variance: [46.2, 21.4]}}
+  - id: association_mantel
+    scientific_intent: association
+    request: Show a correlation matrix with precomputed Mantel links and significance.
+    expected_template: association.mantel
+    figure_intent: {template: association.mantel, data: {correlation_matrix: correlation, mantel_links: links, significance: significant}}
+  - id: flow_sankey
+    scientific_intent: flow
+    request: Show conserved transfers from process sources to targets.
+    expected_template: flow.sankey
+    figure_intent: {template: flow.sankey, data: {source: source, target: target, flow: amount}}
+  - id: field_contour
+    scientific_intent: field
+    request: Show a positive scalar field with a sequential scale.
+    expected_template: field.contour
+    figure_intent: {template: field.contour, data: {x: x, y: y, field: concentration}, semantics: {color_semantics: sequential}}
+  - id: omics_volcano
+    scientific_intent: omics
+    request: Show fold changes against adjusted p-values with explicit thresholds.
+    expected_template: omics.volcano
+    figure_intent: {template: omics.volcano, data: {fold_change: fold_change, adjusted_p_value: adjusted_p}, semantics: {significance_threshold: 0.05}}
+  - id: survival_km
+    scientific_intent: survival
+    request: Show precomputed Kaplan-Meier curves and censoring.
+    expected_template: survival.kaplan_meier
+    figure_intent: {template: survival.kaplan_meier, data: {time: time, survival_probability: survival, censoring: censored}}
+  - id: composition_mixed
+    scientific_intent: composition
+    request: Compose a deterministic mixed 2 by 2 scientific figure.
+    expected_template: layouts.grid_2x2
+    figure_intent: {template: layouts.grid_2x2, geometry: double-column}

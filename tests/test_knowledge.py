@@ -9,10 +9,10 @@ KNOWLEDGE_ROOT = ROOT / "references/template-knowledge"
 
 
 def test_knowledge_index_routes_to_existing_topics_and_templates() -> None:
-    from axiomfig.templates.registry import public_template_specs
+    from axiomfig.templates.registry import load_template_registry
 
     document = yaml.safe_load((KNOWLEDGE_ROOT / "index.yaml").read_text(encoding="utf-8"))
-    registered = {spec.template_id for spec in public_template_specs()}
+    registered = {spec.template_id for spec in load_template_registry()}
 
     assert document["version"] == 1
     assert 10 <= len(document["intents"]) <= 15

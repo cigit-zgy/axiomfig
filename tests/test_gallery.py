@@ -82,8 +82,8 @@ def test_gallery_builds_only_registry_pdf_png_pairs(tmp_path: Path) -> None:
     expected = set(expected_gallery_stems())
     entries = validate_gallery(gallery, expected_stems=expected)
 
-    assert len(results) == 68
-    assert len(entries) == 68
+    assert len(results) == 112
+    assert len(entries) == 112
     assert {
         path.relative_to(gallery).with_suffix("").as_posix() for path in gallery.rglob("*.pdf")
     } == expected

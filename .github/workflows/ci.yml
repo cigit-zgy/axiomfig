@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fast-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - name: Install package and development tools
+        run: python -m pip install -e ".[dev]"
+      - name: Lint and format contract
+        run: |
+          ruff check .
+          ruff format --check .
+      - name: Validate Agent Skill
+        run: python scripts/validate_skill.py
+      - name: Run fast deterministic tests
+        run: python -m pytest -q -m "not e2e"
+      - name: Evaluate registry and Figure Intent routing
+        run: python -c "from axiomfig.evaluation import run_evaluation; assert run_evaluation(render=False).pass_rate == 1.0"
+      - name: Render headless smoke figure
+        env:
+          MPLBACKEND: Agg
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import matplotlib as mpl
+          from axiomfig.config import build_rcparams, load_contracts
+          from axiomfig.templates import build_template
+          from axiomfig.typography import discover_fonts
+
+          discover_fonts("sans")
+          params = build_rcparams(load_contracts(), geometry="single-column", typography="sans")
+          output = Path("tmp/ci-smoke.png")
+          output.parent.mkdir(parents=True, exist_ok=True)
+          with mpl.rc_context(rc=params):
+              figure = build_template("scatter/parity")
+              figure.set_size_inches(params["figure.figsize"], forward=False)
+              figure.savefig(output)
+          assert output.is_file() and output.stat().st_size > 0
+          PY

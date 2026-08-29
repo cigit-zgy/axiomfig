@@ -46,14 +46,14 @@
 
 ## H5 — Evaluate, package, and automate
 
-- [ ] Add 24 deterministic scientific request cases with expected routing and validity.
-- [ ] Implement evaluation metrics for pass rate, render success, repeatability, and token cost.
-- [ ] Audit wheel contents and add package-resource tests for registry, contracts, styles, fonts,
+- [x] Add 24 deterministic scientific request cases with expected routing and validity.
+- [x] Implement evaluation metrics for pass rate, render success, repeatability, and token cost.
+- [x] Audit wheel contents and add package-resource tests for registry, contracts, styles, fonts,
       attributions, LaTeX, and knowledge resources.
-- [ ] Update v1 metadata and minimal CLI entry points; add contributor/security metadata.
-- [ ] Add least-privilege, SHA-pinned CI for install, Ruff, tests, Skill validation, and render smoke.
-- [ ] Perform an isolated wheel install from a clean temporary directory.
-- [ ] Commit and push the packaging/evaluation/CI checkpoint.
+- [x] Update v1 metadata and minimal CLI entry points; add contributor/security metadata.
+- [x] Add least-privilege, SHA-pinned CI for install, Ruff, tests, Skill validation, and render smoke.
+- [x] Perform an isolated wheel install from a clean temporary directory.
+- [x] Commit and push the packaging/evaluation/CI checkpoint.
 
 ## H6 — Validate the whole v1 product
 
