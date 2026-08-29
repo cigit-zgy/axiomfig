@@ -57,11 +57,11 @@
 
 ## H6 — Validate the whole v1 product
 
-- [ ] Exercise line, grouped scatter, bar, violin, correlation heatmap, parity, Mantel, ordination,
+- [x] Exercise line, grouped scatter, bar, violin, correlation heatmap, parity, Mantel, ordination,
       forest, volcano, and mixed-panel flows from a fresh clone/equivalent checkout.
-- [ ] Run Gallery validation, font validation, Tectonic probe, and PDF geometry checks.
-- [ ] Run exactly one final `python -m pytest -q`, `ruff check .`, and `ruff format --check .`.
-- [ ] Audit tracked files, generated junk, absolute local paths, secrets patterns, and remote contents.
-- [ ] Reconcile README, SKILL, taxonomy, contracts, CLI, and documented limitations.
-- [ ] Write the date/sequence-correct final agent report.
-- [ ] Commit, push `master`, then verify local, origin, and GitHub SHA equality.
+- [x] Run Gallery validation, font validation, Tectonic probe, and PDF geometry checks.
+- [x] Run exactly one final `python -m pytest -q`, `ruff check .`, and `ruff format --check .`.
+- [x] Audit tracked files, generated junk, absolute local paths, secrets patterns, and remote contents.
+- [x] Reconcile README, SKILL, taxonomy, contracts, CLI, and documented limitations.
+- [x] Write the date/sequence-correct final agent report.
+- [x] Commit, push `master`, then verify local, origin, and GitHub SHA equality.
