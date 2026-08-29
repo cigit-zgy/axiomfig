@@ -15,3 +15,9 @@ variants:
   errorbar:
     required: [x, estimate, error, uncertainty_type]
     optional: [xlabel, ylabel]
+  step:
+    required: [x, y]
+    optional: [where, xlabel, ylabel]
+  area:
+    required: [x, y]
+    optional: [baseline, xlabel, ylabel]

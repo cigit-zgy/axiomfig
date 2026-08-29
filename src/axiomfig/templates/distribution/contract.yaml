@@ -18,3 +18,9 @@ variants:
   box_violin:
     required: [value, category]
     optional: [ylabel]
+  strip:
+    required: [value, category]
+    optional: [jitter, ylabel]
+  raincloud:
+    required: [value, category]
+    optional: [jitter, summary, ylabel]

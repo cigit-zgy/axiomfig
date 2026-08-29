@@ -11,6 +11,7 @@ from axiomfig.template_helpers import (
     apply_axis_contract,
     apply_categorical_axis,
     apply_nice_linear_axis,
+    apply_scatter_contract,
     place_legend_above,
 )
 
@@ -82,9 +83,49 @@ def build_stacked() -> Figure:
     return figure
 
 
+def build_normalized_stacked() -> Figure:
+    labels = ["Baseline", "Calibrated", "Hybrid"]
+    positions = np.arange(3)
+    first_values = np.array([0.58, 0.63, 0.69])
+    second_values = 1.0 - first_values
+    figure, axis = plt.subplots()
+    width = bar_width()
+    first = axis.bar(positions, first_values, width=width, label="Mechanistic")
+    second = axis.bar(
+        positions,
+        second_values,
+        width=width,
+        bottom=first_values,
+        label="Data-driven",
+    )
+    axis.set(ylabel="Normalized contribution (-)")
+    _vertical_axes(axis, labels, 1.0)
+    add_bar_value_labels(axis, [first, second])
+    place_legend_above(axis)
+    return figure
+
+
+def build_dot() -> Figure:
+    labels = ["Mechanistic", "Neural ODE", "Hybrid ODE"]
+    positions = np.arange(3)
+    values = np.array([0.66, 0.78, 0.87])
+    figure, axis = plt.subplots()
+    axis.vlines(positions, 0.0, values)
+    collection = axis.scatter(positions, values)
+    apply_scatter_contract(collection)
+    axis.set_xticks(positions, labels)
+    axis.set(ylabel="Explained variance (-)")
+    apply_axis_contract(axis, surface="open")
+    apply_categorical_axis(axis, coordinate="x")
+    apply_nice_linear_axis(axis, 0.0, 1.0, coordinate="y")
+    return figure
+
+
 BUILDERS = {
     "vertical": build_vertical,
     "horizontal": build_horizontal,
     "grouped": build_grouped,
     "stacked": build_stacked,
+    "normalized_stacked": build_normalized_stacked,
+    "dot": build_dot,
 }

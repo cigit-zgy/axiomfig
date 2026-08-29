@@ -192,6 +192,16 @@ def apply_scatter_contract(collection: PathCollection) -> None:
     collection.set_sizes([float(contract["marker_size_pt2"])])
 
 
+def apply_filled_collection_contract(
+    collection: object, *, alpha: float | None = None, edge_width_token: str = "fill_edge"
+) -> None:
+    """Apply the shared filled-geometry face/edge contract to a collection."""
+    if alpha is not None:
+        _collection_face_alpha(collection, alpha)
+    collection.set_edgecolor(mcolors.to_rgba("black", 1.0))  # type: ignore[attr-defined]
+    collection.set_linewidth(_stroke_width(edge_width_token))  # type: ignore[attr-defined]
+
+
 def line_marker_kwargs() -> dict[str, object]:
     contract = load_contracts().style["plots"]["line_marker"]
     return {

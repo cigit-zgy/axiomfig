@@ -79,10 +79,36 @@ def build_errorbar() -> Figure:
     return figure
 
 
+def build_step() -> Figure:
+    x = np.arange(0.0, 13.0, 1.0)
+    response = np.array(
+        [0.08, 0.12, 0.20, 0.31, 0.39, 0.48, 0.56, 0.61, 0.69, 0.75, 0.81, 0.86, 0.89]
+    )
+    figure, axis = plt.subplots()
+    axis.step(x, response, where="post")
+    axis.set(xlabel="Sampling interval", ylabel="Cumulative response (-)")
+    _open(axis, (0.0, 12.0), (0.0, 1.0))
+    return figure
+
+
+def build_area() -> Figure:
+    x = np.linspace(0.0, 12.0, 81)
+    response = 0.15 + 0.72 * (1.0 - np.exp(-x / 3.8))
+    figure, axis = plt.subplots()
+    color = plt.rcParams["axes.prop_cycle"].by_key()["color"][0]
+    axis.fill_between(x, 0.0, response, **confidence_interval_kwargs(color))
+    axis.plot(x, response)
+    axis.set(xlabel="Time (d)", ylabel="Accumulated fraction (-)")
+    _open(axis, (0.0, 12.0), (0.0, 1.0))
+    return figure
+
+
 BUILDERS = {
     "single": build_single,
     "multi": build_multi,
     "marker": build_marker,
     "confidence_band": build_confidence_band,
     "errorbar": build_errorbar,
+    "step": build_step,
+    "area": build_area,
 }

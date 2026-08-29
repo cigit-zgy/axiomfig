@@ -12,3 +12,6 @@ variants:
   confusion_matrix:
     required: [matrix, class_labels]
     optional: [annotations, colorbar_label]
+  annotated:
+    required: [matrix, row_labels, column_labels, color_semantics, annotations]
+    optional: [colorbar_label, annotation_format]

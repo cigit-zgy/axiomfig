@@ -12,3 +12,9 @@ variants:
   stacked:
     required: [category, value, component]
     optional: [value_labels, ylabel]
+  normalized_stacked:
+    required: [category, value, component, normalization]
+    optional: [value_labels, ylabel]
+  dot:
+    required: [category, value]
+    optional: [value_labels, ylabel]

@@ -26,11 +26,11 @@ SCIENTIFIC_FAMILIES = (
     "field",
 )
 EXPECTED_PUBLIC_COUNTS = {
-    "line": 5,
-    "scatter": 4,
-    "bar": 4,
-    "distribution": 6,
-    "heatmap": 4,
+    "line": 7,
+    "scatter": 6,
+    "bar": 6,
+    "distribution": 8,
+    "heatmap": 5,
     "estimation": 2,
     "diagnostics": 6,
     "association": 1,
@@ -44,8 +44,8 @@ def test_registry_has_canonical_taxonomy_and_separate_layouts() -> None:
 
     assert tuple(dict.fromkeys(spec.family for spec in public)) == SCIENTIFIC_FAMILIES
     assert {spec.family for spec in specs if not spec.public} == {"layouts"}
-    assert len(public) == 33
-    assert len(specs) == 37
+    assert len(public) == 42
+    assert len(specs) == 46
     assert {
         family: sum(spec.family == family for spec in public) for family in SCIENTIFIC_FAMILIES
     } == EXPECTED_PUBLIC_COUNTS
@@ -80,6 +80,28 @@ def test_mandatory_mantel_field_and_explicit_scientific_semantics() -> None:
     assert {"correlation_matrix", "mantel_links", "significance"} <= set(mantel["required"])
     assert "center" in correlation["required"]
     assert "uncertainty_type" in forest["required"]
+
+
+def test_v1_core_template_variants_are_real_and_scientifically_explicit() -> None:
+    public_ids = {spec.template_id for spec in public_template_specs()}
+    expected = {
+        "line/step",
+        "line/area",
+        "scatter/bubble",
+        "scatter/hexbin",
+        "bar/normalized_stacked",
+        "bar/dot",
+        "distribution/strip",
+        "distribution/raincloud",
+        "heatmap/annotated",
+    }
+
+    assert expected <= public_ids
+    assert "size" in load_family_contract("scatter")["variants"]["bubble"]["required"]
+    assert (
+        "normalization" in load_family_contract("bar")["variants"]["normalized_stacked"]["required"]
+    )
+    assert "annotations" in load_family_contract("heatmap")["variants"]["annotated"]["required"]
 
 
 def test_old_coarse_template_modules_are_removed() -> None:

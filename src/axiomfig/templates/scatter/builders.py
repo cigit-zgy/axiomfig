@@ -6,6 +6,7 @@ from matplotlib.figure import Figure
 
 from axiomfig.template_helpers import (
     apply_axis_contract,
+    apply_filled_collection_contract,
     apply_nice_linear_axis,
     apply_scatter_contract,
     place_legend_above,
@@ -78,9 +79,38 @@ def build_parity() -> Figure:
     return figure
 
 
+def build_bubble() -> Figure:
+    rng = np.random.default_rng(101)
+    x = np.linspace(2.0, 28.0, 28)
+    y = 0.72 * x + 3.0 + rng.normal(0.0, 1.35, x.size)
+    magnitude = np.linspace(0.55, 1.75, x.size)
+    base_size = float(plt.rcParams["lines.markersize"]) ** 2
+    figure, axis = plt.subplots()
+    collection = axis.scatter(x, y, s=base_size * magnitude)
+    apply_scatter_contract(collection)
+    collection.set_sizes(base_size * magnitude)
+    axis.set(xlabel="Substrate loading", ylabel="Process response")
+    _open(axis, (0.0, 30.0), (0.0, 30.0))
+    return figure
+
+
+def build_hexbin() -> Figure:
+    rng = np.random.default_rng(107)
+    x = rng.normal(12.0, 3.4, 420)
+    y = 0.68 * x + rng.normal(2.5, 2.0, x.size)
+    figure, axis = plt.subplots()
+    collection = axis.hexbin(x, y, gridsize=18, mincnt=1, cmap="cividis")
+    apply_filled_collection_contract(collection)
+    axis.set(xlabel="Observed loading", ylabel="Response density")
+    _open(axis, (2.0, 22.0), (0.0, 20.0))
+    return figure
+
+
 BUILDERS = {
     "simple": build_simple,
     "grouped": build_grouped,
     "regression": build_regression,
     "parity": build_parity,
+    "bubble": build_bubble,
+    "hexbin": build_hexbin,
 }

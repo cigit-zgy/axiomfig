@@ -11,6 +11,7 @@ from axiomfig.template_helpers import (
     apply_boxplot_contract,
     apply_categorical_axis,
     apply_nice_linear_axis,
+    apply_scatter_contract,
     apply_violin_contract,
     confidence_interval_kwargs,
     histogram_kwargs,
@@ -131,6 +132,49 @@ def build_box_violin() -> Figure:
     return figure
 
 
+def build_strip() -> Figure:
+    samples = _samples(109)
+    rng = np.random.default_rng(109)
+    figure, axis = plt.subplots()
+    colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+    for position, (values, color) in enumerate(zip(samples, colors, strict=False), start=1):
+        jitter = rng.uniform(-0.13, 0.13, values.size)
+        collection = axis.scatter(np.full(values.size, position) + jitter, values, color=color)
+        apply_scatter_contract(collection)
+    _distribution_axis(axis, samples)
+    return figure
+
+
+def build_raincloud() -> Figure:
+    samples = _samples(113)
+    rng = np.random.default_rng(113)
+    figure, axis = plt.subplots()
+    colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+    violin_contract = load_contracts().style["plots"]["violin"]
+    violins = axis.violinplot(
+        samples,
+        positions=[1, 2, 3],
+        showextrema=False,
+        widths=float(violin_contract["width"]),
+    )
+    for position, body, color in zip((1, 2, 3), violins["bodies"], colors, strict=False):
+        body.set_facecolor(color)
+        vertices = body.get_paths()[0].vertices
+        vertices[:, 0] = np.minimum(vertices[:, 0], float(position))
+    apply_violin_contract(violins, combined=True)
+    for position, (values, color) in enumerate(zip(samples, colors, strict=False), start=1):
+        jitter = rng.uniform(0.07, 0.25, values.size)
+        collection = axis.scatter(np.full(values.size, position) + jitter, values, color=color)
+        apply_scatter_contract(collection)
+        axis.plot(
+            [position - 0.05, position + 0.05],
+            [float(np.median(values)), float(np.median(values))],
+            color="black",
+        )
+    _distribution_axis(axis, samples)
+    return figure
+
+
 BUILDERS = {
     "histogram": build_histogram,
     "density": build_density,
@@ -138,4 +182,6 @@ BUILDERS = {
     "box": build_box,
     "violin": build_violin,
     "box_violin": build_box_violin,
+    "strip": build_strip,
+    "raincloud": build_raincloud,
 }

@@ -102,6 +102,7 @@ def _heatmap_figure(
     color_semantics: str,
     center: float | None = None,
     fmt: str = ".2f",
+    annotate: bool = True,
 ) -> Figure:
     figure = plt.figure()
     layout = create_panel_grid(figure, 1, 1, panel_labels=False)
@@ -111,7 +112,7 @@ def _heatmap_figure(
         axis,
         matrix,
         labels,
-        annotate=True,
+        annotate=annotate,
         vmin=vmin,
         vmax=vmax,
         color_semantics=color_semantics,
@@ -131,6 +132,7 @@ def build_basic() -> Figure:
         vmin=0.0,
         vmax=1.0,
         color_semantics="sequential",
+        annotate=False,
     )
 
 
@@ -176,9 +178,30 @@ def build_confusion_matrix() -> Figure:
     )
 
 
+def build_annotated() -> Figure:
+    matrix = np.array(
+        [
+            [0.88, 0.64, 0.42, 0.31],
+            [0.59, 0.81, 0.57, 0.46],
+            [0.36, 0.53, 0.76, 0.69],
+            [0.24, 0.39, 0.62, 0.91],
+        ]
+    )
+    return _heatmap_figure(
+        matrix,
+        ["R1", "R2", "R3", "R4"],
+        colorbar_label="Normalized response (-)",
+        vmin=0.0,
+        vmax=1.0,
+        color_semantics="sequential",
+        annotate=True,
+    )
+
+
 BUILDERS = {
     "basic": build_basic,
     "correlation": build_correlation,
     "clustered": build_clustered,
     "confusion_matrix": build_confusion_matrix,
+    "annotated": build_annotated,
 }

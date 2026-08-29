@@ -38,7 +38,7 @@ def test_expected_gallery_paths_are_registry_projection() -> None:
         "technical/latex/palettes",
     }
     assert set(expected_gallery_stems()) == expected
-    assert len(expected) == 68
+    assert len(expected) == 2 * len(public_template_specs()) + 2
 
 
 def test_gallery_cli_validates_registry_projection(

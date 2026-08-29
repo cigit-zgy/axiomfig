@@ -15,13 +15,13 @@
 
 ## H2 — Extend core canonical templates
 
-- [ ] Add failing registry/contract/builder tests for the selected core variants.
-- [ ] Implement line `step` and `area`.
-- [ ] Implement scatter `bubble` and `hexbin`.
-- [ ] Implement bar `normalized_stacked` and `dot`.
-- [ ] Implement distribution `strip` and `raincloud`.
-- [ ] Implement heatmap `annotated`.
-- [ ] Run targeted registry/render tests and push a coherent core checkpoint.
+- [x] Add failing registry/contract/builder tests for the selected core variants.
+- [x] Implement line `step` and `area`.
+- [x] Implement scatter `bubble` and `hexbin`.
+- [x] Implement bar `normalized_stacked` and `dot`.
+- [x] Implement distribution `strip` and `raincloud`.
+- [x] Implement heatmap `annotated`.
+- [x] Run targeted registry/render tests and push a coherent core checkpoint.
 
 ## H3 — Add advanced scientific families
 

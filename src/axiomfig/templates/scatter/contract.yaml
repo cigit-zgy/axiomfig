@@ -12,3 +12,9 @@ variants:
   parity:
     required: [observed, predicted]
     optional: [identity_limits, xlabel, ylabel]
+  bubble:
+    required: [x, y, size]
+    optional: [size_label, group, xlabel, ylabel]
+  hexbin:
+    required: [x, y]
+    optional: [gridsize, count_label, xlabel, ylabel]
