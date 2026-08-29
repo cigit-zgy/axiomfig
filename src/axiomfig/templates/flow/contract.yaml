@@ -1,0 +1,5 @@
+family: flow
+variants:
+  sankey:
+    required: [source, target, flow]
+    optional: [node_labels, flow_labels]

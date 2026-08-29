@@ -1,0 +1,8 @@
+family: omics
+variants:
+  volcano:
+    required: [fold_change, adjusted_p_value, significance_threshold]
+    optional: [feature_label, fold_change_threshold]
+  enrichment_dot:
+    required: [term, enrichment_ratio, adjusted_p_value, count]
+    optional: [colorbar_label, size_label]

@@ -1,12 +1,17 @@
 from __future__ import annotations
 
 import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
 
 from axiomfig.contracts import MAIN_STROKE_PT
 from axiomfig.layout import add_panel_axes, create_panel_grid
-from axiomfig.template_helpers import apply_scatter_contract, place_legend_above
+from axiomfig.template_helpers import (
+    apply_filled_collection_contract,
+    apply_scatter_contract,
+    place_legend_above,
+)
 from axiomfig.templates.heatmap.builders import CORRELATION, CORRELATION_LABELS, add_matrix
 
 
@@ -68,4 +73,43 @@ def build_mantel() -> Figure:
     return figure
 
 
-BUILDERS = {"mantel": build_mantel}
+def build_correlation_network() -> Figure:
+    labels = ["COD", "TN", "TP", "Oxygen", "Community", "Function"]
+    angles = [2.62, 2.09, 1.57, 0.52, -0.52, -1.57]
+    coordinates = [(0.5 + 0.36 * np.cos(a), 0.5 + 0.36 * np.sin(a)) for a in angles]
+    edges = (
+        (0, 3, 0.74),
+        (0, 4, 0.58),
+        (1, 4, -0.61),
+        (1, 5, 0.67),
+        (2, 5, -0.52),
+        (3, 4, 0.45),
+    )
+    colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+    figure, axis = plt.subplots()
+    for source, target, value in edges:
+        x0, y0 = coordinates[source]
+        x1, y1 = coordinates[target]
+        axis.plot(
+            [x0, x1],
+            [y0, y1],
+            color=colors[0] if value > 0 else colors[4],
+            linewidth=MAIN_STROKE_PT * (1.0 + 2.0 * abs(value)),
+        )
+    for index, ((x, y), label) in enumerate(zip(coordinates, labels, strict=True)):
+        node = axis.scatter([x], [y], color=colors[index % len(colors)])
+        apply_filled_collection_contract(node, alpha=0.82)
+        axis.text(x, y + 0.06, label, ha="center", va="bottom")
+    proxies = (
+        Line2D([], [], color=colors[0], linewidth=MAIN_STROKE_PT * 2.2, label="positive"),
+        Line2D([], [], color=colors[4], linewidth=MAIN_STROKE_PT * 2.2, label="negative"),
+    )
+    for proxy in proxies:
+        axis.add_line(proxy)
+    place_legend_above(axis)
+    axis.set(xlim=(0.0, 1.0), ylim=(0.0, 1.0))
+    axis.set_axis_off()
+    return figure
+
+
+BUILDERS = {"mantel": build_mantel, "correlation_network": build_correlation_network}

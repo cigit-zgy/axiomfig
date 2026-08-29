@@ -12,6 +12,17 @@ def palettes(contracts: Contracts | None = None) -> Mapping[str, Mapping[str, st
     return selected.colors["palettes"]
 
 
+def semantic_colormap(semantics: str, contracts: Contracts | None = None) -> str:
+    selected = contracts or load_contracts()
+    colormaps = selected.colors.get("colormaps")
+    if not isinstance(colormaps, Mapping) or semantics not in colormaps:
+        raise ValueError(f"unsupported color semantics: {semantics!r}")
+    value = colormaps[semantics]
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"invalid colormap for color semantics: {semantics!r}")
+    return value
+
+
 def render_xcolor(contracts: Contracts | None = None) -> str:
     selected = contracts or load_contracts()
     default_name = selected.colors["default"]

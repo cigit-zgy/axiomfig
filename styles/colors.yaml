@@ -1,6 +1,12 @@
 version: 1
 default: axiom_classic
 
+colormaps:
+  qualitative: tab10
+  sequential: cividis
+  diverging: RdBu_r
+  cyclic: twilight
+
 palettes:
   tol_bright:
     TolBlue: "#4477AA"

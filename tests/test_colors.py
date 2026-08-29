@@ -16,6 +16,23 @@ def test_default_rc_cycle_is_loaded_from_canonical_colors_yaml() -> None:
     )
 
 
+def test_scientific_colormap_semantics_are_owned_by_colors_yaml() -> None:
+    from axiomfig.colors import semantic_colormap
+    from axiomfig.config import build_rcparams, load_contracts
+
+    contracts = load_contracts(ROOT / "styles")
+
+    assert set(contracts.colors["colormaps"]) == {
+        "qualitative",
+        "sequential",
+        "diverging",
+        "cyclic",
+    }
+    assert semantic_colormap("sequential", contracts) == "cividis"
+    assert semantic_colormap("diverging", contracts) == "RdBu_r"
+    assert build_rcparams(contracts)["image.cmap"] == semantic_colormap("sequential", contracts)
+
+
 def test_matplotlib_and_xcolor_use_the_same_canonical_rgb_values() -> None:
     from axiomfig.colors import palettes, render_xcolor
     from axiomfig.config import load_contracts

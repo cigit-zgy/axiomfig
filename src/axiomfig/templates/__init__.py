@@ -13,11 +13,15 @@ from axiomfig.templates.diagnostics import BUILDERS as DIAGNOSTICS_BUILDERS
 from axiomfig.templates.distribution import BUILDERS as DISTRIBUTION_BUILDERS
 from axiomfig.templates.estimation import BUILDERS as ESTIMATION_BUILDERS
 from axiomfig.templates.field import BUILDERS as FIELD_BUILDERS
+from axiomfig.templates.flow import BUILDERS as FLOW_BUILDERS
 from axiomfig.templates.heatmap import BUILDERS as HEATMAP_BUILDERS
 from axiomfig.templates.layouts import BUILDERS as LAYOUT_BUILDERS
 from axiomfig.templates.line import BUILDERS as LINE_BUILDERS
+from axiomfig.templates.omics import BUILDERS as OMICS_BUILDERS
+from axiomfig.templates.ordination import BUILDERS as ORDINATION_BUILDERS
 from axiomfig.templates.registry import validate_registry
 from axiomfig.templates.scatter import BUILDERS as SCATTER_BUILDERS
+from axiomfig.templates.survival import BUILDERS as SURVIVAL_BUILDERS
 
 
 def _qualified(
@@ -34,8 +38,12 @@ TEMPLATE_BUILDERS: dict[str, Callable[..., Figure]] = {
     **_qualified("heatmap", HEATMAP_BUILDERS),
     **_qualified("estimation", ESTIMATION_BUILDERS),
     **_qualified("diagnostics", DIAGNOSTICS_BUILDERS),
+    **_qualified("ordination", ORDINATION_BUILDERS),
     **_qualified("association", ASSOCIATION_BUILDERS),
+    **_qualified("flow", FLOW_BUILDERS),
     **_qualified("field", FIELD_BUILDERS),
+    **_qualified("omics", OMICS_BUILDERS),
+    **_qualified("survival", SURVIVAL_BUILDERS),
     **_qualified("layouts", LAYOUT_BUILDERS),
 }
 

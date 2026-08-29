@@ -22,8 +22,12 @@ SCIENTIFIC_FAMILIES = (
     "heatmap",
     "estimation",
     "diagnostics",
+    "ordination",
     "association",
+    "flow",
     "field",
+    "omics",
+    "survival",
 )
 EXPECTED_PUBLIC_COUNTS = {
     "line": 7,
@@ -31,10 +35,14 @@ EXPECTED_PUBLIC_COUNTS = {
     "bar": 6,
     "distribution": 8,
     "heatmap": 5,
-    "estimation": 2,
-    "diagnostics": 6,
-    "association": 1,
-    "field": 1,
+    "estimation": 3,
+    "diagnostics": 8,
+    "ordination": 4,
+    "association": 2,
+    "flow": 1,
+    "field": 2,
+    "omics": 2,
+    "survival": 1,
 }
 
 
@@ -44,8 +52,8 @@ def test_registry_has_canonical_taxonomy_and_separate_layouts() -> None:
 
     assert tuple(dict.fromkeys(spec.family for spec in public)) == SCIENTIFIC_FAMILIES
     assert {spec.family for spec in specs if not spec.public} == {"layouts"}
-    assert len(public) == 42
-    assert len(specs) == 46
+    assert len(public) == 55
+    assert len(specs) == 59
     assert {
         family: sum(spec.family == family for spec in public) for family in SCIENTIFIC_FAMILIES
     } == EXPECTED_PUBLIC_COUNTS
@@ -102,6 +110,31 @@ def test_v1_core_template_variants_are_real_and_scientifically_explicit() -> Non
         "normalization" in load_family_contract("bar")["variants"]["normalized_stacked"]["required"]
     )
     assert "annotations" in load_family_contract("heatmap")["variants"]["annotated"]["required"]
+
+
+def test_v1_advanced_families_and_semantics_are_registered() -> None:
+    public_ids = {spec.template_id for spec in public_template_specs()}
+    expected = {
+        "estimation/coefficient",
+        "diagnostics/qq",
+        "diagnostics/feature_importance",
+        "ordination/pca_scores",
+        "ordination/pca_biplot",
+        "ordination/pcoa",
+        "ordination/nmds",
+        "association/correlation_network",
+        "flow/sankey",
+        "field/quiver",
+        "omics/volcano",
+        "omics/enrichment_dot",
+        "survival/kaplan_meier",
+    }
+
+    assert expected <= public_ids
+    assert "coordinates" in load_family_contract("ordination")["variants"]["pca_scores"]["required"]
+    assert "flow" in load_family_contract("flow")["variants"]["sankey"]["required"]
+    assert "adjusted_p_value" in load_family_contract("omics")["variants"]["volcano"]["required"]
+    assert "censoring" in load_family_contract("survival")["variants"]["kaplan_meier"]["required"]
 
 
 def test_old_coarse_template_modules_are_removed() -> None:

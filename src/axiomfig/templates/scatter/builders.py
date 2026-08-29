@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.figure import Figure
 
+from axiomfig.colors import semantic_colormap
 from axiomfig.template_helpers import (
     apply_axis_contract,
     apply_filled_collection_contract,
@@ -99,7 +100,13 @@ def build_hexbin() -> Figure:
     x = rng.normal(12.0, 3.4, 420)
     y = 0.68 * x + rng.normal(2.5, 2.0, x.size)
     figure, axis = plt.subplots()
-    collection = axis.hexbin(x, y, gridsize=18, mincnt=1, cmap="cividis")
+    collection = axis.hexbin(
+        x,
+        y,
+        gridsize=18,
+        mincnt=1,
+        cmap=semantic_colormap("sequential"),
+    )
     apply_filled_collection_contract(collection)
     axis.set(xlabel="Observed loading", ylabel="Response density")
     _open(axis, (2.0, 22.0), (0.0, 20.0))

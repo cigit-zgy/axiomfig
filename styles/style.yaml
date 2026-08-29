@@ -121,8 +121,6 @@ plots:
     limit_padding_fraction: 0.02
   histogram: { alpha: 0.72, edge_color: black, edge_width_token: fill_edge }
   heatmap:
-    sequential_cmap: cividis
-    diverging_cmap: RdBu_r
     interpolation: nearest
 
 rendering: { pdf_fonttype: 42, ps_fonttype: 42, dpi: 300, transparent: false }

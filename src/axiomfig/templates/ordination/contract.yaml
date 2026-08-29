@@ -1,0 +1,14 @@
+family: ordination
+variants:
+  pca_scores:
+    required: [coordinates, explained_variance]
+    optional: [group, sample_labels]
+  pca_biplot:
+    required: [coordinates, loadings, explained_variance]
+    optional: [group, feature_labels]
+  pcoa:
+    required: [coordinates, explained_variance, distance_metric]
+    optional: [group, sample_labels]
+  nmds:
+    required: [coordinates, stress, distance_metric]
+    optional: [group, sample_labels]

@@ -59,4 +59,38 @@ def build_point_interval() -> Figure:
     return figure
 
 
-BUILDERS = {"forest": build_forest, "point_interval": build_point_interval}
+def build_coefficient() -> Figure:
+    labels = ["Intercept", "Temperature", "Loading", "Oxygen"]
+    positions = np.arange(len(labels))
+    estimates = np.array([[0.18, 0.42, -0.31, 0.27], [0.11, 0.36, -0.22, 0.34]])
+    errors = np.array([[0.08, 0.10, 0.09, 0.08], [0.07, 0.08, 0.08, 0.09]])
+    figure, axis = plt.subplots()
+    for index, label in enumerate(("Mechanistic", "Hybrid")):
+        offset = (index - 0.5) * 0.16
+        style = series_style(index)
+        axis.errorbar(
+            estimates[index],
+            positions + offset,
+            xerr=errors[index],
+            label=label,
+            color=style["color"],
+            marker=style["marker"],
+            linestyle="none",
+            **{key: value for key, value in errorbar_kwargs().items() if key != "marker"},
+        )
+    axis.axvline(0.0, **reference_line_kwargs())
+    axis.set_yticks(positions, labels)
+    axis.set(xlabel="Coefficient estimate (95% CI)")
+    axis.invert_yaxis()
+    apply_axis_contract(axis, surface="open")
+    apply_categorical_axis(axis, coordinate="y")
+    apply_nice_linear_axis(axis, -0.5, 0.6, coordinate="x")
+    place_legend_above(axis)
+    return figure
+
+
+BUILDERS = {
+    "forest": build_forest,
+    "point_interval": build_point_interval,
+    "coefficient": build_coefficient,
+}

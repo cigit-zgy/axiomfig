@@ -18,3 +18,9 @@ variants:
   learning_curve:
     required: [iteration, metric, series]
     optional: [target, metric_name]
+  qq:
+    required: [theoretical_quantile, sample_quantile, reference_distribution]
+    optional: [envelope]
+  feature_importance:
+    required: [feature, importance, importance_type]
+    optional: [uncertainty, xlabel]

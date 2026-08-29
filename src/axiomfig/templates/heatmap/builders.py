@@ -6,7 +6,7 @@ from matplotlib.axes import Axes
 from matplotlib.colors import TwoSlopeNorm
 from matplotlib.figure import Figure
 
-from axiomfig.config import load_contracts
+from axiomfig.colors import semantic_colormap
 from axiomfig.layout import add_panel_axes, create_panel_grid
 from axiomfig.template_helpers import (
     apply_axis_contract,
@@ -26,11 +26,7 @@ CORRELATION_LABELS = ["Oxygen", "Ammonium", "Nitrate", "Phosphate"]
 
 
 def _cmap(color_semantics: str) -> str:
-    contract = load_contracts().style["plots"]["heatmap"]
-    key = f"{color_semantics}_cmap"
-    if key not in contract:
-        raise ValueError(f"unsupported heatmap color semantics: {color_semantics!r}")
-    return str(contract[key])
+    return semantic_colormap(color_semantics)
 
 
 def add_matrix(

@@ -3,3 +3,6 @@ variants:
   contour:
     required: [x, y, field, color_semantics]
     optional: [levels, colorbar_label, xlabel, ylabel]
+  quiver:
+    required: [x, y, u, v, color_semantics]
+    optional: [magnitude, colorbar_label, xlabel, ylabel]

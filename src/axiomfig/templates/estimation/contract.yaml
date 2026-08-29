@@ -6,3 +6,6 @@ variants:
   point_interval:
     required: [label, estimate, interval, uncertainty_type]
     optional: [group, xlabel]
+  coefficient:
+    required: [term, estimate, interval, uncertainty_type]
+    optional: [model, reference, xlabel]

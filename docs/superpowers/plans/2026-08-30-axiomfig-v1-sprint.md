@@ -25,14 +25,14 @@
 
 ## H3 — Add advanced scientific families
 
-- [ ] Add failing tests for advanced family presence, contracts, builders, and explicit semantics.
-- [ ] Extend estimation and diagnostics with coefficient, QQ, and feature importance.
-- [ ] Add ordination with four precomputed-coordinate templates.
-- [ ] Add correlation network while preserving Mantel as first-class.
-- [ ] Add one dependency-free Sankey, one quiver field, volcano/enrichment-dot, and Kaplan–Meier.
-- [ ] Rebuild the registry-derived sans/serif Gallery and validate exact coverage.
-- [ ] Perform the single visual review and one bounded repair pass if required.
-- [ ] Commit and push the advanced-template/Gallery checkpoint.
+- [x] Add failing tests for advanced family presence, contracts, builders, and explicit semantics.
+- [x] Extend estimation and diagnostics with coefficient, QQ, and feature importance.
+- [x] Add ordination with four precomputed-coordinate templates.
+- [x] Add correlation network while preserving Mantel as first-class.
+- [x] Add one dependency-free Sankey, one quiver field, volcano/enrichment-dot, and Kaplan–Meier.
+- [x] Rebuild the registry-derived sans/serif Gallery and validate exact coverage.
+- [x] Perform the single visual review; no repair pass was required.
+- [x] Commit and push the advanced-template/Gallery checkpoint.
 
 ## H4 — Implement the LLM-efficient boundary
 

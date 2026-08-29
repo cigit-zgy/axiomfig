@@ -46,6 +46,7 @@ families:
     variants:
       forest: {geometry: single-column}
       point_interval: {geometry: single-column}
+      coefficient: {geometry: single-column}
   diagnostics:
     variants:
       residual: {geometry: single-column}
@@ -54,12 +55,32 @@ families:
       roc: {geometry: single-column}
       precision_recall: {geometry: single-column}
       learning_curve: {geometry: single-column}
+      qq: {geometry: single-column}
+      feature_importance: {geometry: single-column}
+  ordination:
+    variants:
+      pca_scores: {geometry: single-column}
+      pca_biplot: {geometry: single-column}
+      pcoa: {geometry: single-column}
+      nmds: {geometry: single-column}
   association:
     variants:
       mantel: {geometry: onehalf-column}
+      correlation_network: {geometry: single-column}
+  flow:
+    variants:
+      sankey: {geometry: onehalf-column}
   field:
     variants:
       contour: {geometry: single-column}
+      quiver: {geometry: single-column}
+  omics:
+    variants:
+      volcano: {geometry: single-column}
+      enrichment_dot: {geometry: single-column}
+  survival:
+    variants:
+      kaplan_meier: {geometry: single-column}
 layouts:
   layouts:
     variants:

@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+from statistics import NormalDist
+
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.figure import Figure
 
+from axiomfig.contracts import bar_width
 from axiomfig.template_helpers import (
+    add_bar_value_labels,
     apply_axis_contract,
+    apply_categorical_axis,
     apply_nice_linear_axis,
     apply_scatter_contract,
     place_legend_above,
@@ -122,6 +127,39 @@ def build_learning_curve() -> Figure:
     return figure
 
 
+def build_qq() -> Figure:
+    rng = np.random.default_rng(149)
+    sample = np.sort(rng.normal(0.0, 1.0, 72) + 0.10 * rng.standard_t(5, 72))
+    probability = (np.arange(sample.size) + 0.5) / sample.size
+    normal = NormalDist()
+    theoretical = np.array([normal.inv_cdf(float(value)) for value in probability])
+    lower = min(float(theoretical.min()), float(sample.min()))
+    upper = max(float(theoretical.max()), float(sample.max()))
+    figure, axis = plt.subplots()
+    collection = axis.scatter(theoretical, sample)
+    apply_scatter_contract(collection)
+    axis.plot([lower, upper], [lower, upper], **reference_line_kwargs())
+    axis.set(xlabel="Theoretical normal quantile", ylabel="Sample quantile")
+    _open(axis, (lower, upper), (lower, upper))
+    return figure
+
+
+def build_feature_importance() -> Figure:
+    labels = ["Temperature", "Influent COD", "Dissolved oxygen", "Hydraulic load"]
+    values = np.array([0.31, 0.27, 0.22, 0.14])
+    positions = np.arange(len(labels))
+    figure, axis = plt.subplots()
+    bars = axis.barh(positions, values, height=bar_width())
+    axis.set_yticks(positions, labels)
+    axis.set(xlabel="Permutation importance (-)")
+    axis.invert_yaxis()
+    apply_axis_contract(axis, surface="open")
+    apply_categorical_axis(axis, coordinate="y")
+    apply_nice_linear_axis(axis, 0.0, 0.4, coordinate="x")
+    add_bar_value_labels(axis, [bars])
+    return figure
+
+
 BUILDERS = {
     "residual": build_residual,
     "bland_altman": build_bland_altman,
@@ -129,4 +167,6 @@ BUILDERS = {
     "roc": build_roc,
     "precision_recall": build_precision_recall,
     "learning_curve": build_learning_curve,
+    "qq": build_qq,
+    "feature_importance": build_feature_importance,
 }
