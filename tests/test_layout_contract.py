@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import matplotlib.pyplot as plt
 import pytest
+from matplotlib.transforms import ScaledTranslation
 
 from axiomfig import template_helpers
 
@@ -67,4 +68,37 @@ def test_legend_rejects_an_irreducibly_wide_single_column() -> None:
 
     with pytest.raises(ValueError, match="cannot fit"):
         template_helpers.place_legend_above(axis, gap_pt=2.0)
+    plt.close(figure)
+
+
+def test_legend_rejects_a_rendered_collision_with_a_tagged_panel_label() -> None:
+    figure, axis = plt.subplots(figsize=(5.0, 2.5))
+    axis.plot([0, 1], [0, 1], label="W" * 23)
+    template_helpers.add_panel_labels([axis])
+    transform = axis.transAxes + ScaledTranslation(0.0, 2.0 / 72.0, figure.dpi_scale_trans)
+    candidate = axis.legend(
+        loc="lower right",
+        bbox_to_anchor=(1.0, 1.0),
+        bbox_transform=transform,
+        frameon=False,
+        borderaxespad=0.0,
+    )
+    figure.canvas.draw()
+    assert candidate.get_window_extent(figure.canvas.get_renderer()).overlaps(
+        axis.texts[0].get_window_extent(figure.canvas.get_renderer())
+    )
+    candidate.remove()
+
+    with pytest.raises(ValueError, match="panel label"):
+        template_helpers.place_legend_above(axis)
+    plt.close(figure)
+
+
+def test_panel_labels_reject_a_preexisting_colliding_legend() -> None:
+    figure, axis = plt.subplots(figsize=(5.0, 2.5))
+    axis.plot([0, 1], [0, 1], label="W" * 23)
+    template_helpers.place_legend_above(axis)
+
+    with pytest.raises(ValueError, match="panel label"):
+        template_helpers.add_panel_labels([axis])
     plt.close(figure)

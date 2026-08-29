@@ -18,14 +18,14 @@ from axiomfig.template_helpers import (
 def build_style_contract() -> Figure:
     rng = np.random.default_rng(109)
     figure, axes_grid = plt.subplots(2, 2)
-    line_axis, bar_axis, scatter_axis, heatmap_axis = axes_grid.flat
+    axes = list(axes_grid.flat)
+    line_axis, bar_axis, scatter_axis, heatmap_axis = axes
 
     time = np.linspace(0.0, 12.0, 61)
     line_axis.plot(time, 1.0 - np.exp(-time / 3.2), label="Open line")
     line_axis.plot(time, 0.92 * (1.0 - np.exp(-time / 4.1)), label="Reference")
     line_axis.set(xlabel="Time (d)", ylabel="Response (-)")
     apply_axis_contract(line_axis)
-    place_legend_above(line_axis)
 
     positions = np.arange(3)
     width = 0.34
@@ -45,7 +45,6 @@ def build_style_contract() -> Figure:
     bar_axis.set(ylabel="$R^2$ (-)", ylim=(0.0, 1.0))
     apply_axis_contract(bar_axis, surface="filled")
     add_bar_value_labels(bar_axis, [mechanistic, hybrid])
-    place_legend_above(bar_axis)
 
     observed = np.linspace(2.0, 28.0, 36)
     predicted = observed + rng.normal(0.0, 1.35, observed.size)
@@ -90,7 +89,9 @@ def build_style_contract() -> Figure:
     colorbar = figure.colorbar(image, ax=heatmap_axis, pad=0.04)
     colorbar.set_label("Correlation (-)")
 
-    add_panel_labels(axes_grid.flat)
+    add_panel_labels(axes)
+    place_legend_above(line_axis)
+    place_legend_above(bar_axis)
     return figure
 
 

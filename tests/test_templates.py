@@ -79,3 +79,19 @@ def test_filled_templates_use_outward_major_and_minor_ticks(name: str) -> None:
         assert axis.yaxis._major_tick_kw["tickdir"] == "out"
         assert axis.yaxis._minor_tick_kw["tickdir"] == "out"
     plt.close(figure)
+
+
+@pytest.mark.parametrize("name", ["layout-2-panel", "layout-4-panel", "style-contract"])
+def test_layout_templates_keep_tagged_panel_labels_disjoint_from_legends(name: str) -> None:
+    figure = build_template(name)
+    figure.canvas.draw()
+    renderer = figure.canvas.get_renderer()
+    for axis in figure.axes:
+        legend = axis.get_legend()
+        panel_labels = [text for text in axis.texts if text.get_gid() == "axiomfig-panel-label"]
+        if legend is not None:
+            legend_bbox = legend.get_window_extent(renderer)
+            assert all(
+                not legend_bbox.overlaps(text.get_window_extent(renderer)) for text in panel_labels
+            )
+    plt.close(figure)

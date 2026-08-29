@@ -29,8 +29,8 @@ def build_two_panel() -> Figure:
     axes[1].set(xlabel="Observed", ylabel="Predicted")
     for axis in axes:
         apply_axis_contract(axis)
-    place_legend_above(axes[0])
     add_panel_labels(axes)
+    place_legend_above(axes[0])
     return figure
 
 
@@ -46,7 +46,6 @@ def build_four_panel() -> Figure:
         x, mean - 0.045, mean + 0.045, color=line.get_color(), alpha=0.2, linewidth=0
     )
     axes[0].set(xlabel="Time (d)", ylabel="Response (-)")
-    place_legend_above(axes[0])
 
     observed = np.linspace(2.0, 26.0, 34)
     predicted = observed + rng.normal(0.0, 1.35, observed.size)
@@ -62,7 +61,6 @@ def build_four_panel() -> Figure:
     axes[2].set(ylabel="$R^2$ (-)", ylim=(0.0, 1.0))
     apply_axis_contract(axes[2], surface="filled")
     add_bar_value_labels(axes[2], [asm_bars, hybrid_bars])
-    place_legend_above(axes[2])
 
     distributions = [rng.normal(value, 0.075, 70) for value in (0.62, 0.74, 0.82)]
     parts = axes[3].violinplot(distributions, showmedians=True)
@@ -78,6 +76,8 @@ def build_four_panel() -> Figure:
     apply_axis_contract(axes[3], surface="filled")
 
     add_panel_labels(axes)
+    place_legend_above(axes[0])
+    place_legend_above(axes[2])
     return figure
 
 

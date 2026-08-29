@@ -14,6 +14,8 @@ from matplotlib.transforms import ScaledTranslation
 from axiomfig.contracts import FILLED_TICK_PARAMS, OPEN_TICK_PARAMS, STROKE_WIDTH_PT
 from axiomfig.typography import font_for_language
 
+PANEL_LABEL_GID = "axiomfig-panel-label"
+
 
 def apply_axis_contract(axis: Axes, surface: Literal["open", "filled"] = "open") -> None:
     """Apply deterministic ticks for an open or filled plotting surface."""
@@ -34,7 +36,7 @@ def add_panel_labels(axes: Iterable[Axes], gap_pt: float = 2.0) -> None:
     for index, axis in enumerate(axes):
         offset = ScaledTranslation(0.0, gap_pt / 72.0, axis.figure.dpi_scale_trans)
         transform = axis.transAxes + offset
-        axis.text(
+        label = axis.text(
             0.0,
             1.0,
             f"({chr(ord('a') + index)})",
@@ -44,6 +46,14 @@ def add_panel_labels(axes: Iterable[Axes], gap_pt: float = 2.0) -> None:
             fontweight="bold",
             clip_on=False,
         )
+        label.set_gid(PANEL_LABEL_GID)
+        legend = axis.get_legend()
+        if legend is not None:
+            axis.figure.canvas.draw()
+            if _legend_overlaps_panel_label(axis, legend):
+                raise ValueError(
+                    "legend cannot fit above the axes without overlapping a panel label"
+                )
 
 
 def place_legend_above(axis: Axes, gap_pt: float = 2.0) -> Legend | None:
@@ -56,6 +66,7 @@ def place_legend_above(axis: Axes, gap_pt: float = 2.0) -> Legend | None:
     figure.canvas.draw()
     transform = axis.transAxes + ScaledTranslation(0.0, gap_pt / 72.0, figure.dpi_scale_trans)
     legend: Legend | None = None
+    fits_without_collision = False
     for ncol in range(len(handles), 0, -1):
         legend = axis.legend(
             handles,
@@ -68,10 +79,15 @@ def place_legend_above(axis: Axes, gap_pt: float = 2.0) -> Legend | None:
             borderaxespad=0.0,
         )
         figure.canvas.draw()
-        if legend.get_window_extent(figure.canvas.get_renderer()).width <= axis.bbox.width:
+        if legend.get_window_extent(
+            figure.canvas.get_renderer()
+        ).width <= axis.bbox.width and not _legend_overlaps_panel_label(axis, legend):
+            fits_without_collision = True
             break
     if legend is None:  # pragma: no cover - non-empty handles always enter the loop.
         raise RuntimeError("legend creation did not produce a legend")
+    if not fits_without_collision:
+        raise ValueError("legend cannot fit above the axes without overlapping a panel label")
     legend_bbox = legend.get_window_extent(figure.canvas.get_renderer())
     overflow = legend_bbox.y1 - figure.bbox.y1
     if overflow > 0:
@@ -91,7 +107,19 @@ def place_legend_above(axis: Axes, gap_pt: float = 2.0) -> Legend | None:
     )
     if exceeds_axes_width or exceeds_figure:
         raise ValueError("legend cannot fit above the axes within the figure bounds")
+    if _legend_overlaps_panel_label(axis, legend):
+        raise ValueError("legend cannot fit above the axes without overlapping a panel label")
     return legend
+
+
+def _legend_overlaps_panel_label(axis: Axes, legend: Legend) -> bool:
+    renderer = axis.figure.canvas.get_renderer()
+    legend_bbox = legend.get_window_extent(renderer)
+    return any(
+        legend_bbox.overlaps(text.get_window_extent(renderer))
+        for text in axis.texts
+        if text.get_gid() == PANEL_LABEL_GID
+    )
 
 
 def _reserve_bar_label_headroom(axis: Axes, containers: list[BarContainer]) -> None:
