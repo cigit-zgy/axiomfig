@@ -59,8 +59,23 @@ def test_open_tick_contract_sets_one_linear_minor_locator_per_major_interval() -
     figure, axes = plt.subplots()
     apply_tick_contract(axes, filled=False)
 
-    assert isinstance(axes.xaxis.get_minor_locator(), AutoMinorLocator)
-    assert isinstance(axes.yaxis.get_minor_locator(), AutoMinorLocator)
+    for axis in (axes.xaxis, axes.yaxis):
+        locator = axis.get_minor_locator()
+        assert isinstance(locator, AutoMinorLocator)
+        assert locator.ndivs == 2
+    plt.close(figure)
+
+
+def test_filled_tick_contract_sets_linear_minor_locator_and_outward_ticks() -> None:
+    figure, axes = plt.subplots()
+    apply_tick_contract(axes, filled=True)
+
+    for axis in (axes.xaxis, axes.yaxis):
+        locator = axis.get_minor_locator()
+        assert isinstance(locator, AutoMinorLocator)
+        assert locator.ndivs == 2
+        assert axis._major_tick_kw["tickdir"] == "out"
+        assert axis._minor_tick_kw["tickdir"] == "out"
     plt.close(figure)
 
 
