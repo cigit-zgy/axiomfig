@@ -5,10 +5,31 @@ import pytest
 
 from axiomfig.templates import TEMPLATE_BUILDERS, build_template
 
-CANONICAL_TEMPLATES = {"line", "scatter", "bar", "violin", "heatmap", "multi-panel"}
+CANONICAL_TEMPLATES = {
+    "single-line",
+    "multi-line",
+    "line-marker",
+    "line-ci",
+    "scatter",
+    "grouped-scatter",
+    "parity",
+    "regression-scatter",
+    "vertical-bar",
+    "grouped-bar",
+    "horizontal-bar",
+    "stacked-bar",
+    "boxplot",
+    "violin",
+    "box-violin",
+    "histogram",
+    "heatmap",
+    "errorbar",
+    "model-evaluation",
+    "multi-panel",
+}
 
 
-def test_registry_contains_only_six_canonical_templates_from_four_families() -> None:
+def test_registry_contains_only_twenty_canonical_templates_from_four_families() -> None:
     assert set(TEMPLATE_BUILDERS) == CANONICAL_TEMPLATES
     assert {
         builder.__module__.rsplit(".", maxsplit=1)[-1] for builder in TEMPLATE_BUILDERS.values()

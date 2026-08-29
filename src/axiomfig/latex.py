@@ -41,10 +41,9 @@ _EXPECTED_TEXT = (
     "Units marker:",
     "10 mg L−1",
     "Chemistry markers:",
-    "+ – 3–",
-    "NH4",
-    "NO3",
-    "PO4",
+    "NH4 +",
+    "NO3 –",
+    "PO4 3 –",
     "Math marker:",
     "𝜇max",
     "𝛼",
@@ -100,12 +99,10 @@ def _font_rows(pdf: Path) -> tuple[str, ...]:
         if unicode_mapping != "yes":
             raise LatexProbeError(f"Font has no Unicode mapping in {pdf}: {row}")
     font_names = tuple(row.split()[0] for row in rows)
-    if not any("LMRoman" in name for name in font_names) or not any(
-        "LatinModernMath" in name for name in font_names
+    if not any("XCharter" in name and "Math" not in name for name in font_names) or not any(
+        "XCharter-Math" in name for name in font_names
     ):
-        raise LatexProbeError(
-            f"PDF is missing required Latin Modern fonts: {', '.join(font_names)}"
-        )
+        raise LatexProbeError(f"PDF is missing required XCharter fonts: {', '.join(font_names)}")
     return rows
 
 

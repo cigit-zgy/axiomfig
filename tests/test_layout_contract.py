@@ -33,6 +33,8 @@ def test_normal_legend_is_one_row_frameless_and_right_aligned() -> None:
     assert bbox.x1 == pytest.approx(axis.bbox.x1, abs=0.02)
     assert bbox.y0 > axis.bbox.y1
     assert bbox.y1 <= figure.bbox.y1
+    expected_gap_px = 0.7 * figure.dpi / 72.0
+    assert bbox.y0 - axis.bbox.y1 == pytest.approx(expected_gap_px, abs=0.15)
     plt.close(figure)
 
 
@@ -96,7 +98,10 @@ def test_multi_panel_data_axes_are_equal_and_colorbar_is_independent() -> None:
     heights = [axis.bbox.height for axis in data_axes]
     assert max(widths) - min(widths) < 0.02
     assert max(heights) - min(heights) < 0.02
-    assert colorbar_axis.bbox.x0 > max(axis.bbox.x1 for axis in data_axes)
+    assert data_axes[1].bbox.x0 == pytest.approx(data_axes[3].bbox.x0, abs=0.02)
+    assert colorbar_axis.bbox.x0 > data_axes[3].bbox.x1
+    assert colorbar_axis.bbox.y0 == pytest.approx(data_axes[3].bbox.y0, abs=0.02)
+    assert colorbar_axis.bbox.y1 == pytest.approx(data_axes[3].bbox.y1, abs=0.02)
     assert colorbar_axis.yaxis._major_tick_kw["tickdir"] == "out"
     assert colorbar_axis.yaxis._minor_tick_kw["tickdir"] == "out"
     assert colorbar_axis.yaxis._major_tick_kw["tick1On"] is False
@@ -104,12 +109,15 @@ def test_multi_panel_data_axes_are_equal_and_colorbar_is_independent() -> None:
     plt.close(figure)
 
 
-@pytest.mark.parametrize("template", ["line", "scatter", "bar", "violin", "heatmap"])
+@pytest.mark.parametrize(
+    "template", ["single-line", "scatter", "vertical-bar", "violin", "heatmap"]
+)
 def test_single_panel_layout_keeps_visible_text_inside_the_figure(template: str) -> None:
     params = build_rcparams(load_contracts(), geometry="single-column", typography="sans")
     with mpl.rc_context(rc=params):
         figure = build_template(template)
         figure.set_size_inches(params["figure.figsize"], forward=False)
+        template_helpers.apply_output_margin(figure)
         figure.canvas.draw()
         renderer = figure.canvas.get_renderer()
         artists = []
@@ -142,4 +150,22 @@ def test_single_panel_layout_keeps_visible_text_inside_the_figure(template: str)
             assert bbox.y0 >= figure.bbox.y0 - 0.5, (template, label, bbox)
             assert bbox.x1 <= figure.bbox.x1 + 0.5, (template, label, bbox)
             assert bbox.y1 <= figure.bbox.y1 + 0.5, (template, label, bbox)
+        plt.close(figure)
+
+
+def test_tight_output_margin_handles_an_outside_multi_series_legend() -> None:
+    params = build_rcparams(load_contracts(), geometry="single-column", typography="sans")
+    with mpl.rc_context(rc=params):
+        figure = build_template("multi-line")
+        figure.set_size_inches(params["figure.figsize"], forward=False)
+        template_helpers.apply_output_margin(figure)
+        figure.canvas.draw()
+        tight = figure.get_tightbbox(figure.canvas.get_renderer()).transformed(
+            figure.dpi_scale_trans
+        )
+        padding = 1.5 * figure.dpi / 72.0
+        assert tight.x0 == pytest.approx(padding, abs=0.5)
+        assert tight.y0 == pytest.approx(padding, abs=0.5)
+        assert figure.bbox.width - tight.x1 == pytest.approx(padding, abs=0.5)
+        assert figure.bbox.height - tight.y1 == pytest.approx(padding, abs=0.5)
         plt.close(figure)

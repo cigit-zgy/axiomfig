@@ -33,7 +33,7 @@ axes:
 legend:
   single_series: none
   location: outside-top-right
-  gap_pt: 2.0
+  top_gap_pt: 0.7
   handlelength: 1.0
   frame: false
   prefer_single_row: true
@@ -45,6 +45,11 @@ panel:
   left_offset_pt: -2.0
   top_offset_pt: 2.0
 
+output:
+  margin_mode: tight
+  allowed_margin_modes: [tight, normal, custom]
+  padding_pt: 1.5
+
 layout:
   single_panel:
     margins: { left: 0.20, right: 0.89, bottom: 0.20, top: 0.84 }
@@ -52,23 +57,52 @@ layout:
     colorbar_wspace: 0.10
   multi_panel:
     margins: { left: 0.12, right: 0.92, bottom: 0.11, top: 0.88 }
-    width_ratios: [1.0, 1.0, 0.055]
-    wspace: 0.42
+    colorbar_width_ratio: 0.055
+    colorbar_gap: 0.025
+    wspace: 0.34
     hspace: 0.45
 
 plots:
   line: { linewidth_token: main_stroke }
+  line_marker:
+    marker: o
+    marker_size_pt: 5.2
+    edge_color: black
+    edge_width_token: fill_edge
+  confidence_interval:
+    alpha: 0.22
+    edge_color: black
+    edge_width_token: fill_edge
   scatter:
-    marker_size_pt2: 28.0
+    marker_size_pt2: 36.0
     alpha: 0.55
     edge_color: black
     edge_width_token: fill_edge
+  errorbar:
+    marker: o
+    marker_size_pt: 5.2
+    edge_color: black
+    edge_width_token: fill_edge
+    cap_size_pt: 2.5
   bar:
     edge_color: black
     edge_width_token: fill_edge
     value_labels: true
     decimals: 2
-  violin: { edge_color: black, edge_width_token: fill_edge, limit_padding_fraction: 0.02 }
+  boxplot:
+    alpha: 0.72
+    edge_color: black
+    edge_width_token: fill_edge
+    width: 0.55
+    combined_width: 0.22
+  violin:
+    alpha: 0.72
+    combined_alpha: 0.42
+    edge_color: black
+    edge_width_token: fill_edge
+    width: 0.82
+    limit_padding_fraction: 0.02
+  histogram: { edge_color: black, edge_width_token: fill_edge }
   heatmap: { cmap: cividis, interpolation: nearest }
 
 rendering: { pdf_fonttype: 42, ps_fonttype: 42, dpi: 300, transparent: false }

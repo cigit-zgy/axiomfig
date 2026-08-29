@@ -38,7 +38,14 @@ For open axes, the configured major length is `4 pt`. Raster measurement confirm
 
 ## Plot defaults
 
-- Scatter: black `0.6 pt` edge, alpha `0.55`, marker area `28 pt²`.
+- Line markers and errorbar markers: `5.2 pt`, black `0.6 pt` edge; errorbar caps are `2.5 pt`.
+- Confidence intervals: alpha `0.22`, black `0.6 pt` edge.
+- Scatter: black `0.6 pt` edge, alpha `0.55`, marker area `36 pt²`.
 - Bar: black `0.6 pt` edge, value labels enabled, two decimals, no category tick marks.
-- Violin: black `0.6 pt` edge and no category tick marks.
+- Box/violin: black `0.6 pt` edges, YAML-owned fill alpha/width, and no category tick marks.
+- Histogram: black `0.6 pt` bin edges.
 - Heatmap/image: filled-surface tick directions; colorbar is separate support axes.
+
+## Fixed-page output margins
+
+The default output mode is `tight` with `1.5 pt` physical padding. A centralized post-layout solver measures all visible artists and adjusts subplot margins while preserving the requested page size. `normal` leaves the configured layout margins unchanged; `custom` is reserved as a validated configuration value. Templates must not implement their own crop or `bbox_inches` policy.

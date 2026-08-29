@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 from matplotlib.backends.backend_agg import FigureCanvasAgg
+from matplotlib.collections import PathCollection
 from matplotlib.figure import Figure
 from matplotlib.ticker import AutoMinorLocator, LogLocator
 
@@ -99,7 +100,7 @@ def test_bar_scatter_and_violin_use_fill_edge_contract() -> None:
     assert scatter.get_edgecolors()[0, :3] == pytest.approx((0.0, 0.0, 0.0))
     assert scatter.get_linewidths()[0] == 0.6
     assert scatter.get_alpha() == 0.55
-    assert scatter.get_sizes() == pytest.approx([28.0])
+    assert scatter.get_sizes() == pytest.approx([36.0])
     assert all(body.get_linewidths()[0] == 0.6 for body in violin["bodies"])
     plt.close(figure)
 
@@ -112,4 +113,60 @@ def test_violin_geometry_has_deterministic_headroom() -> None:
     )
 
     assert axis.get_ylim()[1] - body_top >= 0.01
+    plt.close(figure)
+
+
+@pytest.mark.parametrize("name", ["vertical-bar", "violin"])
+def test_bar_and_violin_use_open_numeric_ticks_and_no_category_marks(name: str) -> None:
+    figure = build_template(name)
+    axis = figure.axes[0]
+
+    assert axis.xaxis._major_tick_kw["size"] == 0.0
+    assert axis.yaxis._major_tick_kw["tickdir"] == "inout"
+    assert axis.yaxis._minor_tick_kw["tickdir"] == "in"
+    plt.close(figure)
+
+
+def test_heatmap_uses_outward_ticks_on_image_and_colorbar() -> None:
+    figure = build_template("heatmap")
+
+    for axis in figure.axes:
+        assert axis.yaxis._major_tick_kw["tickdir"] == "out"
+        assert axis.yaxis._minor_tick_kw["tickdir"] == "out"
+    plt.close(figure)
+
+
+def test_plot_artist_defaults_are_consumed_from_style_tokens() -> None:
+    from axiomfig.config import load_contracts
+
+    plots = load_contracts().style["plots"]
+    line_marker = build_template("line-marker").axes[0].lines[0]
+    ci_axis = build_template("line-ci").axes[0]
+    violin_axis = build_template("violin").axes[0]
+
+    assert line_marker.get_markersize() == plots["line_marker"]["marker_size_pt"]
+    assert line_marker.get_markeredgecolor() == plots["line_marker"]["edge_color"]
+    assert ci_axis.collections[0].get_alpha() == plots["confidence_interval"]["alpha"]
+    assert violin_axis.collections[0].get_alpha() == plots["violin"]["alpha"]
+    plt.close(line_marker.figure)
+    plt.close(ci_axis.figure)
+    plt.close(violin_axis.figure)
+
+
+@pytest.mark.parametrize("name", ["line-marker", "regression-scatter", "errorbar"])
+def test_marker_examples_keep_data_strictly_inside_axes(name: str) -> None:
+    figure = build_template(name)
+    axis = figure.axes[0]
+    x_lower, x_upper = sorted(axis.get_xlim())
+    y_lower, y_upper = sorted(axis.get_ylim())
+    points: list[tuple[float, float]] = []
+    for line in axis.lines:
+        if line.get_marker() not in {"None", "none", "", " ", None}:
+            points.extend(zip(line.get_xdata(), line.get_ydata(), strict=False))
+    for collection in axis.collections:
+        if isinstance(collection, PathCollection):
+            points.extend(tuple(point) for point in collection.get_offsets())
+
+    assert points
+    assert all(x_lower < x < x_upper and y_lower < y < y_upper for x, y in points)
     plt.close(figure)

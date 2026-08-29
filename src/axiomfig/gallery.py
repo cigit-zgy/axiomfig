@@ -29,12 +29,26 @@ class GallerySpec:
 
 
 GALLERY_SPECS = (
-    GallerySpec("01_line", "line", "single-column"),
-    GallerySpec("02_scatter", "scatter", "single-column"),
-    GallerySpec("03_bar", "bar", "single-column"),
-    GallerySpec("04_violin", "violin", "single-column"),
-    GallerySpec("05_heatmap", "heatmap", "single-column"),
-    GallerySpec("06_multi_panel", "multi-panel", "double-column"),
+    GallerySpec("01_single_line", "single-line", "single-column"),
+    GallerySpec("02_multi_line", "multi-line", "single-column"),
+    GallerySpec("03_line_marker", "line-marker", "single-column"),
+    GallerySpec("04_line_ci", "line-ci", "single-column"),
+    GallerySpec("05_scatter", "scatter", "single-column"),
+    GallerySpec("06_grouped_scatter", "grouped-scatter", "single-column"),
+    GallerySpec("07_parity", "parity", "single-column"),
+    GallerySpec("08_regression_scatter", "regression-scatter", "single-column"),
+    GallerySpec("09_vertical_bar", "vertical-bar", "single-column"),
+    GallerySpec("10_grouped_bar", "grouped-bar", "single-column"),
+    GallerySpec("11_horizontal_bar", "horizontal-bar", "single-column"),
+    GallerySpec("12_stacked_bar", "stacked-bar", "single-column"),
+    GallerySpec("13_boxplot", "boxplot", "single-column"),
+    GallerySpec("14_violin", "violin", "single-column"),
+    GallerySpec("15_box_violin", "box-violin", "single-column"),
+    GallerySpec("16_histogram", "histogram", "single-column"),
+    GallerySpec("17_heatmap", "heatmap", "single-column"),
+    GallerySpec("18_errorbar", "errorbar", "single-column"),
+    GallerySpec("19_model_evaluation", "model-evaluation", "single-column"),
+    GallerySpec("20_multi_panel", "multi-panel", "double-column"),
 )
 
 

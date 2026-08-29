@@ -60,6 +60,16 @@ def test_visual_stroke_tokens_are_distinct_and_positive() -> None:
     assert get_token(contracts, "style.stroke.fill_edge_pt") == 0.6
 
 
+def test_output_margin_contract_is_centralized_and_physical() -> None:
+    from axiomfig.config import load_contracts
+
+    output = load_contracts(STYLE_ROOT).style["output"]
+
+    assert output["margin_mode"] == "tight"
+    assert output["allowed_margin_modes"] == ("tight", "normal", "custom")
+    assert output["padding_pt"] == 1.5
+
+
 def test_unknown_geometry_and_missing_token_fail_explicitly() -> None:
     from axiomfig.config import build_rcparams, get_token, load_contracts
 
@@ -77,6 +87,7 @@ def test_unknown_geometry_and_missing_token_fail_explicitly() -> None:
         (("stroke", "main_stroke_pt"), -0.8),
         (("typography", "sizes_pt", "base"), float("nan")),
         (("ticks", "open", "minor", "length_pt"), -1.0),
+        (("output", "padding_pt"), -0.1),
     ],
 )
 def test_loader_rejects_invalid_physical_tokens(
@@ -94,5 +105,5 @@ def test_loader_rejects_invalid_physical_tokens(
 
     from axiomfig.config import load_contracts
 
-    with pytest.raises(ValueError, match="finite|positive"):
+    with pytest.raises(ValueError, match="finite|positive|nonnegative"):
         load_contracts(tmp_path)

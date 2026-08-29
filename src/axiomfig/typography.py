@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import sysconfig
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -26,7 +27,13 @@ class ResolvedFont:
 
 
 def _search_roots(contracts: Contracts) -> tuple[Path, ...]:
-    return tuple(Path(value).expanduser() for value in contracts.fonts["search_roots"])
+    bundle = str(contracts.fonts["bundle_subdir"])
+    bundled_roots = (
+        Path(__file__).resolve().parents[2] / bundle,
+        Path(sysconfig.get_path("data")) / "share" / "axiomfig" / bundle,
+    )
+    system_roots = tuple(Path(value).expanduser() for value in contracts.fonts["search_roots"])
+    return bundled_roots + system_roots
 
 
 def _name_value(font: TTFont, name_id: int) -> str:

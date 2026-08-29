@@ -6,8 +6,8 @@ Use these general-purpose packages and exact macros. Do not invent ad hoc unit, 
 
 ```latex
 \usepackage{siunitx}
-\unit{\milli\gram\per\liter}
-\qty{10}{\milli\gram\per\liter}
+\unit{\milli\gram\per\litre}
+\qty{10}{\milli\gram\per\litre}
 \num{1.25}
 ```
 
@@ -43,7 +43,7 @@ Use `equation` for one displayed equation, `align` for aligned multi-line equati
 
 ```latex
 \usepackage{unicode-math}
-\setmathfont{Latin Modern Math}
+\setmathfont{XCharter Math}
 \symup{Re}
 \symbf{x}
 ```
@@ -54,7 +54,7 @@ Use `\setmathfont{...}` to select the OpenType math font, `\symup{...}` for upri
 
 ```latex
 \usepackage{xcolor}
-\definecolor{AxiomBlue}{HTML}{4477AA}
+\definecolor{AxiomBlue}{HTML}{315A7D}
 \textcolor{AxiomBlue}{highlighted text}
 {\color{AxiomBlue} scoped text}
 ```

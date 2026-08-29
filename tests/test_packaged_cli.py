@@ -21,7 +21,7 @@ def _run(command: list[str], *, cwd: Path, env: dict[str, str] | None = None) ->
 
 
 @pytest.mark.e2e
-def test_clean_wheel_installs_yaml_and_four_template_families(tmp_path: Path) -> None:
+def test_clean_wheel_installs_yaml_fonts_and_four_template_families(tmp_path: Path) -> None:
     wheelhouse = tmp_path / "wheelhouse"
     environment = tmp_path / "environment"
     outside = tmp_path / "outside"
@@ -62,6 +62,9 @@ def test_clean_wheel_installs_yaml_and_four_template_families(tmp_path: Path) ->
     with zipfile.ZipFile(wheel) as archive:
         names = set(archive.namelist())
     assert any(name.endswith("share/axiomfig/styles/style.yaml") for name in names)
+    assert any(name.endswith("share/axiomfig/fonts/XCharter-Roman.otf") for name in names)
+    assert any(name.endswith("share/axiomfig/fonts/licenses/Maple-Mono-OFL.txt") for name in names)
+    assert any(name.endswith("share/axiomfig/fonts/licenses/OFL-1.1.txt") for name in names)
     assert "axiomfig/templates/curves.py" in names
     assert "axiomfig/templates/distributions.py" in names
     assert "axiomfig/templates/surfaces.py" in names
@@ -87,7 +90,9 @@ def test_clean_wheel_installs_yaml_and_four_template_families(tmp_path: Path) ->
                 "from axiomfig.config import load_contracts; "
                 "from axiomfig.templates import TEMPLATE_BUILDERS; "
                 "assert load_contracts().style['stroke']['main_stroke_pt'] == 0.8; "
-                "assert len(TEMPLATE_BUILDERS) == 6"
+                "assert len(TEMPLATE_BUILDERS) == 20; "
+                "from axiomfig.typography import discover_fonts; "
+                "assert discover_fonts('serif')['text'].family == 'XCharter'"
             ),
         ],
         cwd=outside,

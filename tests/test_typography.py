@@ -23,8 +23,8 @@ ROOT = Path(__file__).resolve().parents[1]
         (
             "serif",
             {
-                "text": "Latin Modern Roman",
-                "math": "Latin Modern Math",
+                "text": "XCharter",
+                "math": "XCharter Math",
                 "mono": "Maple Mono",
             },
         ),
@@ -50,7 +50,11 @@ def test_font_metadata_declares_optional_commercial_system_fonts_unbundled() -> 
         "Yu Gothic",
     }
     assert all(entry["bundled"] is False for entry in optional.values())
-    assert all(entry["bundled"] is False for entry in contracts.fonts["families"].values())
+    assert all(entry["bundled"] is True for entry in contracts.fonts["families"].values())
+    assert optional["arial"]["proprietary"] is True
+    assert optional["times-new-roman"]["proprietary"] is True
+    assert optional["arial"]["source"] == "system"
+    assert optional["times-new-roman"]["source"] == "system"
 
 
 def test_open_font_metadata_preserves_verified_license_attribution() -> None:
@@ -61,6 +65,21 @@ def test_open_font_metadata_preserves_verified_license_attribution() -> None:
         assert entry["license"]
         assert entry["license_url"].startswith("https://")
         assert entry["copyright"]
+
+
+def test_bundled_font_assets_and_attributions_exist() -> None:
+    contracts = load_contracts(ROOT / "styles")
+    font_root = ROOT / "fonts"
+
+    for entry in contracts.fonts["families"].values():
+        assert entry["bundled"] is True
+        for filename in entry["filenames"].values():
+            assert (font_root / filename).is_file(), filename
+        assert (font_root / "licenses" / entry["attribution_file"]).is_file()
+        assert (font_root / "licenses" / entry["license_file"]).is_file()
+
+    ofl = (font_root / "licenses" / "OFL-1.1.txt").read_text(encoding="utf-8")
+    assert "SIL OPEN FONT LICENSE Version 1.1" in ofl
 
 
 def test_font_discovery_fails_instead_of_using_fallback() -> None:

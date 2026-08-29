@@ -14,7 +14,7 @@ from matplotlib.ticker import AutoMinorLocator, MultipleLocator
 from matplotlib.transforms import ScaledTranslation
 
 from axiomfig.config import load_contracts
-from axiomfig.contracts import FILL_EDGE_PT, MAIN_STROKE_PT, nice_linear_axis
+from axiomfig.contracts import MAIN_STROKE_PT, nice_linear_axis
 from axiomfig.typography import font_for_language
 
 PANEL_LABEL_GID = "axiomfig-panel-label"
@@ -23,6 +23,43 @@ PANEL_LABEL_GID = "axiomfig-panel-label"
 def apply_single_panel_layout(figure: Figure) -> None:
     margins = load_contracts().style["layout"]["single_panel"]["margins"]
     figure.subplots_adjust(**{key: float(value) for key, value in margins.items()})
+
+
+def apply_output_margin(figure: Figure) -> None:
+    """Fit visible artists to physical padding while preserving the page size."""
+    contract = load_contracts().style["output"]
+    mode = str(contract["margin_mode"])
+    if mode == "normal":
+        return
+    padding_px = float(contract["padding_pt"]) * figure.dpi / 72.0
+    tolerance_px = 0.25
+    for _ in range(8):
+        figure.canvas.draw()
+        renderer = figure.canvas.get_renderer()
+        tight = figure.get_tightbbox(renderer).transformed(figure.dpi_scale_trans)
+        width, height = figure.bbox.width, figure.bbox.height
+        delta_left = (padding_px - tight.x0) / width
+        delta_right = (tight.x1 - (width - padding_px)) / width
+        delta_bottom = (padding_px - tight.y0) / height
+        delta_top = (tight.y1 - (height - padding_px)) / height
+        if (
+            max(
+                abs(delta_left * width),
+                abs(delta_right * width),
+                abs(delta_bottom * height),
+                abs(delta_top * height),
+            )
+            <= tolerance_px
+        ):
+            break
+        subplotpars = figure.subplotpars
+        left = max(0.01, subplotpars.left + delta_left)
+        right = min(0.99, subplotpars.right - delta_right)
+        bottom = max(0.01, subplotpars.bottom + delta_bottom)
+        top = min(0.99, subplotpars.top - delta_top)
+        if left >= right or bottom >= top:
+            raise ValueError("output padding cannot fit visible artists on the physical page")
+        figure.subplots_adjust(left=left, right=right, bottom=bottom, top=top)
 
 
 def apply_axis_contract(axis: Axes, surface: Literal["open", "filled"] = "open") -> None:
@@ -164,7 +201,7 @@ def place_legend_above(axis: Axes) -> Legend | None:
     figure = axis.figure
     figure.canvas.draw()
     transform = axis.transAxes + ScaledTranslation(
-        0.0, float(contract["gap_pt"]) / 72.0, figure.dpi_scale_trans
+        0.0, float(contract["top_gap_pt"]) / 72.0, figure.dpi_scale_trans
     )
     legend: Legend | None = None
     tolerance = 0.5
@@ -229,15 +266,25 @@ def _reserve_bar_label_headroom(axis: Axes, containers: list[BarContainer]) -> N
     (axis.set_xlim if orientation == "horizontal" else axis.set_ylim)(*padded)
 
 
+def _stroke_width(token: object) -> float:
+    stroke = load_contracts().style["stroke"]
+    keys = {"main_stroke": "main_stroke_pt", "fill_edge": "fill_edge_pt"}
+    try:
+        return float(stroke[keys[str(token)]])
+    except KeyError as error:
+        raise ValueError(f"unknown stroke token: {token}") from error
+
+
 def add_bar_value_labels(axis: Axes, containers: Iterable[BarContainer], decimals: int = 2) -> None:
     if decimals < 0:
         raise ValueError("decimals must be non-negative")
     selected = list(containers)
     _reserve_bar_label_headroom(axis, selected)
+    contract = load_contracts().style["plots"]["bar"]
     for container in selected:
         for patch in container.patches:
-            patch.set_edgecolor("black")
-            patch.set_linewidth(FILL_EDGE_PT)
+            patch.set_edgecolor(str(contract["edge_color"]))
+            patch.set_linewidth(_stroke_width(contract["edge_width_token"]))
         axis.bar_label(
             container,
             labels=[f"{value:.{decimals}f}" for value in container.datavalues],
@@ -248,15 +295,70 @@ def add_bar_value_labels(axis: Axes, containers: Iterable[BarContainer], decimal
 def apply_scatter_contract(collection: PathCollection) -> None:
     contract = load_contracts().style["plots"]["scatter"]
     collection.set_edgecolor(str(contract["edge_color"]))
-    collection.set_linewidth(FILL_EDGE_PT)
+    collection.set_linewidth(_stroke_width(contract["edge_width_token"]))
     collection.set_alpha(float(contract["alpha"]))
     collection.set_sizes([float(contract["marker_size_pt2"])])
 
 
-def apply_violin_contract(parts: dict[str, object]) -> None:
+def line_marker_kwargs() -> dict[str, object]:
+    contract = load_contracts().style["plots"]["line_marker"]
+    return {
+        "marker": str(contract["marker"]),
+        "markersize": float(contract["marker_size_pt"]),
+        "markeredgecolor": str(contract["edge_color"]),
+        "markeredgewidth": _stroke_width(contract["edge_width_token"]),
+    }
+
+
+def confidence_interval_kwargs() -> dict[str, object]:
+    contract = load_contracts().style["plots"]["confidence_interval"]
+    return {
+        "alpha": float(contract["alpha"]),
+        "edgecolor": str(contract["edge_color"]),
+        "linewidth": _stroke_width(contract["edge_width_token"]),
+    }
+
+
+def errorbar_kwargs() -> dict[str, object]:
+    contract = load_contracts().style["plots"]["errorbar"]
+    return {
+        "marker": str(contract["marker"]),
+        "markersize": float(contract["marker_size_pt"]),
+        "markeredgecolor": str(contract["edge_color"]),
+        "markeredgewidth": _stroke_width(contract["edge_width_token"]),
+        "capsize": float(contract["cap_size_pt"]),
+        "elinewidth": MAIN_STROKE_PT,
+        "capthick": MAIN_STROKE_PT,
+    }
+
+
+def apply_boxplot_contract(parts: dict[str, object], *, combined: bool = False) -> None:
+    contract = load_contracts().style["plots"]["boxplot"]
+    for box in parts["boxes"]:  # type: ignore[index]
+        box.set_alpha(1.0 if combined else float(contract["alpha"]))
+        box.set_edgecolor(str(contract["edge_color"]))
+        box.set_linewidth(_stroke_width(contract["edge_width_token"]))
+    for key in ("whiskers", "caps", "medians"):
+        for artist in parts[key]:  # type: ignore[index]
+            artist.set_color(str(contract["edge_color"]))
+            artist.set_linewidth(MAIN_STROKE_PT)
+
+
+def apply_violin_contract(parts: dict[str, object], *, combined: bool = False) -> None:
+    contract = load_contracts().style["plots"]["violin"]
+    alpha_token = "combined_alpha" if combined else "alpha"
     for body in parts["bodies"]:  # type: ignore[index]
-        body.set_edgecolor("black")
-        body.set_linewidth(FILL_EDGE_PT)
+        body.set_alpha(float(contract[alpha_token]))
+        body.set_edgecolor(str(contract["edge_color"]))
+        body.set_linewidth(_stroke_width(contract["edge_width_token"]))
+
+
+def histogram_kwargs() -> dict[str, object]:
+    contract = load_contracts().style["plots"]["histogram"]
+    return {
+        "edgecolor": str(contract["edge_color"]),
+        "linewidth": _stroke_width(contract["edge_width_token"]),
+    }
 
 
 def add_language_text(

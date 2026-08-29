@@ -79,6 +79,7 @@ def _validate_style(style: Mapping[str, Any]) -> None:
         "axes",
         "legend",
         "panel",
+        "output",
         "layout",
         "plots",
         "rendering",
@@ -112,7 +113,13 @@ def _validate_style(style: Mapping[str, Any]) -> None:
             (style["ticks"]["open"]["minor_inward_ratio"], "ticks.open.minor_inward_ratio"),
             (style["legend"]["handlelength"], "legend.handlelength"),
             (style["panel"]["font_size_pt"], "panel.font_size_pt"),
+            (style["plots"]["line_marker"]["marker_size_pt"], "plots.line_marker.marker_size_pt"),
             (style["plots"]["scatter"]["marker_size_pt2"], "plots.scatter.marker_size_pt2"),
+            (style["plots"]["errorbar"]["marker_size_pt"], "plots.errorbar.marker_size_pt"),
+            (style["plots"]["errorbar"]["cap_size_pt"], "plots.errorbar.cap_size_pt"),
+            (style["plots"]["boxplot"]["width"], "plots.boxplot.width"),
+            (style["plots"]["boxplot"]["combined_width"], "plots.boxplot.combined_width"),
+            (style["plots"]["violin"]["width"], "plots.violin.width"),
             (style["rendering"]["dpi"], "rendering.dpi"),
         )
     )
@@ -120,21 +127,33 @@ def _validate_style(style: Mapping[str, Any]) -> None:
         _finite_number(value, name, positive=True)
     for value, name in (
         (style["ticks"]["categorical"]["length_pt"], "ticks.categorical.length_pt"),
-        (style["legend"]["gap_pt"], "legend.gap_pt"),
+        (style["legend"]["top_gap_pt"], "legend.top_gap_pt"),
+        (style["output"]["padding_pt"], "output.padding_pt"),
         (
             style["plots"]["violin"]["limit_padding_fraction"],
             "plots.violin.limit_padding_fraction",
         ),
     ):
         _finite_number(value, name, nonnegative=True)
+    margin_mode = style["output"]["margin_mode"]
+    allowed_modes = tuple(style["output"]["allowed_margin_modes"])
+    if margin_mode not in allowed_modes or set(allowed_modes) != {"tight", "normal", "custom"}:
+        raise ValueError("output margin mode must be tight, normal, or custom")
     for value, name in (
         (style["panel"]["left_offset_pt"], "panel.left_offset_pt"),
         (style["panel"]["top_offset_pt"], "panel.top_offset_pt"),
     ):
         _finite_number(value, name)
-    alpha = _finite_number(style["plots"]["scatter"]["alpha"], "plots.scatter.alpha")
-    if not 0.0 <= alpha <= 1.0:
-        raise ValueError("plots.scatter.alpha must be between 0 and 1")
+    for dotted, alpha in (
+        ("plots.confidence_interval.alpha", style["plots"]["confidence_interval"]["alpha"]),
+        ("plots.scatter.alpha", style["plots"]["scatter"]["alpha"]),
+        ("plots.boxplot.alpha", style["plots"]["boxplot"]["alpha"]),
+        ("plots.violin.alpha", style["plots"]["violin"]["alpha"]),
+        ("plots.violin.combined_alpha", style["plots"]["violin"]["combined_alpha"]),
+    ):
+        value = _finite_number(alpha, dotted)
+        if not 0.0 <= value <= 1.0:
+            raise ValueError(f"{dotted} must be between 0 and 1")
     decimals = style["plots"]["bar"]["decimals"]
     if isinstance(decimals, bool) or not isinstance(decimals, int) or decimals < 0:
         raise ValueError("plots.bar.decimals must be a nonnegative integer")

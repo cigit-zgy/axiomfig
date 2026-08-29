@@ -1,26 +1,49 @@
 version: 1
-default: default
+default: axiom_classic
 
 palettes:
-  default:
-    AxiomBlue: "#4477AA"
-    AxiomRed: "#EE6677"
-    AxiomGreen: "#228833"
-    AxiomYellow: "#CCBB44"
-    AxiomCyan: "#66CCEE"
-    AxiomPurple: "#AA3377"
-    AxiomGrey: "#BBBBBB"
-  colorblind:
-    AxiomBlue: "#004488"
-    AxiomYellow: "#DDAA33"
-    AxiomRed: "#BB5566"
-  muted:
-    AxiomRed: "#CC6677"
-    AxiomPurple: "#332288"
-    AxiomYellow: "#DDCC77"
-    AxiomGreen: "#117733"
-    AxiomCyan: "#88CCEE"
-    AxiomWine: "#882255"
-    AxiomTeal: "#44AA99"
-    AxiomOlive: "#999933"
-    AxiomMagenta: "#AA4499"
+  tol_bright:
+    TolBlue: "#4477AA"
+    TolRed: "#EE6677"
+    TolGreen: "#228833"
+    TolYellow: "#CCBB44"
+    TolCyan: "#66CCEE"
+    TolPurple: "#AA3377"
+    TolGrey: "#BBBBBB"
+  tol_muted:
+    TolRose: "#CC6677"
+    TolIndigo: "#332288"
+    TolSand: "#DDCC77"
+    TolGreen: "#117733"
+    TolCyan: "#88CCEE"
+    TolWine: "#882255"
+    TolTeal: "#44AA99"
+    TolOlive: "#999933"
+    TolPurple: "#AA4499"
+  axiom_classic:
+    AxiomBlue: "#315A7D"
+    AxiomCyan: "#5596A6"
+    AxiomGreen: "#4B7F52"
+    AxiomYellow: "#C2A23A"
+    AxiomOrange: "#C46D3B"
+    AxiomRed: "#A94E59"
+    AxiomPurple: "#735C8E"
+    AxiomGrey: "#7F858B"
+  axiom_soft:
+    AxiomBlue: "#5E81AC"
+    AxiomCyan: "#76A5AF"
+    AxiomGreen: "#78A878"
+    AxiomYellow: "#C9B458"
+    AxiomOrange: "#D99A5B"
+    AxiomRed: "#C9797E"
+    AxiomPurple: "#9279AD"
+    AxiomGrey: "#A0A5AA"
+  grayscale:
+    AxiomBlue: "#202020"
+    AxiomCyan: "#404040"
+    AxiomGreen: "#606060"
+    AxiomYellow: "#808080"
+    AxiomOrange: "#989898"
+    AxiomRed: "#B0B0B0"
+    AxiomPurple: "#C8C8C8"
+    AxiomGrey: "#E0E0E0"

@@ -1,14 +1,16 @@
 version: 1
 default: sans
+bundle_subdir: fonts
 
 modes:
   sans: {text: latin-modern-sans, math: latin-modern-math, mono: maple-mono}
-  serif: {text: latin-modern-roman, math: latin-modern-math, mono: maple-mono}
+  serif: {text: xcharter, math: xcharter-math, mono: maple-mono}
 
 families:
   latin-modern-sans:
     family: Latin Modern Sans
-    matplotlib_family: LMSans10
+    matplotlib_family: Latin Modern Sans
+    role: sans
     filenames:
       regular: lmsans10-regular.otf
       bold: lmsans10-bold.otf
@@ -17,45 +19,78 @@ families:
     source: https://ctan.org/pkg/lm
     license: GUST Font License
     license_url: https://mirrors.ctan.org/fonts/lm/doc/fonts/lm/GUST-FONT-LICENSE.txt
+    attribution_file: Latin-Modern-GUST.txt
+    license_file: Latin-Modern-GUST.txt
     copyright: Copyright 2003-2021 B. Jackowski and J.M. Nowacki
-    bundled: false
-  latin-modern-roman:
-    family: Latin Modern Roman
-    matplotlib_family: LMRoman10
-    filenames:
-      regular: lmroman10-regular.otf
-      bold: lmroman10-bold.otf
-      italic: lmroman10-italic.otf
-      bold_italic: lmroman10-bolditalic.otf
-    source: https://ctan.org/pkg/lm
-    license: GUST Font License
-    license_url: https://mirrors.ctan.org/fonts/lm/doc/fonts/lm/GUST-FONT-LICENSE.txt
-    copyright: Copyright 2003-2021 B. Jackowski and J.M. Nowacki
-    bundled: false
+    bundled: true
   latin-modern-math:
     family: Latin Modern Math
     matplotlib_family: Latin Modern Math
+    role: math
     filenames: {regular: latinmodern-math.otf}
     source: https://ctan.org/pkg/lm-math
     license: GUST Font License
     license_url: https://mirrors.ctan.org/fonts/lm-math/GUST-FONT-LICENSE.txt
+    attribution_file: Latin-Modern-Math-GUST.txt
+    license_file: Latin-Modern-Math-GUST.txt
     copyright: Copyright 2012-2014 B. Jackowski, P. Strzelczyk, P. Pianowski
-    bundled: false
+    bundled: true
+  xcharter:
+    family: XCharter
+    matplotlib_family: XCharter
+    role: serif
+    filenames:
+      regular: XCharter-Roman.otf
+      bold: XCharter-Bold.otf
+      italic: XCharter-Italic.otf
+      bold_italic: XCharter-BoldItalic.otf
+    source: https://ctan.org/pkg/xcharter
+    license: Bitstream Charter free-font license
+    license_url: https://www.ctan.org/tex-archive/fonts/xcharter
+    attribution_file: XCharter-ATTRIBUTION.txt
+    license_file: XCharter-ATTRIBUTION.txt
+    copyright: Copyright 1989-1992 Bitstream Inc.; modifications 2009-2024 Andrey Panov and Michael Sharpe
+    bundled: true
+  xcharter-math:
+    family: XCharter Math
+    matplotlib_family: XCharter Math
+    role: math
+    filenames: {regular: XCharter-Math.otf}
+    source: https://ctan.org/pkg/xcharter-math
+    license: SIL Open Font License 1.1
+    license_url: https://ctan.org/tex-archive/fonts/xcharter-math
+    attribution_file: XCharter-Math-ATTRIBUTION.md
+    license_file: OFL-1.1.txt
+    copyright: Copyright 2022-2026 Daniel Flipo
+    bundled: true
   maple-mono:
     family: Maple Mono
     matplotlib_family: Maple Mono
+    role: mono
     filenames: {regular: "MapleMono[wght].ttf"}
-    source: https://github.com/subframe7536/maple-font
+    source: https://github.com/subframe7536/maple-font/releases/tag/v7.9
     license: SIL Open Font License 1.1
-    license_url: https://github.com/subframe7536/maple-font/blob/variable/OFL.txt
+    license_url: https://github.com/subframe7536/maple-font/blob/v7.9/OFL.txt
+    attribution_file: Maple-Mono-OFL.txt
+    license_file: Maple-Mono-OFL.txt
     copyright: Copyright 2022 The Maple Mono Project Authors
-    bundled: false
+    bundled: true
 
 optional_system_fonts:
-  arial: {family: Arial, bundled: false}
-  times-new-roman: {family: Times New Roman, bundled: false}
-  simsun: {family: SimSun, bundled: false}
-  yu-gothic: {family: Yu Gothic, bundled: false}
+  arial:
+    family: Arial
+    source: system
+    proprietary: true
+    bundled: false
+    redistribution: prohibited without separate license
+  times-new-roman:
+    family: Times New Roman
+    source: system
+    proprietary: true
+    bundled: false
+    redistribution: prohibited without separate license
+  simsun: {family: SimSun, source: system, proprietary: true, bundled: false}
+  yu-gothic: {family: Yu Gothic, source: system, proprietary: true, bundled: false}
 
 search_roots:
   - ~/Library/Fonts
