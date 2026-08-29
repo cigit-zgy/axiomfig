@@ -59,3 +59,12 @@ def test_legend_rejects_add_axes_when_figure_top_space_cannot_be_reserved() -> N
     with pytest.raises(ValueError, match="cannot fit"):
         template_helpers.place_legend_above(axis, gap_pt=2.0)
     plt.close(figure)
+
+
+def test_legend_rejects_an_irreducibly_wide_single_column() -> None:
+    figure, axis = plt.subplots(figsize=(3.0, 2.0))
+    axis.plot([0, 1], [0, 1], label="W" * 1000)
+
+    with pytest.raises(ValueError, match="cannot fit"):
+        template_helpers.place_legend_above(axis, gap_pt=2.0)
+    plt.close(figure)
