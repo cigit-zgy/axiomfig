@@ -375,6 +375,15 @@ def _expected_explicit_path(artist: Text, language: str | None, mode: str) -> st
     )
 
 
+def _is_public_explicit_opt_in(explicit_file: str, language: str | None, mode: str) -> bool:
+    path = str(Path(explicit_file).resolve())
+    japanese_path = str(Path(font_for_language("ja", mode=mode).get_file()).resolve())
+    mono_path = str(Path(font_for_language("mono", mode=mode).get_file()).resolve())
+    if language == "zh" and path == japanese_path:
+        return True
+    return language == "en" and path == mono_path
+
+
 def apply_figure_typography(figure: Figure, mode: str = "sans") -> Figure:
     """Assign exact regional fonts to all ordinary figure text before rendering."""
     for artist in _figure_text_artists(figure):
@@ -384,7 +393,10 @@ def apply_figure_typography(figure: Figure, mode: str = "sans") -> Figure:
         artist.set_math_fontfamily("custom")
         if explicit_file is not None:
             expected_path = _expected_explicit_path(artist, language, mode)
-            if str(Path(explicit_file).resolve()) != expected_path:
+            resolved_explicit_path = str(Path(explicit_file).resolve())
+            if resolved_explicit_path != expected_path and not _is_public_explicit_opt_in(
+                explicit_file, language, mode
+            ):
                 raise FontContractError(
                     f"Explicit font {explicit_file!r} is not the exact allowed "
                     f"{language or 'math'} font for {mode} typography mode"

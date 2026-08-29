@@ -8,7 +8,7 @@ The fixed order is:
 base -> geometry -> typography -> colors -> plot -> language -> rendering
 ```
 
-`StyleSelection.paths()` resolves one file per layer; `compose_styles()` fails on duplicate rcParams unless `src/axiomfig/styles.py` declares the exact layer pair and key. `ALLOWED_OVERRIDES` permits base-to-plot `xtick.direction`/`ytick.direction` changes and a typography-to-language `font.family` change; the current multilingual module preserves the selected family and sets only `font.stretch`. Templates own data transforms, labels, units, annotations, justified limits, and panel arrangement; they do not set contract rcParams or physical width.
+`StyleSelection.paths()` resolves one file per layer; `compose_styles()` fails on duplicate rcParams unless `src/axiomfig/styles.py` declares the exact layer pair and key. `ALLOWED_OVERRIDES` permits only base-to-plot `xtick.direction`/`ytick.direction` changes. The current multilingual module preserves the selected typography family and sets only `font.stretch`. Templates own data transforms, labels, units, annotations, justified limits, and panel arrangement; they do not set contract rcParams or physical width.
 
 | Layer | Owns |
 |---|---|

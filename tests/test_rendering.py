@@ -192,3 +192,17 @@ def test_typography_pass_rejects_dejavu_explicit_font() -> None:
     with pytest.raises(FontContractError, match="not the exact allowed"):
         apply_figure_typography(figure, mode="serif")
     plt.close(figure)
+
+
+@pytest.mark.e2e
+def test_render_pipeline_allows_public_japanese_and_mono_explicit_opt_ins(tmp_path: Path) -> None:
+    figure, axis = plt.subplots(figsize=(3.543307, 2.65748))
+    axis.text(0.2, 0.7, "効率", fontproperties=font_for_language("ja", mode="serif"))
+    axis.text(0.2, 0.3, "S_NH4", fontproperties=font_for_language("mono", mode="serif"))
+
+    result = render_figure(figure, tmp_path / "public-opt-in", typography="serif")
+    entry = validate_pair(result.pdf, result.png, tectonic_log=result.log)
+
+    assert any("NotoSerifCJKjp-Regular" in row for row in entry.fonts)
+    assert any("MapleMono-Regular" in row for row in entry.fonts)
+    plt.close(figure)
