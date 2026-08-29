@@ -8,6 +8,8 @@ from pathlib import Path
 
 from matplotlib.figure import Figure
 
+from axiomfig.typography import discover_fonts
+
 
 class RenderError(RuntimeError):
     """Raised when the deterministic renderer cannot produce both deliverables."""
@@ -68,7 +70,9 @@ def render_figure(
     tectonic: str = "tectonic",
     pdftoppm: str = "pdftoppm",
     preview_dpi: int = 300,
+    typography: str = "sans",
 ) -> RenderResult:
+    discover_fonts(mode=typography)
     tectonic_bin = _resolve_executable(tectonic, "Tectonic")
     pdftoppm_bin = _resolve_executable(pdftoppm, "pdftoppm")
     output_stem = Path(output_stem)

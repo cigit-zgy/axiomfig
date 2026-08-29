@@ -35,6 +35,7 @@ MULTILINGUAL_REQUIRED = (
 class GallerySpec:
     stem: str
     template: str
+    typography: str
     geometry: str
     colors: str
     plot: str
@@ -42,22 +43,23 @@ class GallerySpec:
     def selection(self) -> StyleSelection:
         return StyleSelection(
             geometry=self.geometry,
+            typography=self.typography,
             colors=self.colors,
             plot=self.plot,
         )
 
 
 GALLERY_SPECS = (
-    GallerySpec("01_line", "line-ci", "single-column", "default", "line"),
-    GallerySpec("02_scatter", "scatter-grouped", "single-column", "colorblind", "scatter"),
-    GallerySpec("03_bar", "bar-grouped", "single-column", "default", "bar"),
-    GallerySpec("04_violin", "violin", "single-column", "muted", "distribution"),
-    GallerySpec("05_heatmap", "heatmap", "single-column", "default", "heatmap"),
+    GallerySpec("01_line", "line-ci", "sans", "single-column", "default", "line"),
+    GallerySpec("02_scatter", "scatter-grouped", "sans", "single-column", "colorblind", "scatter"),
+    GallerySpec("03_bar", "bar-grouped", "sans", "single-column", "default", "bar"),
+    GallerySpec("04_violin", "violin", "sans", "single-column", "muted", "distribution"),
+    GallerySpec("05_heatmap", "heatmap", "sans", "single-column", "default", "heatmap"),
     GallerySpec(
-        "06_model_evaluation", "model-evaluation", "double-column", "colorblind", "scatter"
+        "06_model_evaluation", "model-evaluation", "sans", "double-column", "colorblind", "scatter"
     ),
-    GallerySpec("07_multilingual", "multilingual", "onehalf-column", "default", "line"),
-    GallerySpec("08_multi_panel", "layout-4-panel", "double-column", "default", "line"),
+    GallerySpec("07_multilingual", "multilingual", "sans", "onehalf-column", "default", "line"),
+    GallerySpec("08_multi_panel", "layout-4-panel", "sans", "double-column", "default", "line"),
 )
 
 
@@ -79,23 +81,29 @@ def build_gallery(gallery: Path, *, work_root: Path | None = None) -> list[Rende
     work_root.mkdir(parents=True)
     _prepare_gallery(gallery)
 
-    fonts = discover_fonts()
+    fonts_by_mode = {
+        spec.typography: discover_fonts(mode=spec.typography) for spec in GALLERY_SPECS
+    }
     style_root = PROJECT_ROOT / "styles"
     results: list[RenderResult] = []
     manifest: dict[str, object] = {
-        "fonts": {role: font.__dict__ for role, font in fonts.items()},
+        "fonts": {
+            mode: {role: font.__dict__ for role, font in fonts.items()}
+            for mode, fonts in fonts_by_mode.items()
+        },
         "figures": [],
     }
 
     for spec in GALLERY_SPECS:
         composed = compose_styles(spec.selection().paths(style_root))
         with mpl.rc_context(rc=composed.params):
-            figure = build_template(spec.template)
+            figure = build_template(spec.template, typography=spec.typography)
             figure.set_size_inches(composed.params["figure.figsize"], forward=False)
             result = render_figure(
                 figure,
                 gallery / spec.stem,
                 work_root=work_root,
+                typography=spec.typography,
             )
             plt.close(figure)
         width_mm, height_mm = GEOMETRY_MM[spec.geometry]

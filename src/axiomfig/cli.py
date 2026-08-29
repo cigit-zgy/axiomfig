@@ -52,12 +52,14 @@ def render_main(argv: list[str] | None = None) -> int:
     _selection_arguments(parser)
     args = parser.parse_args(argv)
 
-    discover_fonts()
+    discover_fonts(mode=args.typography)
     composed = compose_styles(_selection(args).paths(PROJECT_ROOT / "styles"))
     with mpl.rc_context(rc=composed.params):
-        figure = build_template(args.template)
+        figure = build_template(args.template, typography=args.typography)
         figure.set_size_inches(composed.params["figure.figsize"], forward=False)
-        result = render_figure(figure, args.output, work_root=args.work_root)
+        result = render_figure(
+            figure, args.output, work_root=args.work_root, typography=args.typography
+        )
         plt.close(figure)
     validate_pair(result.pdf, result.png, tectonic_log=result.log)
     print(result.pdf)

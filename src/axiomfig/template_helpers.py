@@ -131,9 +131,10 @@ def add_language_text(
     y: float,
     text: str,
     language: str,
+    mode: str = "sans",
     **kwargs: object,
 ) -> None:
-    axis.text(x, y, text, fontproperties=font_for_language(language), **kwargs)
+    axis.text(x, y, text, fontproperties=font_for_language(language, mode=mode), **kwargs)
 
 
 def close_secondary_spines(figure: Figure) -> Figure:

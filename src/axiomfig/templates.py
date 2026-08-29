@@ -50,5 +50,8 @@ def get_template_builder(name: str) -> Callable[..., Figure]:
     return builder
 
 
-def build_template(name: str, **kwargs: object) -> Figure:
-    return get_template_builder(name)(**kwargs)
+def build_template(name: str, *, typography: str = "sans", **kwargs: object) -> Figure:
+    builder = get_template_builder(name)
+    if name == "multilingual":
+        return builder(mode=typography, **kwargs)
+    return builder(**kwargs)

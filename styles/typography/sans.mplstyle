@@ -1,11 +1,13 @@
 # Latin family names match the Homebrew Latin Modern font metadata.
 font.family: LMSans10
+font.sans-serif: LMSans10, Noto Sans CJK SC, Noto Sans CJK JP
+font.monospace: Maple Mono
 mathtext.fontset: custom
-mathtext.rm: Latin Modern Math
-mathtext.it: Latin Modern Math
-mathtext.bf: Latin Modern Math
-mathtext.bfit: Latin Modern Math
-mathtext.cal: Latin Modern Math
-mathtext.sf: LMSans10
-mathtext.tt: LMSans10
+mathtext.rm: Fira Math
+mathtext.it: Fira Math
+mathtext.bf: Fira Math
+mathtext.bfit: Fira Math
+mathtext.cal: Fira Math
+mathtext.sf: Fira Math
+mathtext.tt: Maple Mono
 mathtext.fallback: None
