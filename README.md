@@ -69,9 +69,10 @@ axiomfig-intent examples/parity-intent.yaml \
 ```
 
 This produces and validates `output/parity.pdf` and `output/parity.png`. See the
-[Figure Intent contract](references/figure-intent.md). Twelve representative v1 templates accept
-external mapped data. Every public template can render a deterministic canonical example; an
-unadapted data-bearing request fails explicitly rather than ignoring data.
+[Figure Intent contract](references/figure-intent.md). All 55 public templates accept external
+mapped data: 28 consume direct user data and 27 consume explicit precomputed scientific results.
+Every public template also retains a deterministic canonical example. Unsupported or malformed
+roles fail explicitly instead of being ignored.
 
 ```bash
 axiomfig-render association/mantel --output output/mantel \
@@ -115,9 +116,9 @@ registry, and one selected family contract. If the plot choice is unclear, the A
 15-line [Knowledge index](references/template-knowledge/index.yaml) and only its routed topic.
 Builder source and the entire Knowledge Base are not normal prompt context.
 
-Current approximate prompt-side sizes are measured by the Evaluation suite: Skill 3,858 bytes,
-Registry 2,895 bytes, selected scatter contract 509 bytes, and representative Figure Intent 75
-bytes. The combined byte/4 estimate is about 1,835 tokens.
+Current prompt-side sizes are measured by the Evaluation suite for the Skill, Registry, one selected
+family contract, and one representative Figure Intent. The byte/4 estimate is reported by the final
+release evaluation rather than maintained as a second hand-written constant here.
 
 ## Deterministic visual contract
 
@@ -140,15 +141,17 @@ orphan examples.
 
 Runtime validation covers anatomy and ownership, unequal panels, clipping and overflow, colorbar
 containment, legend/panel-label/annotation collisions, physical PDF geometry, embedded subset fonts,
-Type 3 rejection, and text page boundaries. The deterministic Evaluation corpus contains 24
-scientific requests spanning 14 intent categories and checks routing, Figure Intent, render success,
-repeatability, prompt-side size, and mixed-panel composition.
+Type 3 rejection, and text page boundaries. The deterministic Evaluation corpus contains one true
+external-data Figure Intent for each of the 55 public templates. It reports routing, canonical
+rendering, external-data rendering, runtime validation, seven complex-template repeatability checks,
+Gallery coverage, and prompt-side size separately.
 
 ```bash
 python scripts/generate_colors.py --check
 python scripts/check_fonts.py
 python scripts/check_latex.py
 python scripts/validate_skill.py
+python scripts/evaluate_release.py --output tmp/evaluation
 python -m pytest -q
 ruff check .
 ruff format --check .
@@ -164,15 +167,16 @@ and the exact [LaTeX contract](references/latex-contract.md).
 
 ## v1 limitations
 
-Full CJK/Japanese typography, TeX-native Matplotlib labels, arbitrary external-data adapters for all
-55 variants, animation, interactive dashboards, a large 3D suite, microscopy/image processing,
-chemical structure drawing, and GIS are outside v1. Statistical calculations such as Mantel,
+Full CJK/Japanese typography, TeX-native Matplotlib labels, animation, interactive dashboards, a
+large 3D suite, microscopy/image processing, chemical structure drawing, and GIS are outside v1.
+Statistical calculations such as Mantel,
 ordination, adjusted p-values, confidence intervals, and survival estimates remain separate from
 visualization and must be supplied explicitly.
 
 ## Development and release readiness
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md). Fast CI runs install, Ruff,
-non-E2E tests, Skill validation, deterministic routing evaluation, and a headless render on Python
-3.11/3.12. Local release validation additionally requires Tectonic/Poppler, full Gallery E2E, font
-and LaTeX probes, isolated wheel installation, fresh-clone workflow tests, and final visual review.
+non-E2E tests, Skill validation, deterministic routing evaluation, all 55 lightweight external-data
+Figure Intent paths, and a headless smoke render on Python 3.11/3.12. Local release validation adds
+55 Tectonic PDF/PNG data-path renders, full Gallery E2E, font and LaTeX probes, isolated wheel
+installation, fresh-clone workflow tests, and final visual review.

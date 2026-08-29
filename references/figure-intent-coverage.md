@@ -84,10 +84,15 @@ semantics remain in each family `contract.yaml`.
 | Class A direct-data templates | 28 |
 | Class B precomputed-result templates | 27 |
 | Baseline adapters | 12 |
-| Target externally operable | 55 |
-| Target canonical-only | 0 |
+| Final externally operable | 55 |
+| Final direct-data operable | 28 |
+| Final precomputed-result operable | 27 |
+| Final canonical-only | 0 |
 
 Every data-bearing Figure Intent must resolve all contract roles, pass family-specific shape
 validation, reach the registered canonical builder with normalized kwargs, and fail on any
 unsupported field. AxiomFig does not fit regressions, clustering, ordination, Mantel statistics,
 model diagnostics, adjusted p-values, survival curves, or uncertainty intervals.
+
+The baseline `Current` column is retained for audit provenance. Completion is enforced by the
+55-case true external-data Evaluation corpus, not by changing those historical baseline values.

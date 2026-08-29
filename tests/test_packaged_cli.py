@@ -67,6 +67,7 @@ def test_clean_wheel_installs_resources_and_canonical_template_taxonomy(
     assert any(name.endswith("share/axiomfig/styles/style.yaml") for name in names)
     assert any(name.endswith("share/axiomfig/template-knowledge/index.yaml") for name in names)
     assert any(name.endswith("share/axiomfig/evaluation/cases.yaml") for name in names)
+    assert any(name.endswith("share/axiomfig/evaluation/fixtures.yaml") for name in names)
     assert "axiomfig/resources/fonts/XCharter-Roman.otf" in names
     assert "axiomfig/resources/fonts/licenses/Maple-Mono-OFL.txt" in names
     assert "axiomfig/resources/fonts/licenses/OFL-1.1.txt" in names
@@ -127,8 +128,10 @@ def test_clean_wheel_installs_resources_and_canonical_template_taxonomy(
                 "from axiomfig.templates.registry import public_template_specs; "
                 "assert len(TEMPLATE_BUILDERS) == 59; "
                 "assert len(public_template_specs()) == 55; "
-                "from axiomfig.evaluation import load_evaluation_cases, knowledge_routes; "
-                "assert len(load_evaluation_cases()) == 24; "
+                "from axiomfig.evaluation import load_evaluation_cases, "
+                "load_evaluation_fixtures, knowledge_routes; "
+                "assert len(load_evaluation_cases()) == 55; "
+                "assert len(load_evaluation_fixtures()) == 13; "
                 "assert 'relationship' in knowledge_routes(); "
                 "assert files('axiomfig.templates').joinpath('index.yaml').is_file(); "
                 "from axiomfig.typography import discover_fonts; "

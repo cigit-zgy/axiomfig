@@ -26,6 +26,7 @@ def test_ci_is_least_privilege_and_pins_third_party_actions() -> None:
 
     assert document["permissions"] == {"contents": "read"}
     assert 'python -m pytest -q -m "not e2e"' in source
+    assert "tests/test_external_data_surface.py" in source
     assert "python scripts/validate_skill.py" in source
     assert uses
     assert all(re.search(r"@[0-9a-f]{40}$", value) for value in uses)

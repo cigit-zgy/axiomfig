@@ -69,7 +69,7 @@ axiomfig = [
   "references/template-knowledge/matrix-multivariate.md",
   "references/template-knowledge/domain-specialized.md",
 ]
-"share/axiomfig/evaluation" = ["evaluation/cases.yaml"]
+"share/axiomfig/evaluation" = ["evaluation/cases.yaml", "evaluation/fixtures.yaml"]
 
 [tool.pytest.ini_options]
 addopts = "-ra"

@@ -94,7 +94,10 @@ def parse_figure_intent(document: Mapping[str, Any]) -> FigureIntent:
         rendered = ", ".join(sorted(forbidden_semantics))
         raise FigureIntentError(f"deterministic visual field is forbidden: {rendered}")
 
-    geometry = document.get("geometry", "single-column")
+    default_geometry = next(
+        spec.geometry for spec in load_template_registry() if spec.template_id == template_id
+    )
+    geometry = document.get("geometry", default_geometry)
     typography = document.get("typography", "sans")
     contracts = load_contracts()
     if geometry not in contracts.style["geometry"]:

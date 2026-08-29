@@ -1,81 +1,87 @@
 version: 1
 cases:
-  - {id: line_single, scientific_intent: trend, expected_template: line.single, fixture: line, figure_intent: {template: line.single, data: {x: time, y: response}}}
-  - {id: line_multi, scientific_intent: trend, expected_template: line.multi, fixture: line, figure_intent: {template: line.multi, data: {x: time, series_values: series_values, series_labels: series_labels}}}
-  - {id: line_marker, scientific_intent: trend, expected_template: line.marker, fixture: line, figure_intent: {template: line.marker, data: {x: time, y: response}}}
+  - {expected_validation: pass, id: line_single, scientific_intent: trend, expected_template: line.single, fixture: line, figure_intent: {template: line.single, data: {x: time, y: response}}}
+  - {expected_validation: pass, id: line_multi, scientific_intent: trend, expected_template: line.multi, fixture: line, figure_intent: {template: line.multi, data: {x: time, series_values: series_values, series_labels: series_labels}}}
+  - {expected_validation: pass, id: line_marker, scientific_intent: trend, expected_template: line.marker, fixture: line, figure_intent: {template: line.marker, data: {x: time, y: response}}}
   - id: line_confidence_band
+    expected_validation: pass
     scientific_intent: uncertainty
     expected_template: line.confidence_band
     fixture: line
     figure_intent: {template: line.confidence_band, data: {x: time, estimate: estimate, lower: lower, upper: upper}, semantics: {uncertainty_type: 95% CI}}
   - id: line_errorbar
+    expected_validation: pass
     scientific_intent: uncertainty
     expected_template: line.errorbar
     fixture: line
     figure_intent: {template: line.errorbar, data: {x: time, estimate: estimate, error: error}, semantics: {uncertainty_type: SE}}
-  - {id: line_step, scientific_intent: trend, expected_template: line.step, fixture: line, figure_intent: {template: line.step, data: {x: time, y: response}, semantics: {where: post}}}
-  - {id: line_area, scientific_intent: trend, expected_template: line.area, fixture: line, figure_intent: {template: line.area, data: {x: time, y: response}, semantics: {baseline: 0.0}}}
-  - {id: scatter_simple, scientific_intent: relationship, expected_template: scatter.simple, fixture: scatter, figure_intent: {template: scatter.simple, data: {x: x, y: y}}}
-  - {id: scatter_grouped, scientific_intent: relationship, expected_template: scatter.grouped, fixture: scatter, figure_intent: {template: scatter.grouped, data: {x: x, y: y, group: group}}}
-  - {id: scatter_regression, scientific_intent: relationship, expected_template: scatter.regression, fixture: scatter, figure_intent: {template: scatter.regression, data: {x: x, y: y, fitted: fitted}, semantics: {fit_label: Precomputed fit}}}
-  - {id: scatter_parity, scientific_intent: relationship, expected_template: scatter.parity, fixture: scatter, figure_intent: {template: scatter.parity, data: {observed: x, predicted: y}}}
-  - {id: scatter_bubble, scientific_intent: relationship, expected_template: scatter.bubble, fixture: scatter, figure_intent: {template: scatter.bubble, data: {x: x, y: y, size: size, group: group}}}
-  - {id: scatter_hexbin, scientific_intent: relationship, expected_template: scatter.hexbin, fixture: scatter, figure_intent: {template: scatter.hexbin, data: {x: x, y: y}, semantics: {gridsize: 8}}}
-  - {id: bar_vertical, scientific_intent: comparison, expected_template: bar.vertical, fixture: bar, figure_intent: {template: bar.vertical, data: {category: category, value: value}}}
-  - {id: bar_horizontal, scientific_intent: comparison, expected_template: bar.horizontal, fixture: bar, figure_intent: {template: bar.horizontal, data: {category: category, value: value}}}
-  - {id: bar_grouped, scientific_intent: comparison, expected_template: bar.grouped, fixture: bar, figure_intent: {template: bar.grouped, data: {category: category_long, value: value_long, group: group}}}
-  - {id: bar_stacked, scientific_intent: comparison, expected_template: bar.stacked, fixture: bar, figure_intent: {template: bar.stacked, data: {category: category_long, value: stack_value, component: component}}}
-  - {id: bar_normalized, scientific_intent: comparison, expected_template: bar.normalized_stacked, fixture: bar, figure_intent: {template: bar.normalized_stacked, data: {category: category_long, value: stack_value, component: component}, semantics: {normalization: normalize}}}
-  - {id: bar_dot, scientific_intent: comparison, expected_template: bar.dot, fixture: bar, figure_intent: {template: bar.dot, data: {category: category, value: value}}}
-  - {id: distribution_histogram, scientific_intent: distribution, expected_template: distribution.histogram, fixture: distribution, figure_intent: {template: distribution.histogram, data: {value: value}, semantics: {bins: 6}}}
-  - {id: distribution_density, scientific_intent: distribution, expected_template: distribution.density, fixture: distribution, figure_intent: {template: distribution.density, data: {x: density_x, density: density}}}
-  - {id: distribution_ecdf, scientific_intent: distribution, expected_template: distribution.ecdf, fixture: distribution, figure_intent: {template: distribution.ecdf, data: {value: value, group: category}}}
-  - {id: distribution_box, scientific_intent: distribution, expected_template: distribution.box, fixture: distribution, figure_intent: {template: distribution.box, data: {value: value, category: category}}}
-  - {id: distribution_violin, scientific_intent: distribution, expected_template: distribution.violin, fixture: distribution, figure_intent: {template: distribution.violin, data: {value: value, category: category}}}
-  - {id: distribution_box_violin, scientific_intent: distribution, expected_template: distribution.box_violin, fixture: distribution, figure_intent: {template: distribution.box_violin, data: {value: value, category: category}}}
-  - {id: distribution_strip, scientific_intent: distribution, expected_template: distribution.strip, fixture: distribution, figure_intent: {template: distribution.strip, data: {value: value, category: category}, semantics: {jitter: 0.12}}}
-  - {id: distribution_raincloud, scientific_intent: distribution, expected_template: distribution.raincloud, fixture: distribution, figure_intent: {template: distribution.raincloud, data: {value: value, category: category}, semantics: {jitter: 0.15, summary: median}}}
-  - {id: heatmap_basic, scientific_intent: matrix, expected_template: heatmap.basic, fixture: heatmap, figure_intent: {template: heatmap.basic, data: {matrix: positive_matrix, row_labels: row_labels, column_labels: column_labels}, semantics: {color_semantics: sequential}}}
-  - {id: heatmap_correlation, scientific_intent: matrix, expected_template: heatmap.correlation, fixture: heatmap, figure_intent: {template: heatmap.correlation, data: {matrix: correlation_matrix, labels: row_labels}, semantics: {center: 0.0}}}
+  - {expected_validation: pass, id: line_step, scientific_intent: trend, expected_template: line.step, fixture: line, figure_intent: {template: line.step, data: {x: time, y: response}, semantics: {where: post}}}
+  - {expected_validation: pass, id: line_area, scientific_intent: trend, expected_template: line.area, fixture: line, figure_intent: {template: line.area, data: {x: time, y: response}, semantics: {baseline: 0.0}}}
+  - {expected_validation: pass, id: scatter_simple, scientific_intent: relationship, expected_template: scatter.simple, fixture: scatter, figure_intent: {template: scatter.simple, data: {x: x, y: y}}}
+  - {expected_validation: pass, id: scatter_grouped, scientific_intent: relationship, expected_template: scatter.grouped, fixture: scatter, figure_intent: {template: scatter.grouped, data: {x: x, y: y, group: group}}}
+  - {expected_validation: pass, id: scatter_regression, scientific_intent: relationship, expected_template: scatter.regression, fixture: scatter, figure_intent: {template: scatter.regression, data: {x: x, y: y, fitted: fitted}, semantics: {fit_label: Precomputed fit}}}
+  - {expected_validation: pass, id: scatter_parity, scientific_intent: relationship, expected_template: scatter.parity, fixture: scatter, figure_intent: {template: scatter.parity, data: {observed: x, predicted: y}}}
+  - {expected_validation: pass, id: scatter_bubble, scientific_intent: relationship, expected_template: scatter.bubble, fixture: scatter, figure_intent: {template: scatter.bubble, data: {x: x, y: y, size: size, group: group}}}
+  - {expected_validation: pass, id: scatter_hexbin, scientific_intent: relationship, expected_template: scatter.hexbin, fixture: scatter, figure_intent: {template: scatter.hexbin, data: {x: x, y: y}, semantics: {gridsize: 8}}}
+  - {expected_validation: pass, id: bar_vertical, scientific_intent: comparison, expected_template: bar.vertical, fixture: bar, figure_intent: {template: bar.vertical, data: {category: category, value: value}}}
+  - {expected_validation: pass, id: bar_horizontal, scientific_intent: comparison, expected_template: bar.horizontal, fixture: bar, figure_intent: {template: bar.horizontal, data: {category: category, value: value}}}
+  - {expected_validation: pass, id: bar_grouped, scientific_intent: comparison, expected_template: bar.grouped, fixture: bar, figure_intent: {template: bar.grouped, data: {category: category_long, value: value_long, group: group}}}
+  - {expected_validation: pass, id: bar_stacked, scientific_intent: comparison, expected_template: bar.stacked, fixture: bar, figure_intent: {template: bar.stacked, data: {category: category_long, value: stack_value, component: component}}}
+  - {expected_validation: pass, id: bar_normalized, scientific_intent: comparison, expected_template: bar.normalized_stacked, fixture: bar, figure_intent: {template: bar.normalized_stacked, data: {category: category_long, value: stack_value, component: component}, semantics: {normalization: normalize}}}
+  - {expected_validation: pass, id: bar_dot, scientific_intent: comparison, expected_template: bar.dot, fixture: bar, figure_intent: {template: bar.dot, data: {category: category, value: value}}}
+  - {expected_validation: pass, id: distribution_histogram, scientific_intent: distribution, expected_template: distribution.histogram, fixture: distribution, figure_intent: {template: distribution.histogram, data: {value: value}, semantics: {bins: 6}}}
+  - {expected_validation: pass, id: distribution_density, scientific_intent: distribution, expected_template: distribution.density, fixture: distribution, figure_intent: {template: distribution.density, data: {x: density_x, density: density}}}
+  - {expected_validation: pass, id: distribution_ecdf, scientific_intent: distribution, expected_template: distribution.ecdf, fixture: distribution, figure_intent: {template: distribution.ecdf, data: {value: value, group: category}}}
+  - {expected_validation: pass, id: distribution_box, scientific_intent: distribution, expected_template: distribution.box, fixture: distribution, figure_intent: {template: distribution.box, data: {value: value, category: category}}}
+  - {expected_validation: pass, id: distribution_violin, scientific_intent: distribution, expected_template: distribution.violin, fixture: distribution, figure_intent: {template: distribution.violin, data: {value: value, category: category}}}
+  - {expected_validation: pass, id: distribution_box_violin, scientific_intent: distribution, expected_template: distribution.box_violin, fixture: distribution, figure_intent: {template: distribution.box_violin, data: {value: value, category: category}}}
+  - {expected_validation: pass, id: distribution_strip, scientific_intent: distribution, expected_template: distribution.strip, fixture: distribution, figure_intent: {template: distribution.strip, data: {value: value, category: category}, semantics: {jitter: 0.12}}}
+  - {expected_validation: pass, id: distribution_raincloud, scientific_intent: distribution, expected_template: distribution.raincloud, fixture: distribution, figure_intent: {template: distribution.raincloud, data: {value: value, category: category}, semantics: {jitter: 0.15, summary: median}}}
+  - {expected_validation: pass, id: heatmap_basic, scientific_intent: matrix, expected_template: heatmap.basic, fixture: heatmap, figure_intent: {template: heatmap.basic, data: {matrix: positive_matrix, row_labels: row_labels, column_labels: column_labels}, semantics: {color_semantics: sequential}}}
+  - {expected_validation: pass, id: heatmap_correlation, scientific_intent: matrix, expected_template: heatmap.correlation, fixture: heatmap, figure_intent: {template: heatmap.correlation, data: {matrix: correlation_matrix, labels: row_labels}, semantics: {center: 0.0}}}
   - id: heatmap_clustered
+    expected_validation: pass
     scientific_intent: matrix
     expected_template: heatmap.clustered
     fixture: heatmap
     figure_intent: {template: heatmap.clustered, data: {matrix: positive_matrix, row_labels: row_labels, column_labels: column_labels, row_order: row_order, column_order: column_order}, semantics: {color_semantics: sequential}}
-  - {id: heatmap_confusion, scientific_intent: matrix, expected_template: heatmap.confusion_matrix, fixture: heatmap, figure_intent: {template: heatmap.confusion_matrix, data: {matrix: confusion_matrix, class_labels: row_labels}}}
+  - {expected_validation: pass, id: heatmap_confusion, scientific_intent: matrix, expected_template: heatmap.confusion_matrix, fixture: heatmap, figure_intent: {template: heatmap.confusion_matrix, data: {matrix: confusion_matrix, class_labels: row_labels}}}
   - id: heatmap_annotated
+    expected_validation: pass
     scientific_intent: matrix
     expected_template: heatmap.annotated
     fixture: heatmap
     figure_intent: {template: heatmap.annotated, data: {matrix: positive_matrix, row_labels: row_labels, column_labels: column_labels, annotations: annotations}, semantics: {color_semantics: sequential}}
-  - {id: estimation_forest, scientific_intent: uncertainty, expected_template: estimation.forest, fixture: estimation, figure_intent: {template: estimation.forest, data: {label: label, estimate: estimate, interval: interval}, semantics: {uncertainty_type: 95% CI}}}
-  - {id: estimation_point_interval, scientific_intent: uncertainty, expected_template: estimation.point_interval, fixture: estimation, figure_intent: {template: estimation.point_interval, data: {label: label_long, estimate: estimate_long, interval: interval_long, group: group}, semantics: {uncertainty_type: 95% CI}}}
-  - {id: estimation_coefficient, scientific_intent: uncertainty, expected_template: estimation.coefficient, fixture: estimation, figure_intent: {template: estimation.coefficient, data: {term: label_long, estimate: coefficient, interval: coefficient_interval, model: group}, semantics: {uncertainty_type: 95% CI, reference: 0.0}}}
-  - {id: diagnostics_residual, scientific_intent: model_evaluation, expected_template: diagnostics.residual, fixture: diagnostics, figure_intent: {template: diagnostics.residual, data: {fitted: fitted, residual: residual, trend: trend}}}
-  - {id: diagnostics_bland_altman, scientific_intent: model_evaluation, expected_template: diagnostics.bland_altman, fixture: diagnostics, figure_intent: {template: diagnostics.bland_altman, data: {mean: fitted, difference: residual}, semantics: {agreement_type: 95% limits}}}
-  - {id: diagnostics_calibration, scientific_intent: model_evaluation, expected_template: diagnostics.calibration, fixture: diagnostics, figure_intent: {template: diagnostics.calibration, data: {predicted_probability: probability, observed_frequency: observed_frequency, group: curve_group}}}
-  - {id: diagnostics_roc, scientific_intent: model_evaluation, expected_template: diagnostics.roc, fixture: diagnostics, figure_intent: {template: diagnostics.roc, data: {false_positive_rate: rate_x, true_positive_rate: roc_y, group: curve_group}}}
-  - {id: diagnostics_precision_recall, scientific_intent: model_evaluation, expected_template: diagnostics.precision_recall, fixture: diagnostics, figure_intent: {template: diagnostics.precision_recall, data: {recall: rate_x, precision: precision_y, group: curve_group}, semantics: {baseline: 0.5}}}
-  - {id: diagnostics_learning_curve, scientific_intent: model_evaluation, expected_template: diagnostics.learning_curve, fixture: diagnostics, figure_intent: {template: diagnostics.learning_curve, data: {iteration: iteration, metric: metric, series: curve_group}, semantics: {target: 0.1, metric_name: RMSE}}}
-  - {id: diagnostics_qq, scientific_intent: model_evaluation, expected_template: diagnostics.qq, fixture: diagnostics, figure_intent: {template: diagnostics.qq, data: {theoretical_quantile: theoretical, sample_quantile: sample}, semantics: {reference_distribution: normal}}}
-  - {id: diagnostics_feature_importance, scientific_intent: model_evaluation, expected_template: diagnostics.feature_importance, fixture: diagnostics, figure_intent: {template: diagnostics.feature_importance, data: {feature: feature, importance: importance}, semantics: {importance_type: permutation}}}
-  - {id: ordination_pca_scores, scientific_intent: ordination, expected_template: ordination.pca_scores, fixture: ordination, figure_intent: {template: ordination.pca_scores, data: {coordinates: coordinates, group: group}, semantics: {explained_variance: [48.0, 22.0]}}}
-  - {id: ordination_pca_biplot, scientific_intent: ordination, expected_template: ordination.pca_biplot, fixture: ordination, figure_intent: {template: ordination.pca_biplot, data: {coordinates: coordinates, group: group, loadings: loadings, feature_labels: feature_labels}, semantics: {explained_variance: [48.0, 22.0]}}}
-  - {id: ordination_pcoa, scientific_intent: ordination, expected_template: ordination.pcoa, fixture: ordination, figure_intent: {template: ordination.pcoa, data: {coordinates: coordinates, group: group}, semantics: {explained_variance: [39.0, 19.0], distance_metric: Bray-Curtis}}}
-  - {id: ordination_nmds, scientific_intent: ordination, expected_template: ordination.nmds, fixture: ordination, figure_intent: {template: ordination.nmds, data: {coordinates: coordinates, group: group}, semantics: {stress: 0.09, distance_metric: Bray-Curtis}}}
+  - {expected_validation: pass, id: estimation_forest, scientific_intent: uncertainty, expected_template: estimation.forest, fixture: estimation, figure_intent: {template: estimation.forest, data: {label: label, estimate: estimate, interval: interval}, semantics: {uncertainty_type: 95% CI}}}
+  - {expected_validation: pass, id: estimation_point_interval, scientific_intent: uncertainty, expected_template: estimation.point_interval, fixture: estimation, figure_intent: {template: estimation.point_interval, data: {label: label_long, estimate: estimate_long, interval: interval_long, group: group}, semantics: {uncertainty_type: 95% CI}}}
+  - {expected_validation: pass, id: estimation_coefficient, scientific_intent: uncertainty, expected_template: estimation.coefficient, fixture: estimation, figure_intent: {template: estimation.coefficient, data: {term: label_long, estimate: coefficient, interval: coefficient_interval, model: group}, semantics: {uncertainty_type: 95% CI, reference: 0.0}}}
+  - {expected_validation: pass, id: diagnostics_residual, scientific_intent: model_evaluation, expected_template: diagnostics.residual, fixture: diagnostics, figure_intent: {template: diagnostics.residual, data: {fitted: fitted, residual: residual, trend: trend}}}
+  - {expected_validation: pass, id: diagnostics_bland_altman, scientific_intent: model_evaluation, expected_template: diagnostics.bland_altman, fixture: diagnostics, figure_intent: {template: diagnostics.bland_altman, data: {mean: fitted, difference: residual}, semantics: {agreement_type: 95% limits}}}
+  - {expected_validation: pass, id: diagnostics_calibration, scientific_intent: model_evaluation, expected_template: diagnostics.calibration, fixture: diagnostics, figure_intent: {template: diagnostics.calibration, data: {predicted_probability: probability, observed_frequency: observed_frequency, group: curve_group}}}
+  - {expected_validation: pass, id: diagnostics_roc, scientific_intent: model_evaluation, expected_template: diagnostics.roc, fixture: diagnostics, figure_intent: {template: diagnostics.roc, data: {false_positive_rate: rate_x, true_positive_rate: roc_y, group: curve_group}}}
+  - {expected_validation: pass, id: diagnostics_precision_recall, scientific_intent: model_evaluation, expected_template: diagnostics.precision_recall, fixture: diagnostics, figure_intent: {template: diagnostics.precision_recall, data: {recall: rate_x, precision: precision_y, group: curve_group}, semantics: {baseline: 0.5}}}
+  - {expected_validation: pass, id: diagnostics_learning_curve, scientific_intent: model_evaluation, expected_template: diagnostics.learning_curve, fixture: diagnostics, figure_intent: {template: diagnostics.learning_curve, data: {iteration: iteration, metric: metric, series: curve_group}, semantics: {target: 0.1, metric_name: RMSE}}}
+  - {expected_validation: pass, id: diagnostics_qq, scientific_intent: model_evaluation, expected_template: diagnostics.qq, fixture: diagnostics, figure_intent: {template: diagnostics.qq, data: {theoretical_quantile: theoretical, sample_quantile: sample}, semantics: {reference_distribution: normal}}}
+  - {expected_validation: pass, id: diagnostics_feature_importance, scientific_intent: model_evaluation, expected_template: diagnostics.feature_importance, fixture: diagnostics, figure_intent: {template: diagnostics.feature_importance, data: {feature: feature, importance: importance}, semantics: {importance_type: permutation}}}
+  - {expected_validation: pass, id: ordination_pca_scores, scientific_intent: ordination, expected_template: ordination.pca_scores, fixture: ordination, figure_intent: {template: ordination.pca_scores, data: {coordinates: coordinates, group: group}, semantics: {explained_variance: [48.0, 22.0]}}}
+  - {expected_validation: pass, id: ordination_pca_biplot, scientific_intent: ordination, expected_template: ordination.pca_biplot, fixture: ordination, figure_intent: {template: ordination.pca_biplot, data: {coordinates: coordinates, group: group, loadings: loadings, feature_labels: feature_labels}, semantics: {explained_variance: [48.0, 22.0]}}}
+  - {expected_validation: pass, id: ordination_pcoa, scientific_intent: ordination, expected_template: ordination.pcoa, fixture: ordination, figure_intent: {template: ordination.pcoa, data: {coordinates: coordinates, group: group}, semantics: {explained_variance: [39.0, 19.0], distance_metric: Bray-Curtis}}}
+  - {expected_validation: pass, id: ordination_nmds, scientific_intent: ordination, expected_template: ordination.nmds, fixture: ordination, figure_intent: {template: ordination.nmds, data: {coordinates: coordinates, group: group}, semantics: {stress: 0.09, distance_metric: Bray-Curtis}}}
   - id: association_mantel
+    expected_validation: pass
     scientific_intent: association
     expected_template: association.mantel
     fixture: association
     figure_intent: {template: association.mantel, data: {correlation_matrix: correlation_matrix, matrix_labels: matrix_labels, links: mantel_links, link_strength: link_strength, significance: significance, node_labels: node_labels}}
   - id: association_network
+    expected_validation: pass
     scientific_intent: association
     expected_template: association.correlation_network
     fixture: association
     figure_intent: {template: association.correlation_network, data: {nodes: network_nodes, edges: network_edges, edge_weight: edge_weight, groups: node_groups, significance: edge_significance}}
-  - {id: flow_sankey, scientific_intent: flow, expected_template: flow.sankey, fixture: flow, figure_intent: {template: flow.sankey, data: {source: source, target: target, value: value}}}
-  - {id: field_contour, scientific_intent: field, expected_template: field.contour, fixture: field, figure_intent: {template: field.contour, data: {x_grid: x_grid, y_grid: y_grid, z: z}, semantics: {color_semantics: sequential}}}
-  - {id: field_quiver, scientific_intent: field, expected_template: field.quiver, fixture: field, figure_intent: {template: field.quiver, data: {x: vector_x, y: vector_y, u: u, v: v}, semantics: {color_semantics: sequential}}}
-  - {id: omics_volcano, scientific_intent: omics, expected_template: omics.volcano, fixture: omics, figure_intent: {template: omics.volcano, data: {effect_size: effect_size, adjusted_p_value: adjusted_p_value, feature_label: feature_label}, semantics: {significance_threshold: 0.05, effect_threshold: 1.0}}}
-  - {id: omics_enrichment, scientific_intent: omics, expected_template: omics.enrichment_dot, fixture: omics, figure_intent: {template: omics.enrichment_dot, data: {term: term, enrichment: enrichment, significance: significance, size: size}}}
-  - {id: survival_kaplan_meier, scientific_intent: survival, expected_template: survival.kaplan_meier, fixture: survival, figure_intent: {template: survival.kaplan_meier, data: {time: time, survival_probability: survival_probability, group: group, censoring: censoring, lower_ci: lower_ci, upper_ci: upper_ci}}}
+  - {expected_validation: pass, id: flow_sankey, scientific_intent: flow, expected_template: flow.sankey, fixture: flow, figure_intent: {template: flow.sankey, data: {source: source, target: target, value: value}}}
+  - {expected_validation: pass, id: field_contour, scientific_intent: field, expected_template: field.contour, fixture: field, figure_intent: {template: field.contour, data: {x_grid: x_grid, y_grid: y_grid, z: z}, semantics: {color_semantics: sequential}}}
+  - {expected_validation: pass, id: field_quiver, scientific_intent: field, expected_template: field.quiver, fixture: field, figure_intent: {template: field.quiver, data: {x: vector_x, y: vector_y, u: u, v: v}, semantics: {color_semantics: sequential}}}
+  - {expected_validation: pass, id: omics_volcano, scientific_intent: omics, expected_template: omics.volcano, fixture: omics, figure_intent: {template: omics.volcano, data: {effect_size: effect_size, adjusted_p_value: adjusted_p_value, feature_label: feature_label}, semantics: {significance_threshold: 0.05, effect_threshold: 1.0}}}
+  - {expected_validation: pass, id: omics_enrichment, scientific_intent: omics, expected_template: omics.enrichment_dot, fixture: omics, figure_intent: {template: omics.enrichment_dot, data: {term: term, enrichment: enrichment, significance: significance, size: size}}}
+  - {expected_validation: pass, id: survival_kaplan_meier, scientific_intent: survival, expected_template: survival.kaplan_meier, fixture: survival, figure_intent: {template: survival.kaplan_meier, data: {time: time, survival_probability: survival_probability, group: group, censoring: censoring, lower_ci: lower_ci, upper_ci: upper_ci}}}

@@ -38,7 +38,11 @@ jobs:
       - name: Run fast deterministic tests
         run: python -m pytest -q -m "not e2e"
       - name: Evaluate registry and Figure Intent routing
-        run: python -c "from axiomfig.evaluation import run_evaluation; assert run_evaluation(render=False).pass_rate == 1.0"
+        run: python -c "from axiomfig.evaluation import run_evaluation; assert run_evaluation(render=False).routing_rate == 1.0"
+      - name: Exercise true external-data Figure Intent paths
+        env:
+          MPLBACKEND: Agg
+        run: python -m pytest -q tests/test_external_data_surface.py
       - name: Render headless smoke figure
         env:
           MPLBACKEND: Agg

@@ -13,8 +13,9 @@ typography: sans
 ```
 
 Only `template` is required for a canonical example. `data`, `geometry`, `typography`, and
-`semantics` are optional. A data-bearing intent must provide every required field in the selected
-family contract. Scientific semantics that cannot be inferred belong under `semantics`:
+`semantics` are optional. When geometry is omitted, the selected template's Registry geometry is
+used. A data-bearing intent must provide every required field in the selected family contract.
+Scientific semantics that cannot be inferred belong under `semantics`:
 
 ```yaml
 template: heatmap.correlation
@@ -27,22 +28,15 @@ bar width, colorbar width, subplot spacing, and arbitrary fields. It also reject
 uncertainty types, centers, significance thresholds, or other required contract fields.
 
 CSV supplies named columns. JSON supplies a mapping of keys to arrays/matrices or a non-empty array
-of row objects. The v1 external-data adapters are deliberately explicit:
+of row objects. All 55 public templates have deliberately explicit external-data adapters. Read only
+the selected family's `contract.yaml` to discover its required and optional roles. Twenty-eight
+templates consume direct observations, categorical records, matrices, grids, or flow records;
+twenty-seven consume precomputed scientific results such as intervals, ordination coordinates,
+Mantel links, adjusted p-values, or survival curves. AxiomFig does not compute those analyses.
 
-- `line/single`;
-- `scatter/simple`, `scatter/grouped`, `scatter/parity`;
-- `bar/vertical`;
-- `distribution/violin`;
-- `heatmap/correlation`;
-- `estimation/forest`;
-- `diagnostics/residual`;
-- `ordination/pca_scores`;
-- `omics/volcano`;
-- `survival/kaplan_meier`.
-
-All 55 public templates accept a no-data Figure Intent to render their deterministic canonical
-example. A data-bearing intent for another variant fails explicitly rather than silently ignoring
-user data or generating arbitrary Matplotlib code.
+All public templates also accept a no-data Figure Intent for their deterministic canonical example.
+Unknown, missing, or shape-incompatible data roles fail explicitly rather than being dropped or
+routed to arbitrary Matplotlib code.
 
 ```bash
 axiomfig-intent intent.yaml --data observations.csv --output output/figure
@@ -50,4 +44,3 @@ axiomfig-intent intent.yaml --data observations.csv --output output/figure
 
 The command builds the selected canonical grammar, applies the geometry and typography contracts,
 renders PDF through the Tectonic wrapper, creates PNG from that PDF, and runs runtime validation.
-

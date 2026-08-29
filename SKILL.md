@@ -40,9 +40,11 @@ and required scientific semantics. It must not emit figure dimensions, font size
 marker or bar geometry, tick geometry, legend/panel/colorbar coordinates, margins, subplot spacing,
 or palette values. Any derivable visual property belongs to the deterministic runtime.
 
-Use only registered templates when one exists. Do not silently ignore user data; Figure Intent
-fails explicitly when a public template does not yet have an external-data adapter. Do not infer CI,
-SE, SD, PI, a heatmap center, Mantel significance, censoring, or adjusted-p thresholds.
+Use only registered templates when one exists. All 55 public templates have explicit external-data
+roles in their selected family contract. Direct-data templates accept observations, matrices, grids,
+or records; analysis-bearing templates accept structured precomputed results. Do not silently ignore
+user data or infer CI, SE, SD, PI, a heatmap center, Mantel significance, censoring, or adjusted-p
+thresholds.
 
 Filled geometry has configured face alpha with an opaque black `fill_edge`. Layouts own equal Outer
 Panel Footprints; Primary and Auxiliary Axes remain contained. Panel labels anchor to the Primary

@@ -6,6 +6,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
+import yaml
 
 
 def test_minimal_figure_intent_normalizes_template_and_defaults(tmp_path: Path) -> None:
@@ -120,6 +121,7 @@ def test_intent_without_data_uses_deterministic_canonical_example() -> None:
     intent = parse_figure_intent({"template": "association.mantel"})
     figure = build_intent_figure(intent)
 
+    assert intent.geometry == "onehalf-column"
     assert len(figure.axes) == 2
     plt.close(figure)
 
@@ -225,3 +227,74 @@ def test_intent_cli_loads_data_and_uses_intent_geometry(
     assert captured["geometry"] == "onehalf-column"
     assert captured["typography"] == "sans"
     assert captured["size"] == pytest.approx((140.0 / 25.4, 105.0 / 25.4))
+
+
+def test_intent_cli_executes_one_real_data_contract_per_family(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from types import SimpleNamespace
+
+    import axiomfig.cli as cli
+    from axiomfig.anatomy import validate_figure_anatomy
+    from axiomfig.evaluation import load_evaluation_cases, load_evaluation_fixtures
+
+    selected = {
+        "line/single",
+        "scatter/parity",
+        "bar/grouped",
+        "distribution/violin",
+        "heatmap/correlation",
+        "estimation/forest",
+        "diagnostics/roc",
+        "ordination/pca_scores",
+        "association/mantel",
+        "flow/sankey",
+        "field/contour",
+        "omics/volcano",
+        "survival/kaplan_meier",
+    }
+    cases = [case for case in load_evaluation_cases() if case.expected_template in selected]
+    fixtures = load_evaluation_fixtures()
+    rendered: list[str] = []
+
+    def fake_render(figure: object, output: Path, **kwargs: object) -> object:
+        figure.canvas.draw()  # type: ignore[attr-defined]
+        validate_figure_anatomy(figure)  # type: ignore[arg-type]
+        rendered.append(output.name)
+        return SimpleNamespace(
+            pdf=output.with_suffix(".pdf"),
+            png=output.with_suffix(".png"),
+            log=tmp_path / "render.log",
+        )
+
+    monkeypatch.setattr(cli, "discover_fonts", lambda mode: {})
+    monkeypatch.setattr(cli, "render_figure", fake_render)
+    monkeypatch.setattr(cli, "validate_pair", lambda *args, **kwargs: None)
+
+    for case in cases:
+        intent_path = tmp_path / f"{case.case_id}.yaml"
+        data_path = tmp_path / f"{case.case_id}.json"
+        intent_path.write_text(
+            yaml.safe_dump(dict(case.figure_intent), sort_keys=False),
+            encoding="utf-8",
+        )
+        data_path.write_text(
+            json.dumps(dict(fixtures[case.fixture_id])),
+            encoding="utf-8",
+        )
+        assert (
+            cli.intent_main(
+                [
+                    str(intent_path),
+                    "--data",
+                    str(data_path),
+                    "--output",
+                    str(tmp_path / case.case_id),
+                ]
+            )
+            == 0
+        )
+
+    assert len(cases) == 13
+    assert len(rendered) == 13

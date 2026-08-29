@@ -1,12 +1,12 @@
 version: 1
 intents:
-  trend: {topic: trend-comparison.md, templates: [line.single, line.multi, line.confidence_band]}
-  comparison: {topic: trend-comparison.md, templates: [bar.grouped, estimation.point_interval, estimation.coefficient]}
-  distribution: {topic: distribution-relationship.md, templates: [distribution.violin, distribution.raincloud, distribution.ecdf]}
-  relationship: {topic: distribution-relationship.md, templates: [scatter.simple, scatter.regression, scatter.parity]}
-  uncertainty: {topic: uncertainty-model.md, templates: [estimation.forest, estimation.coefficient, line.confidence_band]}
-  model_evaluation: {topic: uncertainty-model.md, templates: [diagnostics.residual, diagnostics.qq, diagnostics.calibration, diagnostics.roc]}
-  matrix: {topic: matrix-multivariate.md, templates: [heatmap.correlation, heatmap.annotated]}
+  trend: {topic: trend-comparison.md, templates: [line.single, line.multi, line.marker, line.step, line.area]}
+  comparison: {topic: trend-comparison.md, templates: [bar.vertical, bar.horizontal, bar.grouped, bar.stacked, bar.normalized_stacked, bar.dot]}
+  distribution: {topic: distribution-relationship.md, templates: [distribution.histogram, distribution.density, distribution.ecdf, distribution.box, distribution.violin, distribution.box_violin, distribution.strip, distribution.raincloud]}
+  relationship: {topic: distribution-relationship.md, templates: [scatter.simple, scatter.grouped, scatter.regression, scatter.parity, scatter.bubble, scatter.hexbin]}
+  uncertainty: {topic: uncertainty-model.md, templates: [line.confidence_band, line.errorbar, estimation.forest, estimation.point_interval, estimation.coefficient]}
+  model_evaluation: {topic: uncertainty-model.md, templates: [diagnostics.residual, diagnostics.bland_altman, diagnostics.calibration, diagnostics.roc, diagnostics.precision_recall, diagnostics.learning_curve, diagnostics.qq, diagnostics.feature_importance]}
+  matrix: {topic: matrix-multivariate.md, templates: [heatmap.basic, heatmap.correlation, heatmap.clustered, heatmap.confusion_matrix, heatmap.annotated]}
   ordination: {topic: matrix-multivariate.md, templates: [ordination.pca_scores, ordination.pca_biplot, ordination.pcoa, ordination.nmds]}
   association: {topic: matrix-multivariate.md, templates: [association.mantel, association.correlation_network]}
   flow: {topic: domain-specialized.md, templates: [flow.sankey]}
