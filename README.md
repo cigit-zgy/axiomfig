@@ -20,10 +20,10 @@ Requirements: Python 3.11+, Tectonic, Poppler, and the exact font families below
 
 ```bash
 brew install tectonic poppler
-brew install --cask font-latin-modern font-latin-modern-math font-noto-sans-cjk
+brew install --cask font-latin-modern font-latin-modern-math font-noto-sans-cjk-sc font-noto-sans-cjk-jp
 fc-cache -f
 
-python -m pip install -e ".[dev]"
+python -m pip install -e . --group dev
 python scripts/check_fonts.py
 python scripts/render.py line-ci --output tmp/demo/line \
   --geometry single-column --colors default --plot line

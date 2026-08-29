@@ -14,7 +14,7 @@ This matches the Latin direction in `cigit-zgy/latex-templates`, whose current `
 On macOS, install the reproducible font packages with:
 
 ```bash
-brew install --cask font-latin-modern font-latin-modern-math font-noto-sans-cjk
+brew install --cask font-latin-modern font-latin-modern-math font-noto-sans-cjk-sc font-noto-sans-cjk-jp
 fc-cache -f
 python scripts/check_fonts.py
 ```
