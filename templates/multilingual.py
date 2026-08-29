@@ -18,8 +18,15 @@ def build_multilingual(mode: str = "sans") -> Figure:
     apply_axis_contract(axis)
     place_legend_above(axis)
 
+    family_label = {"sans": "Sans", "serif": "Serif"}[mode]
     add_language_text(
-        axis, 0.04, 0.92, "Nitrification efficiency", "en", mode=mode, transform=axis.transAxes
+        axis,
+        0.04,
+        0.92,
+        f"{family_label} - Nitrification efficiency",
+        "en",
+        mode=mode,
+        transform=axis.transAxes,
     )
     add_language_text(axis, 0.04, 0.82, "硝化效率", "zh", mode=mode, transform=axis.transAxes)
     add_language_text(axis, 0.04, 0.72, "硝化効率", "ja", mode=mode, transform=axis.transAxes)

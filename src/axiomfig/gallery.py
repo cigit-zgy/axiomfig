@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import hashlib
 import json
+import os
 import shutil
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -60,7 +64,27 @@ GALLERY_SPECS = (
     ),
     GallerySpec("07_multilingual", "multilingual", "sans", "onehalf-column", "default", "line"),
     GallerySpec("08_multi_panel", "layout-4-panel", "sans", "double-column", "default", "line"),
+    GallerySpec("09_serif", "multilingual", "serif", "onehalf-column", "default", "line"),
+    GallerySpec("10_style_contract", "style-contract", "sans", "double-column", "default", "line"),
 )
+
+
+@contextmanager
+def _deterministic_pdf_environment() -> Iterator[None]:
+    previous = os.environ.get("SOURCE_DATE_EPOCH")
+    os.environ["SOURCE_DATE_EPOCH"] = "0"
+    try:
+        yield
+    finally:
+        if previous is None:
+            os.environ.pop("SOURCE_DATE_EPOCH", None)
+        else:
+            os.environ["SOURCE_DATE_EPOCH"] = previous
+
+
+def _sha256(path: Path) -> str:
+    with path.open("rb") as stream:
+        return hashlib.file_digest(stream, "sha256").hexdigest()
 
 
 def _prepare_gallery(gallery: Path) -> None:
@@ -94,45 +118,49 @@ def build_gallery(gallery: Path, *, work_root: Path | None = None) -> list[Rende
         "figures": [],
     }
 
-    for spec in GALLERY_SPECS:
-        composed = compose_styles(spec.selection().paths(style_root))
-        with mpl.rc_context(rc=composed.params):
-            figure = build_template(spec.template, typography=spec.typography)
-            figure.set_size_inches(composed.params["figure.figsize"], forward=False)
-            result = render_figure(
-                figure,
-                gallery / spec.stem,
-                work_root=work_root,
-                typography=spec.typography,
+    with _deterministic_pdf_environment():
+        for spec in GALLERY_SPECS:
+            composed = compose_styles(spec.selection().paths(style_root))
+            with mpl.rc_context(rc=composed.params):
+                figure = build_template(spec.template, typography=spec.typography)
+                figure.set_size_inches(composed.params["figure.figsize"], forward=False)
+                result = render_figure(
+                    figure,
+                    gallery / spec.stem,
+                    work_root=work_root,
+                    typography=spec.typography,
+                )
+                plt.close(figure)
+            width_mm, height_mm = GEOMETRY_MM[spec.geometry]
+            entry = validate_pair(
+                result.pdf,
+                result.png,
+                expected_width_mm=width_mm,
+                expected_height_mm=height_mm,
+                tectonic_log=result.log,
             )
-            plt.close(figure)
-        width_mm, height_mm = GEOMETRY_MM[spec.geometry]
-        entry = validate_pair(
-            result.pdf,
-            result.png,
-            expected_width_mm=width_mm,
-            expected_height_mm=height_mm,
-            tectonic_log=result.log,
-        )
-        if spec.stem == "07_multilingual":
-            extracted = extract_pdf_text(result.pdf)
-            missing = [text for text in MULTILINGUAL_REQUIRED if text not in extracted]
-            if missing:
-                raise ValidationError(f"multilingual PDF is missing required text: {missing}")
-        results.append(result)
-        manifest["figures"].append(
-            {
-                "stem": spec.stem,
-                "template": spec.template,
-                "style_paths": [str(path.relative_to(PROJECT_ROOT)) for path in composed.paths],
-                "tectonic_command": list(result.tectonic_command),
-                "intermediate_pdf": str(result.intermediate_pdf),
-                "pdf_bytes": entry.pdf.size_bytes,
-                "width_mm": entry.pdf.width_mm,
-                "height_mm": entry.pdf.height_mm,
-                "font_rows": list(entry.fonts),
-            }
-        )
+            if spec.template == "multilingual":
+                extracted = extract_pdf_text(result.pdf)
+                missing = [text for text in MULTILINGUAL_REQUIRED if text not in extracted]
+                if missing:
+                    raise ValidationError(f"multilingual PDF is missing required text: {missing}")
+            results.append(result)
+            manifest["figures"].append(
+                {
+                    "stem": spec.stem,
+                    "template": spec.template,
+                    "typography": spec.typography,
+                    "style_paths": [str(path.relative_to(PROJECT_ROOT)) for path in composed.paths],
+                    "tectonic_command": list(result.tectonic_command),
+                    "intermediate_pdf": str(result.intermediate_pdf),
+                    "pdf_bytes": entry.pdf.size_bytes,
+                    "pdf_sha256": _sha256(result.pdf),
+                    "png_sha256": _sha256(result.png),
+                    "width_mm": entry.pdf.width_mm,
+                    "height_mm": entry.pdf.height_mm,
+                    "font_rows": list(entry.fonts),
+                }
+            )
 
     (work_root / "gallery_manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"

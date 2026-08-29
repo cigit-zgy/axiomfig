@@ -27,6 +27,7 @@ TEMPLATE_BUILDERS: dict[str, tuple[str, str]] = {
     "layout-2-panel": ("layout.py", "build_two_panel"),
     "layout-4-panel": ("layout.py", "build_four_panel"),
     "multilingual": ("multilingual.py", "build_multilingual"),
+    "style-contract": ("style_contract.py", "build_style_contract"),
 }
 
 
