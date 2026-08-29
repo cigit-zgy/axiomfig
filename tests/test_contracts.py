@@ -1,3 +1,4 @@
+import tomllib
 from pathlib import Path
 
 import matplotlib as mpl
@@ -8,6 +9,12 @@ from axiomfig.contracts import FILLED_TICK_PARAMS, OPEN_TICK_PARAMS, STROKE_WIDT
 from axiomfig.styles import apply_tick_contract
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_dev_dependency_group_supplies_setuptools_for_unisolated_wheel_builds() -> None:
+    metadata = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+
+    assert "setuptools>=80" in metadata["dependency-groups"]["dev"]
 
 
 def test_publication_style_uses_the_central_stroke_for_every_default_visible_stroke() -> None:
