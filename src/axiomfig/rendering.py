@@ -101,9 +101,14 @@ def render_figure(
     style_params = compose_styles(
         [selected_paths["typography"], selected_paths["rendering"]]
     ).params
+    with mpl.rc_context(rc=style_params), warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message="Glyph .* missing from font")
+        figure.canvas.draw()
+        apply_figure_typography(figure, mode=typography)
+        figure.canvas.draw()
+        apply_figure_typography(figure, mode=typography)
     with mpl.rc_context(rc=style_params), warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
-        apply_figure_typography(figure, mode=typography)
         figure.savefig(intermediate_pdf, format="pdf")
     glyph_warnings = [str(item.message) for item in caught if "Glyph" in str(item.message)]
     if glyph_warnings:

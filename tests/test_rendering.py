@@ -205,4 +205,21 @@ def test_render_pipeline_allows_public_japanese_and_mono_explicit_opt_ins(tmp_pa
 
     assert any("NotoSerifCJKjp-Regular" in row for row in entry.fonts)
     assert any("MapleMono-Regular" in row for row in entry.fonts)
+    assert not any("DejaVu" in row for row in entry.fonts)
+    plt.close(figure)
+
+
+@pytest.mark.e2e
+@pytest.mark.parametrize(("mode", "expected"), [("sans", "LMSans10"), ("serif", "LMRoman10")])
+def test_render_pipeline_assigns_exact_font_to_materialized_offset_text(
+    tmp_path: Path, mode: str, expected: str
+) -> None:
+    figure, axis = plt.subplots(figsize=(3.543307, 2.65748))
+    axis.plot([1e8, 1e8 + 1], [0, 1])
+
+    result = render_figure(figure, tmp_path / mode, typography=mode)
+    entry = validate_pair(result.pdf, result.png, tectonic_log=result.log)
+
+    assert any(expected in row for row in entry.fonts)
+    assert not any("DejaVu" in row for row in entry.fonts)
     plt.close(figure)
