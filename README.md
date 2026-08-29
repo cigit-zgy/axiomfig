@@ -23,17 +23,17 @@ brew install tectonic poppler
 brew install --cask font-latin-modern font-latin-modern-math font-noto-sans-cjk
 fc-cache -f
 
-uv sync --dev
-uv run python scripts/check_fonts.py
-uv run python scripts/render.py line-ci --output tmp/demo/line \
+python -m pip install -e ".[dev]"
+python scripts/check_fonts.py
+python scripts/render.py line-ci --output tmp/demo/line \
   --geometry single-column --colors default --plot line
-uv run python scripts/validate.py tmp/demo
+python scripts/validate.py tmp/demo
 ```
 
 Compose an inspectable style file without rendering:
 
 ```bash
-uv run python scripts/compose_style.py \
+python scripts/compose_style.py \
   --geometry double-column --typography sans --colors muted \
   --plot line --language multilingual --rendering vector \
   --output tmp/composed.mplstyle
@@ -56,11 +56,11 @@ The exact contract is Latin Modern Sans for Latin text, Latin Modern Math for ma
 Matplotlib's PGF backend does not support `tectonic` as a `pgf.texsystem` value. AxiomFig instead writes a vector PDF intermediate, includes it in a standalone TeX document, invokes Tectonic for the final PDF, then rasterizes that exact PDF for the preview. Intermediate TeX/PDF/log files stay under `tmp/`; `gallery/` contains only final PDF/PNG pairs.
 
 ```bash
-uv run python scripts/build_gallery.py
-uv run python scripts/validate.py gallery
-uv run pytest
-uv run ruff check .
-uv run ruff format --check .
+python scripts/build_gallery.py
+python scripts/validate.py gallery
+python -m pytest
+ruff check .
+ruff format --check .
 ```
 
 ![Line with confidence interval](gallery/01_line.png)

@@ -16,7 +16,7 @@ On macOS, install the reproducible font packages with:
 ```bash
 brew install --cask font-latin-modern font-latin-modern-math font-noto-sans-cjk
 fc-cache -f
-uv run python scripts/check_fonts.py
+python scripts/check_fonts.py
 ```
 
 `discover_fonts()` registers the regular/bold/oblique/bold-oblique Latin files with Matplotlib, verifies the internal family identity, and uses `fallback_to_default=False` for CJK. Missing files, wrong internal names, or a family lookup that resolves to another font raise `FontContractError`.

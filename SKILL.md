@@ -13,10 +13,10 @@ AxiomFig is deterministic-first: the agent chooses a tested template and style m
 
 1. Identify the scientific comparison and figure archetype. Read [references/templates.md](references/templates.md) when choosing among line, scatter/parity, bar, distribution, heatmap, model-evaluation, and layout templates.
 2. Select exactly one module per layer in this order: `base + geometry + typography + colors + plot + language + rendering`. Read [references/style-contract.md](references/style-contract.md) before changing or adding a module.
-3. Run `uv run python scripts/check_fonts.py`. A missing exact font is a hard failure; do not substitute another family.
+3. Run `python scripts/check_fonts.py`. A missing exact font is a hard failure; do not substitute another family.
 4. Copy or adapt the closest native Matplotlib template. Change data, labels, units, legend placement, annotations, and plot-specific content only. Templates must not mutate contract `rcParams`.
-5. Render through `uv run python scripts/render.py <template> --output <stem> [style options]`. The formal PDF must pass through Tectonic. PNG is rasterized from that final PDF, not rendered by a separate style path.
-6. Run `uv run python scripts/validate.py <output-directory>` and visually inspect the PDF rasterization. Read [references/rendering-validation.md](references/rendering-validation.md) for the evidence required.
+5. Render through `python scripts/render.py <template> --output <stem> [style options]`. The formal PDF must pass through Tectonic. PNG is rasterized from that final PDF, not rendered by a separate style path.
+6. Run `python scripts/validate.py <output-directory>` and visually inspect the PDF rasterization. Read [references/rendering-validation.md](references/rendering-validation.md) for the evidence required.
 
 For multilingual content, explicitly map Chinese text to `zh` and Japanese text to `ja`; read [references/typography.md](references/typography.md). Never rely on font fallback to choose regional CJK glyphs.
 

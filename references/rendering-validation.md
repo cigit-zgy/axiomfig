@@ -18,10 +18,10 @@ All `.tex`, `.aux`, `.log`, wrapper PDF, source PDF, and preview intermediates s
 ## Commands
 
 ```bash
-uv run python scripts/render.py line-ci --output output/line \
+python scripts/render.py line-ci --output output/line \
   --geometry single-column --colors default --plot line
-uv run python scripts/validate.py output
-uv run python scripts/build_gallery.py
+python scripts/validate.py output
+python scripts/build_gallery.py
 ```
 
 ## Deterministic checks
