@@ -43,54 +43,148 @@ def _distribution_axis(
     )
 
 
-def build_histogram() -> Figure:
-    rng = np.random.default_rng(83)
-    residuals = rng.normal(0.0, 1.15, 240)
+def _grouped_samples(value: object, category: object) -> tuple[list[np.ndarray], list[str]]:
+    values = np.asarray(value, dtype=float)
+    categories = np.asarray(category, dtype=object).astype(str)
+    labels = list(dict.fromkeys(categories))
+    return [values[categories == label] for label in labels], labels
+
+
+def build_histogram(
+    value: object | None = None,
+    bins: object | None = None,
+    xlabel: object | None = None,
+    ylabel: object | None = None,
+) -> Figure:
+    if value is None:
+        rng = np.random.default_rng(83)
+        residuals = rng.normal(0.0, 1.15, 240)
+        selected_bins: object = np.linspace(-3.5, 3.5, 15)
+        limits = (-3.5, 3.5)
+    else:
+        residuals = np.asarray(value, dtype=float)
+        selected_bins = 10 if bins is None else bins
+        padding = max(float(np.ptp(residuals)) * 0.05, 0.1)
+        limits = (float(residuals.min()) - padding, float(residuals.max()) + padding)
     figure, axis = plt.subplots()
-    axis.hist(residuals, bins=np.linspace(-3.5, 3.5, 15), **histogram_kwargs())
-    axis.set(xlabel="Residual (mg/L)", ylabel="Frequency")
-    apply_axis_contract(axis, surface="open")
-    apply_nice_linear_axis(axis, -3.5, 3.5, coordinate="x")
-    apply_nice_linear_axis(axis, 0.0, 50.0, coordinate="y")
-    return figure
-
-
-def build_density() -> Figure:
-    rng = np.random.default_rng(89)
-    samples = rng.normal(0.2, 0.95, 180)
-    grid = np.linspace(-3.2, 3.6, 240)
-    bandwidth = 0.38
-    density = np.exp(-0.5 * ((grid[:, None] - samples[None, :]) / bandwidth) ** 2).mean(axis=1) / (
-        bandwidth * np.sqrt(2.0 * np.pi)
+    counts, _, _ = axis.hist(residuals, bins=selected_bins, **histogram_kwargs())
+    axis.set(
+        xlabel="Residual (mg/L)" if xlabel is None else str(xlabel),
+        ylabel="Frequency" if ylabel is None else str(ylabel),
     )
-    figure, axis = plt.subplots()
-    color = plt.rcParams["axes.prop_cycle"].by_key()["color"][0]
-    axis.fill_between(grid, 0.0, density, **confidence_interval_kwargs(color))
-    axis.plot(grid, density)
-    axis.set(xlabel="Standardized residual", ylabel="Density")
     apply_axis_contract(axis, surface="open")
-    apply_nice_linear_axis(axis, -3.2, 3.6, coordinate="x")
-    apply_nice_linear_axis(axis, 0.0, float(density.max()) * 1.08, coordinate="y")
+    apply_nice_linear_axis(axis, *limits, coordinate="x")
+    apply_nice_linear_axis(axis, 0.0, max(float(counts.max()) * 1.12, 1.0), coordinate="y")
     return figure
 
 
-def build_ecdf() -> Figure:
-    rng = np.random.default_rng(97)
+def build_density(
+    x: object | None = None,
+    density: object | None = None,
+    group: object | None = None,
+    xlabel: object | None = None,
+    ylabel: object | None = None,
+) -> Figure:
+    if x is None and density is None:
+        rng = np.random.default_rng(89)
+        samples = rng.normal(0.2, 0.95, 180)
+        grid = np.linspace(-3.2, 3.6, 240)
+        bandwidth = 0.38
+        selected_density = np.exp(
+            -0.5 * ((grid[:, None] - samples[None, :]) / bandwidth) ** 2
+        ).mean(axis=1) / (bandwidth * np.sqrt(2.0 * np.pi))
+        series = [(grid, selected_density, None)]
+        limits = ((-3.2, 3.6), (0.0, float(selected_density.max()) * 1.08))
+    elif x is not None and density is not None:
+        grid = np.asarray(x, dtype=float)
+        selected_density = np.asarray(density, dtype=float)
+        if group is None:
+            series = [(grid, selected_density, None)]
+        else:
+            groups = np.asarray(group, dtype=object).astype(str)
+            series = [
+                (grid[groups == label], selected_density[groups == label], label)
+                for label in dict.fromkeys(groups)
+            ]
+        x_padding = max(float(np.ptp(grid)) * 0.04, 0.1)
+        limits = (
+            (float(grid.min()) - x_padding, float(grid.max()) + x_padding),
+            (0.0, max(float(selected_density.max()) * 1.08, 0.1)),
+        )
+    else:
+        raise ValueError("density requires precomputed x and density together")
     figure, axis = plt.subplots()
-    for index, (mean, label) in enumerate(((0.0, "Baseline"), (0.55, "Hybrid"))):
-        values = np.sort(rng.normal(mean, 0.9, 90))
-        probability = np.arange(1, values.size + 1) / values.size
-        axis.step(values, probability, where="post", label=label, **series_style(index))
-    axis.set(xlabel="Standardized score", ylabel="Cumulative probability")
+    colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+    for index, (selected_x, selected_y, label) in enumerate(series):
+        order = np.argsort(selected_x)
+        color = colors[index % len(colors)]
+        axis.fill_between(
+            selected_x[order], 0.0, selected_y[order], **confidence_interval_kwargs(color)
+        )
+        axis.plot(selected_x[order], selected_y[order], label=label, color=color)
+    axis.set(
+        xlabel="Standardized residual" if xlabel is None else str(xlabel),
+        ylabel="Density" if ylabel is None else str(ylabel),
+    )
     apply_axis_contract(axis, surface="open")
-    apply_nice_linear_axis(axis, -3.0, 3.5, coordinate="x")
+    apply_nice_linear_axis(axis, *limits[0], coordinate="x")
+    apply_nice_linear_axis(axis, *limits[1], coordinate="y")
+    if any(label is not None for _, _, label in series):
+        place_legend_above(axis)
+    return figure
+
+
+def build_ecdf(
+    value: object | None = None,
+    group: object | None = None,
+    xlabel: object | None = None,
+    ylabel: object | None = None,
+) -> Figure:
+    if value is None:
+        rng = np.random.default_rng(97)
+        series = [
+            (rng.normal(mean, 0.9, 90), label)
+            for mean, label in ((0.0, "Baseline"), (0.55, "Hybrid"))
+        ]
+        x_limits = (-3.0, 3.5)
+    else:
+        values = np.asarray(value, dtype=float)
+        if group is None:
+            series = [(values, None)]
+        else:
+            groups = np.asarray(group, dtype=object).astype(str)
+            series = [(values[groups == label], label) for label in dict.fromkeys(groups)]
+        padding = max(float(np.ptp(values)) * 0.05, 0.1)
+        x_limits = (float(values.min()) - padding, float(values.max()) + padding)
+    figure, axis = plt.subplots()
+    for index, (selected, label) in enumerate(series):
+        ordered = np.sort(selected)
+        probability = np.arange(1, ordered.size + 1) / ordered.size
+        axis.step(ordered, probability, where="post", label=label, **series_style(index))
+    axis.set(
+        xlabel="Standardized score" if xlabel is None else str(xlabel),
+        ylabel="Cumulative probability" if ylabel is None else str(ylabel),
+    )
+    apply_axis_contract(axis, surface="open")
+    apply_nice_linear_axis(axis, *x_limits, coordinate="x")
     apply_nice_linear_axis(axis, 0.0, 1.0, coordinate="y")
-    place_legend_above(axis)
+    if any(label is not None for _, label in series):
+        place_legend_above(axis)
     return figure
 
 
-def build_box() -> Figure:
-    samples = _samples(61)
+def build_box(
+    value: object | None = None,
+    category: object | None = None,
+    ylabel: object | None = None,
+) -> Figure:
+    labels = None
+    if value is None and category is None:
+        samples = _samples(61)
+    elif value is not None and category is not None:
+        samples, labels = _grouped_samples(value, category)
+    else:
+        raise ValueError("box requires value and category together")
     figure, axis = plt.subplots()
     colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
     contract = load_contracts().style["plots"]["boxplot"]
@@ -98,11 +192,17 @@ def build_box() -> Figure:
     for box, color in zip(parts["boxes"], colors, strict=False):
         box.set_facecolor(color)
     apply_boxplot_contract(parts)
-    _distribution_axis(axis, samples)
+    _distribution_axis(axis, samples, labels)
+    if ylabel is not None:
+        axis.set_ylabel(str(ylabel))
     return figure
 
 
-def build_violin(value: object | None = None, category: object | None = None) -> Figure:
+def build_violin(
+    value: object | None = None,
+    category: object | None = None,
+    ylabel: object | None = None,
+) -> Figure:
     labels: list[str] | None = None
     if value is None and category is None:
         samples = _samples()
@@ -125,11 +225,23 @@ def build_violin(value: object | None = None, category: object | None = None) ->
         body.set_facecolor(color)
     apply_violin_contract(parts)
     _distribution_axis(axis, samples, labels)
+    if ylabel is not None:
+        axis.set_ylabel(str(ylabel))
     return figure
 
 
-def build_box_violin() -> Figure:
-    samples = _samples(73)
+def build_box_violin(
+    value: object | None = None,
+    category: object | None = None,
+    ylabel: object | None = None,
+) -> Figure:
+    labels = None
+    if value is None and category is None:
+        samples = _samples(73)
+    elif value is not None and category is not None:
+        samples, labels = _grouped_samples(value, category)
+    else:
+        raise ValueError("box_violin requires value and category together")
     figure, axis = plt.subplots()
     colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
     violin_contract = load_contracts().style["plots"]["violin"]
@@ -147,25 +259,55 @@ def build_box_violin() -> Figure:
     for box in boxes["boxes"]:
         box.set_facecolor("white")
     apply_boxplot_contract(boxes, combined=True)
-    _distribution_axis(axis, samples)
+    _distribution_axis(axis, samples, labels)
+    if ylabel is not None:
+        axis.set_ylabel(str(ylabel))
     return figure
 
 
-def build_strip() -> Figure:
-    samples = _samples(109)
+def build_strip(
+    value: object | None = None,
+    category: object | None = None,
+    jitter: object | None = None,
+    ylabel: object | None = None,
+) -> Figure:
+    labels = None
+    if value is None and category is None:
+        samples = _samples(109)
+    elif value is not None and category is not None:
+        samples, labels = _grouped_samples(value, category)
+    else:
+        raise ValueError("strip requires value and category together")
     rng = np.random.default_rng(109)
     figure, axis = plt.subplots()
     colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
     for position, (values, color) in enumerate(zip(samples, colors, strict=False), start=1):
-        jitter = rng.uniform(-0.13, 0.13, values.size)
-        collection = axis.scatter(np.full(values.size, position) + jitter, values, color=color)
+        amount = 0.13 if jitter is None else float(jitter)
+        offsets = rng.uniform(-amount, amount, values.size)
+        collection = axis.scatter(np.full(values.size, position) + offsets, values, color=color)
         apply_scatter_contract(collection)
-    _distribution_axis(axis, samples)
+    _distribution_axis(axis, samples, labels)
+    if ylabel is not None:
+        axis.set_ylabel(str(ylabel))
     return figure
 
 
-def build_raincloud() -> Figure:
-    samples = _samples(113)
+def build_raincloud(
+    value: object | None = None,
+    category: object | None = None,
+    jitter: object | None = None,
+    summary: object | None = None,
+    ylabel: object | None = None,
+) -> Figure:
+    labels = None
+    if value is None and category is None:
+        samples = _samples(113)
+    elif value is not None and category is not None:
+        samples, labels = _grouped_samples(value, category)
+    else:
+        raise ValueError("raincloud requires value and category together")
+    if summary not in {None, "median"}:
+        raise ValueError("raincloud summary must be median")
     rng = np.random.default_rng(113)
     figure, axis = plt.subplots()
     colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
@@ -182,15 +324,18 @@ def build_raincloud() -> Figure:
         vertices[:, 0] = np.minimum(vertices[:, 0], float(position))
     apply_violin_contract(violins, combined=True)
     for position, (values, color) in enumerate(zip(samples, colors, strict=False), start=1):
-        jitter = rng.uniform(0.07, 0.25, values.size)
-        collection = axis.scatter(np.full(values.size, position) + jitter, values, color=color)
+        amount = 0.18 if jitter is None else float(jitter)
+        offsets = rng.uniform(0.07, 0.07 + amount, values.size)
+        collection = axis.scatter(np.full(values.size, position) + offsets, values, color=color)
         apply_scatter_contract(collection)
         axis.plot(
             [position - 0.05, position + 0.05],
             [float(np.median(values)), float(np.median(values))],
             color="black",
         )
-    _distribution_axis(axis, samples)
+    _distribution_axis(axis, samples, labels)
+    if ylabel is not None:
+        axis.set_ylabel(str(ylabel))
     return figure
 
 

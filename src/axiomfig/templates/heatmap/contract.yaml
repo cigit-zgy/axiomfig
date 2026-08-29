@@ -7,7 +7,7 @@ variants:
     required: [matrix, labels, center]
     optional: [annotations, colorbar_label]
   clustered:
-    required: [matrix, labels, order, color_semantics]
+    required: [matrix, row_labels, column_labels, row_order, column_order, color_semantics]
     optional: [annotations, colorbar_label]
   confusion_matrix:
     required: [matrix, class_labels]

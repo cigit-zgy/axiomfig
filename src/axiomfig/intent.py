@@ -14,6 +14,7 @@ import yaml
 from matplotlib.figure import Figure
 
 from axiomfig.config import load_contracts
+from axiomfig.data_adapters import DATA_ADAPTERS, adapt_template_data
 from axiomfig.templates import build_template
 from axiomfig.templates.registry import load_family_contract, load_template_registry
 
@@ -165,31 +166,6 @@ def _resolve_data(intent: FigureIntent, dataset: Mapping[str, object]) -> dict[s
     return {role: dataset[key] for role, key in intent.data.items()}
 
 
-ADAPTER_FIELDS = {
-    "line/single": frozenset({"x", "y"}),
-    "scatter/simple": frozenset({"x", "y"}),
-    "scatter/grouped": frozenset({"x", "y", "group"}),
-    "scatter/parity": frozenset({"observed", "predicted"}),
-    "bar/vertical": frozenset({"category", "value"}),
-    "distribution/violin": frozenset({"value", "category"}),
-    "heatmap/correlation": frozenset({"matrix", "labels", "center"}),
-    "estimation/forest": frozenset({"label", "estimate", "interval", "uncertainty_type"}),
-    "diagnostics/residual": frozenset({"fitted", "residual", "trend"}),
-    "ordination/pca_scores": frozenset({"coordinates", "explained_variance", "group"}),
-    "omics/volcano": frozenset(
-        {
-            "fold_change",
-            "adjusted_p_value",
-            "significance_threshold",
-            "fold_change_threshold",
-            "feature_label",
-        }
-    ),
-    "survival/kaplan_meier": frozenset({"time", "survival_probability", "censoring", "group"}),
-}
-DATA_ADAPTERS = frozenset(ADAPTER_FIELDS)
-
-
 def build_intent_figure(
     intent: FigureIntent,
     dataset: Mapping[str, object] | None = None,
@@ -201,9 +177,8 @@ def build_intent_figure(
     if intent.template_id not in DATA_ADAPTERS:
         raise FigureIntentError(f"no v1 data adapter for template {intent.template_id!r}")
     kwargs = {**_resolve_data(intent, dataset), **dict(intent.semantics)}
-    unsupported = set(kwargs) - ADAPTER_FIELDS[intent.template_id]
-    if unsupported:
-        raise FigureIntentError(
-            f"v1 data adapter for {intent.template_id!r} does not accept: {sorted(unsupported)}"
-        )
-    return build_template(intent.template_id, **kwargs)
+    try:
+        adapted = adapt_template_data(intent.template_id, kwargs)
+        return build_template(intent.template_id, **adapted)
+    except ValueError as exc:
+        raise FigureIntentError(str(exc)) from exc

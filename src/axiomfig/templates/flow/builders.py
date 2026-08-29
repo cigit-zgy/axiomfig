@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib import colors as mcolors
 from matplotlib.figure import Figure
 from matplotlib.patches import PathPatch, Rectangle
@@ -50,36 +51,125 @@ def _ribbon(
     )
 
 
-def build_sankey() -> Figure:
+def _nodes(
+    labels: list[str],
+    totals: dict[str, float],
+    *,
+    x_value: float,
+    scale: float,
+) -> tuple[tuple[float, float, float, str], ...]:
+    gap = 0.06
+    top = 0.86
+    nodes: list[tuple[float, float, float, str]] = []
+    cursor = top
+    for label in labels:
+        height = totals[label] * scale
+        y_value = cursor - height
+        nodes.append((x_value, y_value, height, label))
+        cursor = y_value - gap
+    return tuple(nodes)
+
+
+def build_sankey(
+    source: object | None = None,
+    target: object | None = None,
+    value: object | None = None,
+    node_labels: object | None = None,
+    flow_labels: object | None = None,
+) -> Figure:
     colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
     figure, axis = plt.subplots()
-    left = (
-        (0.10, 0.68, 0.18, "Influent"),
-        (0.10, 0.39, 0.14, "Recycle"),
-        (0.10, 0.15, 0.11, "Carbon"),
+    if source is None and target is None and value is None:
+        source_values = np.asarray(
+            ("Influent", "Influent", "Recycle", "Recycle", "Carbon", "Carbon")
+        )
+        target_values = np.asarray(
+            ("Biomass", "Effluent", "Biomass", "Effluent", "Biomass", "Effluent")
+        )
+        value_values = np.asarray((0.12, 0.06, 0.08, 0.06, 0.04, 0.07))
+        left_labels = ["Influent", "Recycle", "Carbon"]
+        right_labels = ["Biomass", "Effluent"]
+        left = (
+            (0.10, 0.68, 0.18, "Influent"),
+            (0.10, 0.39, 0.14, "Recycle"),
+            (0.10, 0.15, 0.11, "Carbon"),
+        )
+        right = (
+            (0.82, 0.56, 0.24, "Biomass"),
+            (0.82, 0.20, 0.19, "Effluent"),
+        )
+        scale = 1.0
+    elif source is not None and target is not None and value is not None:
+        source_values = np.asarray(source, dtype=object).astype(str)
+        target_values = np.asarray(target, dtype=object).astype(str)
+        value_values = np.asarray(value, dtype=float)
+        ordered = (
+            [str(label) for label in np.asarray(node_labels)]
+            if node_labels is not None
+            else list(dict.fromkeys(np.concatenate((source_values, target_values))))
+        )
+        left_labels = [label for label in ordered if label in set(source_values)]
+        right_labels = [label for label in ordered if label in set(target_values)]
+        source_totals = {
+            label: float(value_values[source_values == label].sum()) for label in left_labels
+        }
+        target_totals = {
+            label: float(value_values[target_values == label].sum()) for label in right_labels
+        }
+        available = min(
+            0.72 - 0.06 * (len(left_labels) - 1),
+            0.72 - 0.06 * (len(right_labels) - 1),
+        )
+        scale = available / float(value_values.sum())
+        left = _nodes(left_labels, source_totals, x_value=0.10, scale=scale)
+        right = _nodes(right_labels, target_totals, x_value=0.82, scale=scale)
+    else:
+        raise ValueError("Sankey requires source, target, and value together")
+    left_by_label = {item[3]: item for item in left}
+    right_by_label = {item[3]: item for item in right}
+    left_offsets = {label: 0.0 for label in left_labels}
+    right_offsets = {label: 0.0 for label in right_labels}
+    flow_label_values = (
+        np.asarray(flow_labels, dtype=object)
+        if flow_labels is not None
+        else np.full(len(value_values), "", dtype=object)
     )
-    right = ((0.82, 0.56, 0.24, "Biomass"), (0.82, 0.20, 0.19, "Effluent"))
-    flows = (
-        (left[0], right[0], 0.12, colors[0]),
-        (left[0], right[1], 0.06, colors[0]),
-        (left[1], right[0], 0.08, colors[1]),
-        (left[1], right[1], 0.06, colors[1]),
-        (left[2], right[0], 0.04, colors[2]),
-        (left[2], right[1], 0.07, colors[2]),
-    )
-    left_offsets = [0.0, 0.0, 0.0]
-    right_offsets = [0.0, 0.0]
-    for source, target, height, color in flows:
-        source_index = left.index(source)
-        target_index = right.index(target)
+    for source_label, target_label, flow_value, flow_label in zip(
+        source_values,
+        target_values,
+        value_values,
+        flow_label_values,
+        strict=True,
+    ):
+        source_node = left_by_label[source_label]
+        target_node = right_by_label[target_label]
+        height = float(flow_value) * scale
+        start = (
+            source_node[0] + 0.05,
+            source_node[1] + left_offsets[source_label],
+            height,
+        )
+        end = (
+            target_node[0],
+            target_node[1] + right_offsets[target_label],
+            height,
+        )
         _ribbon(
             axis,
-            (source[0] + 0.05, source[1] + left_offsets[source_index], height),
-            (target[0], target[1] + right_offsets[target_index], height),
-            color,
+            start,
+            end,
+            colors[left_labels.index(source_label) % len(colors)],
         )
-        left_offsets[source_index] += height
-        right_offsets[target_index] += height
+        if str(flow_label):
+            axis.text(
+                (start[0] + end[0]) / 2,
+                (start[1] + end[1] + height) / 2,
+                str(flow_label),
+                ha="center",
+                va="center",
+            )
+        left_offsets[source_label] += height
+        right_offsets[target_label] += height
     for x, y, height, label in (*left, *right):
         axis.add_patch(
             Rectangle(

@@ -4,8 +4,8 @@ variants:
     required: [value]
     optional: [bins, xlabel, ylabel]
   density:
-    required: [value]
-    optional: [bandwidth, xlabel, ylabel]
+    required: [x, density]
+    optional: [group, xlabel, ylabel]
   ecdf:
     required: [value]
     optional: [group, xlabel, ylabel]

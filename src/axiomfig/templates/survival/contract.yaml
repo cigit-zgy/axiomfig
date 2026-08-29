@@ -1,5 +1,5 @@
 family: survival
 variants:
   kaplan_meier:
-    required: [time, survival_probability, censoring]
-    optional: [group, confidence_interval, risk_table]
+    required: [time, survival_probability]
+    optional: [group, censoring, lower_ci, upper_ci, censor_time]

@@ -124,34 +124,38 @@ def test_intent_without_data_uses_deterministic_canonical_example() -> None:
     plt.close(figure)
 
 
-def test_data_mapping_for_unadapted_template_fails_explicitly() -> None:
-    from axiomfig.intent import FigureIntentError, build_intent_figure, parse_figure_intent
+def test_multi_line_intent_reaches_data_bearing_canonical_builder() -> None:
+    from axiomfig.intent import build_intent_figure, parse_figure_intent
 
     intent = parse_figure_intent(
-        {"template": "flow.sankey", "data": {"source": "a", "target": "b", "flow": "c"}}
+        {
+            "template": "line.multi",
+            "data": {
+                "x": "time",
+                "series_values": "responses",
+                "series_labels": "models",
+            },
+        }
     )
 
-    with pytest.raises(FigureIntentError, match="data adapter"):
-        build_intent_figure(intent, {"a": ["x"], "b": ["y"], "c": [1.0]})
+    figure = build_intent_figure(
+        intent,
+        {
+            "time": [0.0, 1.0, 2.0],
+            "responses": [[0.1, 0.4, 0.8], [0.2, 0.5, 0.7]],
+            "models": ["Mechanistic", "Hybrid"],
+        },
+    )
+
+    assert [line.get_label() for line in figure.axes[0].lines] == ["Mechanistic", "Hybrid"]
+    plt.close(figure)
 
 
-def test_v1_data_adapters_cover_representative_scientific_families() -> None:
+def test_v1_data_adapters_cover_all_public_templates() -> None:
     from axiomfig.intent import DATA_ADAPTERS
+    from axiomfig.templates.registry import public_template_specs
 
-    assert {
-        "line/single",
-        "scatter/simple",
-        "scatter/grouped",
-        "scatter/parity",
-        "bar/vertical",
-        "distribution/violin",
-        "heatmap/correlation",
-        "estimation/forest",
-        "diagnostics/residual",
-        "ordination/pca_scores",
-        "omics/volcano",
-        "survival/kaplan_meier",
-    } <= DATA_ADAPTERS
+    assert {spec.template_id for spec in public_template_specs()} == DATA_ADAPTERS
 
 
 def test_matrix_intent_passes_explicit_center_to_heatmap() -> None:

@@ -85,7 +85,13 @@ def test_mandatory_mantel_field_and_explicit_scientific_semantics() -> None:
     forest = load_family_contract("estimation")["variants"]["forest"]
 
     assert {"association/mantel", "field/contour"} <= public_ids
-    assert {"correlation_matrix", "mantel_links", "significance"} <= set(mantel["required"])
+    assert {
+        "correlation_matrix",
+        "matrix_labels",
+        "links",
+        "link_strength",
+        "significance",
+    } <= set(mantel["required"])
     assert "center" in correlation["required"]
     assert "uncertainty_type" in forest["required"]
 
@@ -132,9 +138,11 @@ def test_v1_advanced_families_and_semantics_are_registered() -> None:
 
     assert expected <= public_ids
     assert "coordinates" in load_family_contract("ordination")["variants"]["pca_scores"]["required"]
-    assert "flow" in load_family_contract("flow")["variants"]["sankey"]["required"]
+    assert "value" in load_family_contract("flow")["variants"]["sankey"]["required"]
     assert "adjusted_p_value" in load_family_contract("omics")["variants"]["volcano"]["required"]
-    assert "censoring" in load_family_contract("survival")["variants"]["kaplan_meier"]["required"]
+    survival = load_family_contract("survival")["variants"]["kaplan_meier"]
+    assert {"time", "survival_probability"} <= set(survival["required"])
+    assert {"censoring", "lower_ci", "upper_ci", "censor_time"} <= set(survival["optional"])
 
 
 def test_old_coarse_template_modules_are_removed() -> None:

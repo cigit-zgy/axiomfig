@@ -32,15 +32,22 @@ def _cmap(color_semantics: str) -> str:
 def add_matrix(
     axis: Axes,
     matrix: np.ndarray,
-    labels: list[str],
+    labels: list[str] | None = None,
     *,
+    row_labels: list[str] | None = None,
+    column_labels: list[str] | None = None,
     annotate: bool,
     vmin: float,
     vmax: float,
     color_semantics: str,
     center: float | None = None,
     fmt: str = ".2f",
+    annotation_values: np.ndarray | None = None,
 ) -> object:
+    selected_rows = labels if row_labels is None else row_labels
+    selected_columns = labels if column_labels is None else column_labels
+    if selected_rows is None or selected_columns is None:
+        raise ValueError("heatmap labels are required")
     norm = None
     if color_semantics == "diverging":
         if center is None:
@@ -55,8 +62,14 @@ def add_matrix(
         aspect="auto",
         rasterized=True,
     )
-    axis.set_xticks(range(len(labels)), labels, rotation=24, ha="right", rotation_mode="anchor")
-    axis.set_yticks(range(len(labels)), labels)
+    axis.set_xticks(
+        range(len(selected_columns)),
+        selected_columns,
+        rotation=24,
+        ha="right",
+        rotation_mode="anchor",
+    )
+    axis.set_yticks(range(len(selected_rows)), selected_rows)
     apply_axis_contract(axis, surface="filled")
     apply_categorical_axis(axis, coordinate="x")
     apply_categorical_axis(axis, coordinate="y")
@@ -65,10 +78,15 @@ def add_matrix(
         for row in range(matrix.shape[0]):
             for column in range(matrix.shape[1]):
                 color = "white" if matrix[row, column] < midpoint * 0.75 else "black"
+                annotation = (
+                    format(matrix[row, column], fmt)
+                    if annotation_values is None
+                    else str(annotation_values[row, column])
+                )
                 axis.text(
                     column,
                     row,
-                    format(matrix[row, column], fmt),
+                    annotation,
                     ha="center",
                     va="center",
                     color=color,
@@ -90,8 +108,10 @@ def add_heatmap(axis: Axes, *, annotate: bool = True) -> object:
 
 def _heatmap_figure(
     matrix: np.ndarray,
-    labels: list[str],
+    labels: list[str] | None = None,
     *,
+    row_labels: list[str] | None = None,
+    column_labels: list[str] | None = None,
     colorbar_label: str,
     vmin: float,
     vmax: float,
@@ -99,6 +119,7 @@ def _heatmap_figure(
     center: float | None = None,
     fmt: str = ".2f",
     annotate: bool = True,
+    annotation_values: np.ndarray | None = None,
 ) -> Figure:
     figure = plt.figure()
     layout = create_panel_grid(figure, 1, 1, panel_labels=False)
@@ -108,27 +129,55 @@ def _heatmap_figure(
         axis,
         matrix,
         labels,
+        row_labels=row_labels,
+        column_labels=column_labels,
         annotate=annotate,
         vmin=vmin,
         vmax=vmax,
         color_semantics=color_semantics,
         center=center,
         fmt=fmt,
+        annotation_values=annotation_values,
     )
     colorbar = figure.colorbar(image, cax=colorbar_axis, label=colorbar_label)
     apply_colorbar_contract(colorbar)
     return figure
 
 
-def build_basic() -> Figure:
+def build_basic(
+    matrix: object | None = None,
+    row_labels: object | None = None,
+    column_labels: object | None = None,
+    color_semantics: object | None = None,
+    annotations: object | None = None,
+    colorbar_label: object | None = None,
+) -> Figure:
+    if matrix is None and row_labels is None and column_labels is None and color_semantics is None:
+        selected = CORRELATION
+        rows = CORRELATION_LABELS
+        columns = CORRELATION_LABELS
+        semantics = "sequential"
+        limits = (0.0, 1.0)
+    elif all(item is not None for item in (matrix, row_labels, column_labels, color_semantics)):
+        selected = np.asarray(matrix, dtype=float)
+        rows = [str(item) for item in row_labels]  # type: ignore[union-attr]
+        columns = [str(item) for item in column_labels]  # type: ignore[union-attr]
+        semantics = str(color_semantics)
+        limits = (float(selected.min()), float(selected.max()))
+    else:
+        raise ValueError(
+            "basic heatmap requires matrix, row_labels, column_labels, and color_semantics"
+        )
     return _heatmap_figure(
-        CORRELATION,
-        CORRELATION_LABELS,
-        colorbar_label="Correlation (-)",
-        vmin=0.0,
-        vmax=1.0,
-        color_semantics="sequential",
-        annotate=False,
+        selected,
+        row_labels=rows,
+        column_labels=columns,
+        colorbar_label="Correlation (-)" if colorbar_label is None else str(colorbar_label),
+        vmin=limits[0],
+        vmax=limits[1],
+        color_semantics=semantics,
+        annotate=annotations is not None,
+        annotation_values=None if annotations is None else np.asarray(annotations, dtype=object),
     )
 
 
@@ -136,6 +185,8 @@ def build_correlation(
     matrix: object | None = None,
     labels: object | None = None,
     center: object | None = None,
+    annotations: object | None = None,
+    colorbar_label: object | None = None,
 ) -> Figure:
     if matrix is None and labels is None and center is None:
         selected_matrix = CORRELATION * np.array(
@@ -162,60 +213,144 @@ def build_correlation(
     return _heatmap_figure(
         selected_matrix,
         selected_labels,
-        colorbar_label="Pearson r",
+        colorbar_label="Pearson r" if colorbar_label is None else str(colorbar_label),
         vmin=-1.0,
         vmax=1.0,
         color_semantics="diverging",
         center=selected_center,
+        annotation_values=None if annotations is None else np.asarray(annotations, dtype=object),
     )
 
 
-def build_clustered() -> Figure:
-    order = np.array([2, 3, 1, 0])
-    matrix = CORRELATION[np.ix_(order, order)]
-    labels = [CORRELATION_LABELS[index] for index in order]
+def build_clustered(
+    matrix: object | None = None,
+    row_labels: object | None = None,
+    column_labels: object | None = None,
+    row_order: object | None = None,
+    column_order: object | None = None,
+    color_semantics: object | None = None,
+    annotations: object | None = None,
+    colorbar_label: object | None = None,
+) -> Figure:
+    if all(
+        item is None
+        for item in (matrix, row_labels, column_labels, row_order, column_order, color_semantics)
+    ):
+        rows = np.array([2, 3, 1, 0])
+        columns = rows
+        source = CORRELATION
+        source_rows = CORRELATION_LABELS
+        source_columns = CORRELATION_LABELS
+        semantics = "sequential"
+    elif all(
+        item is not None
+        for item in (matrix, row_labels, column_labels, row_order, column_order, color_semantics)
+    ):
+        rows = np.asarray(row_order, dtype=int)
+        columns = np.asarray(column_order, dtype=int)
+        source = np.asarray(matrix, dtype=float)
+        source_rows = [str(item) for item in row_labels]  # type: ignore[union-attr]
+        source_columns = [str(item) for item in column_labels]  # type: ignore[union-attr]
+        semantics = str(color_semantics)
+    else:
+        raise ValueError(
+            "clustered heatmap requires matrix labels, row/column order, and semantics"
+        )
+    selected = source[np.ix_(rows, columns)]
+    selected_rows = [source_rows[index] for index in rows]
+    selected_columns = [source_columns[index] for index in columns]
+    selected_annotations = (
+        None
+        if annotations is None
+        else np.asarray(annotations, dtype=object)[np.ix_(rows, columns)]
+    )
     figure = _heatmap_figure(
-        matrix,
-        labels,
-        colorbar_label="Preordered similarity",
-        vmin=0.0,
-        vmax=1.0,
-        color_semantics="sequential",
+        selected,
+        row_labels=selected_rows,
+        column_labels=selected_columns,
+        colorbar_label=("Preordered similarity" if colorbar_label is None else str(colorbar_label)),
+        vmin=float(source.min()),
+        vmax=float(source.max()),
+        color_semantics=semantics,
+        annotation_values=selected_annotations,
     )
     figure.axes[0].set_title("Deterministic cluster order")
     return figure
 
 
-def build_confusion_matrix() -> Figure:
-    matrix = np.array([[48, 4, 1], [5, 41, 3], [0, 6, 45]])
+def build_confusion_matrix(
+    matrix: object | None = None,
+    class_labels: object | None = None,
+    annotations: object | None = None,
+    colorbar_label: object | None = None,
+) -> Figure:
+    if matrix is None and class_labels is None:
+        selected = np.array([[48, 4, 1], [5, 41, 3], [0, 6, 45]])
+        labels = ["Low", "Medium", "High"]
+    elif matrix is not None and class_labels is not None:
+        selected = np.asarray(matrix, dtype=float)
+        labels = [str(item) for item in class_labels]  # type: ignore[union-attr]
+    else:
+        raise ValueError("confusion_matrix requires matrix and class_labels together")
     return _heatmap_figure(
-        matrix,
-        ["Low", "Medium", "High"],
-        colorbar_label="Count",
+        selected,
+        labels,
+        colorbar_label="Count" if colorbar_label is None else str(colorbar_label),
         vmin=0.0,
-        vmax=50.0,
+        vmax=max(float(selected.max()), 1.0),
         color_semantics="sequential",
         fmt=".0f",
+        annotation_values=None if annotations is None else np.asarray(annotations, dtype=object),
     )
 
 
-def build_annotated() -> Figure:
-    matrix = np.array(
-        [
-            [0.88, 0.64, 0.42, 0.31],
-            [0.59, 0.81, 0.57, 0.46],
-            [0.36, 0.53, 0.76, 0.69],
-            [0.24, 0.39, 0.62, 0.91],
-        ]
-    )
+def build_annotated(
+    matrix: object | None = None,
+    row_labels: object | None = None,
+    column_labels: object | None = None,
+    color_semantics: object | None = None,
+    annotations: object | None = None,
+    colorbar_label: object | None = None,
+    annotation_format: object | None = None,
+) -> Figure:
+    if all(
+        item is None for item in (matrix, row_labels, column_labels, color_semantics, annotations)
+    ):
+        selected = np.array(
+            [
+                [0.88, 0.64, 0.42, 0.31],
+                [0.59, 0.81, 0.57, 0.46],
+                [0.36, 0.53, 0.76, 0.69],
+                [0.24, 0.39, 0.62, 0.91],
+            ]
+        )
+        rows = columns = ["R1", "R2", "R3", "R4"]
+        annotation_values = None
+        semantics = "sequential"
+    elif all(
+        item is not None
+        for item in (matrix, row_labels, column_labels, color_semantics, annotations)
+    ):
+        selected = np.asarray(matrix, dtype=float)
+        rows = [str(item) for item in row_labels]  # type: ignore[union-attr]
+        columns = [str(item) for item in column_labels]  # type: ignore[union-attr]
+        annotation_values = np.asarray(annotations, dtype=object)
+        semantics = str(color_semantics)
+    else:
+        raise ValueError("annotated heatmap requires matrix, labels, annotations, and semantics")
     return _heatmap_figure(
-        matrix,
-        ["R1", "R2", "R3", "R4"],
-        colorbar_label="Normalized response (-)",
-        vmin=0.0,
-        vmax=1.0,
-        color_semantics="sequential",
+        selected,
+        row_labels=rows,
+        column_labels=columns,
+        colorbar_label=(
+            "Normalized response (-)" if colorbar_label is None else str(colorbar_label)
+        ),
+        vmin=float(selected.min()),
+        vmax=float(selected.max()),
+        color_semantics=semantics,
         annotate=True,
+        fmt=".2f" if annotation_format is None else str(annotation_format),
+        annotation_values=annotation_values,
     )
 
 

@@ -1,8 +1,8 @@
 family: omics
 variants:
   volcano:
-    required: [fold_change, adjusted_p_value, significance_threshold]
-    optional: [feature_label, fold_change_threshold]
+    required: [effect_size, adjusted_p_value, significance_threshold, effect_threshold]
+    optional: [feature_label]
   enrichment_dot:
-    required: [term, enrichment_ratio, adjusted_p_value, count]
+    required: [term, enrichment, significance, size]
     optional: [colorbar_label, size_label]
