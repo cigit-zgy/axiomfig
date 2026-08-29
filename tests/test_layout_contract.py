@@ -46,4 +46,5 @@ def test_legend_is_responsive_frameless_and_right_aligned_to_the_spine() -> None
     assert bbox.y0 - axis.bbox.y1 == pytest.approx(2.0 * figure.dpi / 72.0, abs=0.01)
     assert bbox.x0 >= figure.bbox.x0
     assert bbox.x1 <= figure.bbox.x1
+    assert bbox.y1 <= figure.bbox.y1
     plt.close(figure)

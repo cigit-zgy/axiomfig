@@ -70,6 +70,16 @@ def place_legend_above(axis: Axes, gap_pt: float = 2.0) -> Legend | None:
         figure.canvas.draw()
         if legend.get_window_extent(figure.canvas.get_renderer()).width <= axis.bbox.width:
             break
+    if legend is None:  # pragma: no cover - non-empty handles always enter the loop.
+        raise RuntimeError("legend creation did not produce a legend")
+    legend_bbox = legend.get_window_extent(figure.canvas.get_renderer())
+    overflow = legend_bbox.y1 - figure.bbox.y1
+    if overflow > 0:
+        top = figure.subplotpars.top - overflow / figure.bbox.height
+        if top <= figure.subplotpars.bottom:
+            raise ValueError("legend cannot fit above the axes within the figure bounds")
+        figure.subplots_adjust(top=top)
+        figure.canvas.draw()
     return legend
 
 
