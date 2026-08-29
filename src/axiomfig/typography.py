@@ -5,6 +5,7 @@ import re
 import tempfile
 from collections.abc import Mapping
 from dataclasses import dataclass
+from numbers import Real
 from pathlib import Path
 
 from fontTools.ttLib import TTCollection, TTFont
@@ -265,10 +266,15 @@ def _latin_variant_path(mode: str, weight: str | int | None, style: str | None) 
         "heavy",
         "black",
     }
-    if isinstance(weight, int):
-        if weight == 400:
+    if isinstance(weight, Real) and not isinstance(weight, bool):
+        if not float(weight).is_integer() or weight < 0:
+            raise FontContractError(
+                f"Unsupported Latin weight {weight!r}; no exact variant file is available"
+            )
+        normalized_numeric_weight = int(weight)
+        if normalized_numeric_weight == 400:
             is_bold = False
-        elif weight >= 600:
+        elif normalized_numeric_weight >= 600:
             is_bold = True
         else:
             raise FontContractError(

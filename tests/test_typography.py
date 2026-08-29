@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import matplotlib as mpl
+import numpy as np
 import pytest
 
 from axiomfig import typography
@@ -90,10 +91,15 @@ def test_language_font_mapping_uses_the_selected_mode(
     assert font_for_language(language, mode=mode).get_name() == expected
 
 
-@pytest.mark.parametrize("weight", ["light", "medium", 500])
+@pytest.mark.parametrize("weight", ["light", "medium", 500, 500.0])
 def test_latin_weights_without_an_exact_file_hard_fail(weight: str | int) -> None:
     with pytest.raises(FontContractError, match="Unsupported Latin weight"):
         font_for_language("en", weight=weight)
+
+
+@pytest.mark.parametrize("weight", [400.0, 600.0, 1000.0, np.float64(600.0)])
+def test_latin_float_weights_follow_exact_regular_or_bold_policy(weight: float) -> None:
+    assert font_for_language("en", weight=weight).get_name() == "LMSans10"
 
 
 @pytest.mark.parametrize("mode", ["sans", "serif"])
@@ -104,4 +110,36 @@ def test_explicit_cjk_helper_rejects_nonregular_weight(mode: str, language: str)
     figure, axis = plt.subplots()
     with pytest.raises(FontContractError, match="refusing regular fallback"):
         add_language_text(axis, 0.5, 0.5, "硝化效率", language, mode=mode, fontweight="bold")
+    plt.close(figure)
+
+
+@pytest.mark.parametrize("mode", ["sans", "serif"])
+@pytest.mark.parametrize("language", ["zh", "ja"])
+@pytest.mark.parametrize("kwargs", [{"weight": "bold"}, {"style": "italic"}])
+def test_explicit_cjk_helper_rejects_all_weight_and_style_aliases(
+    mode: str, language: str, kwargs: dict[str, str]
+) -> None:
+    import matplotlib.pyplot as plt
+
+    figure, axis = plt.subplots()
+    with pytest.raises(FontContractError, match="refusing regular fallback"):
+        add_language_text(axis, 0.5, 0.5, "硝化效率", language, mode=mode, **kwargs)
+    plt.close(figure)
+
+
+def test_explicit_language_helper_rejects_conflicting_aliases() -> None:
+    import matplotlib.pyplot as plt
+
+    figure, axis = plt.subplots()
+    with pytest.raises(ValueError, match="Conflicting text aliases"):
+        add_language_text(axis, 0.5, 0.5, "硝化效率", "zh", weight="bold", fontweight="normal")
+    plt.close(figure)
+
+
+def test_explicit_language_helper_accepts_regular_short_alias() -> None:
+    import matplotlib.pyplot as plt
+
+    figure, axis = plt.subplots()
+    add_language_text(axis, 0.5, 0.5, "硝化效率", "zh", weight="regular")
+    assert axis.texts[0].get_fontproperties().get_name() == "Noto Sans CJK SC"
     plt.close(figure)

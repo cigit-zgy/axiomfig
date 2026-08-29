@@ -142,15 +142,26 @@ def add_language_text(
     mode: str = "sans",
     **kwargs: object,
 ) -> None:
-    weight = kwargs.get("fontweight")
-    style = kwargs.get("fontstyle")
+    text_kwargs = dict(kwargs)
+    weight = _resolve_text_alias(text_kwargs, "weight", "fontweight")
+    style = _resolve_text_alias(text_kwargs, "style", "fontstyle")
     axis.text(
         x,
         y,
         text,
         fontproperties=font_for_language(language, mode=mode, weight=weight, style=style),
-        **kwargs,
+        **text_kwargs,
     )
+
+
+def _resolve_text_alias(kwargs: dict[str, object], short: str, long: str) -> object | None:
+    short_value = kwargs.pop(short, None)
+    long_value = kwargs.pop(long, None)
+    if short_value is not None and long_value is not None and short_value != long_value:
+        raise ValueError(
+            f"Conflicting text aliases: {short}={short_value!r}, {long}={long_value!r}"
+        )
+    return short_value if short_value is not None else long_value
 
 
 def close_secondary_spines(figure: Figure) -> Figure:
