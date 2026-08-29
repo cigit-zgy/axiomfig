@@ -21,12 +21,28 @@ def _open(axis: plt.Axes, xlim: tuple[float, float], ylim: tuple[float, float]) 
     apply_nice_linear_axis(axis, *ylim, coordinate="y")
 
 
-def build_single() -> Figure:
-    x = np.linspace(0.0, 12.0, 81)
+def build_single(x: object | None = None, y: object | None = None) -> Figure:
+    if x is None and y is None:
+        limits = ((0.0, 12.0), (0.0, 1.0))
+        values_x = np.linspace(0.0, 12.0, 81)
+        values_y = 1.0 - np.exp(-values_x / 3.2)
+    elif x is not None and y is not None:
+        values_x = np.asarray(x, dtype=float)
+        values_y = np.asarray(y, dtype=float)
+        if values_x.ndim != 1 or values_x.shape != values_y.shape or values_x.size < 2:
+            raise ValueError("line x and y must be equal-length one-dimensional data")
+        x_padding = max(float(np.ptp(values_x)) * 0.03, 0.1)
+        y_padding = max(float(np.ptp(values_y)) * 0.05, 0.05)
+        limits = (
+            (float(values_x.min()) - x_padding, float(values_x.max()) + x_padding),
+            (float(values_y.min()) - y_padding, float(values_y.max()) + y_padding),
+        )
+    else:
+        raise ValueError("line requires x and y together")
     figure, axis = plt.subplots()
-    axis.plot(x, 1.0 - np.exp(-x / 3.2))
+    axis.plot(values_x, values_y)
     axis.set(xlabel="Time (d)", ylabel="Normalized response (-)")
-    _open(axis, (0.0, 12.0), (0.0, 1.0))
+    _open(axis, *limits)
     return figure
 
 

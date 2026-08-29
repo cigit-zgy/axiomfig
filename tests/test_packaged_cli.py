@@ -80,8 +80,12 @@ def test_clean_wheel_installs_resources_and_canonical_template_taxonomy(
         "heatmap",
         "estimation",
         "diagnostics",
+        "ordination",
         "association",
+        "flow",
         "field",
+        "omics",
+        "survival",
         "layouts",
     ):
         assert f"axiomfig/templates/{family}/builders.py" in names
@@ -119,8 +123,8 @@ def test_clean_wheel_installs_resources_and_canonical_template_taxonomy(
                 "from importlib.resources import files; "
                 "assert load_contracts().style['stroke']['main_stroke_pt'] == 0.8; "
                 "from axiomfig.templates.registry import public_template_specs; "
-                "assert len(TEMPLATE_BUILDERS) == 37; "
-                "assert len(public_template_specs()) == 33; "
+                "assert len(TEMPLATE_BUILDERS) == 59; "
+                "assert len(public_template_specs()) == 55; "
                 "assert files('axiomfig.templates').joinpath('index.yaml').is_file(); "
                 "from axiomfig.typography import discover_fonts; "
                 "assert discover_fonts('serif')['text'].family == 'XCharter'; "

@@ -1,0 +1,15 @@
+version: 1
+intents:
+  trend: {topic: trend-comparison.md, templates: [line.single, line.multi, line.confidence_band]}
+  comparison: {topic: trend-comparison.md, templates: [bar.grouped, estimation.point_interval]}
+  distribution: {topic: distribution-relationship.md, templates: [distribution.violin, distribution.raincloud, distribution.ecdf]}
+  relationship: {topic: distribution-relationship.md, templates: [scatter.simple, scatter.regression, scatter.parity]}
+  uncertainty: {topic: uncertainty-model.md, templates: [estimation.forest, estimation.coefficient, line.confidence_band]}
+  model_evaluation: {topic: uncertainty-model.md, templates: [diagnostics.residual, diagnostics.qq, diagnostics.calibration, diagnostics.roc]}
+  matrix: {topic: matrix-multivariate.md, templates: [heatmap.correlation, heatmap.annotated]}
+  ordination: {topic: matrix-multivariate.md, templates: [ordination.pca_scores, ordination.pca_biplot, ordination.pcoa, ordination.nmds]}
+  association: {topic: matrix-multivariate.md, templates: [association.mantel, association.correlation_network]}
+  flow: {topic: domain-specialized.md, templates: [flow.sankey]}
+  field: {topic: domain-specialized.md, templates: [field.contour, field.quiver]}
+  omics: {topic: domain-specialized.md, templates: [omics.volcano, omics.enrichment_dot]}
+  survival: {topic: domain-specialized.md, templates: [survival.kaplan_meier]}

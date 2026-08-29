@@ -36,13 +36,13 @@
 
 ## H4 — Implement the LLM-efficient boundary
 
-- [ ] Add failing Figure Intent schema, role mapping, and invalid-input tests.
-- [ ] Implement a frozen `FigureIntent`, YAML/JSON loader, compact data adapters, and intent CLI.
-- [ ] Add explicit semantics for uncertainty, diverging centers, and significance where required.
-- [ ] Create the progressive-disclosure knowledge index and concise topic references.
-- [ ] Rewrite `SKILL.md` as a routing document and keep Registry, Contract, and Knowledge roles clear.
-- [ ] Measure routing, registry, selected-contract, and representative-intent bytes/lines/tokens.
-- [ ] Commit and push the Figure Intent/knowledge checkpoint.
+- [x] Add failing Figure Intent schema, role mapping, and invalid-input tests.
+- [x] Implement a frozen `FigureIntent`, YAML/JSON loader, 12 compact data adapters, and intent CLI.
+- [x] Add explicit semantics for uncertainty, diverging centers, and significance where required.
+- [x] Create the progressive-disclosure knowledge index and concise topic references.
+- [x] Rewrite `SKILL.md` as a routing document and keep Registry, Contract, and Knowledge roles clear.
+- [x] Measure routing, registry, selected-contract, and representative-intent bytes/lines/tokens.
+- [x] Commit and push the Figure Intent/knowledge checkpoint.
 
 ## H5 — Evaluate, package, and automate
 

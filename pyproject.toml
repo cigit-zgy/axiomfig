@@ -26,6 +26,7 @@ dev = [
 
 [project.scripts]
 axiomfig-render = "axiomfig.cli:render_main"
+axiomfig-intent = "axiomfig.cli:intent_main"
 axiomfig-validate = "axiomfig.cli:validate_main"
 axiomfig-gallery = "axiomfig.cli:gallery_main"
 

@@ -46,7 +46,10 @@ Technical Tectonic probes live under `gallery/technical/latex/` and are not temp
 validator rejects missing artifacts, orphan artifacts, missing builders/contracts, duplicate IDs,
 and old numbered flat files.
 
-## 4. Boundary
+## 4. Knowledge and execution boundary
 
-The taxonomy states what exists and what inputs it accepts. It does not state which plot should be
-chosen for a research question. Recommendation knowledge and Agent routing remain deferred.
+The taxonomy states what exists and what inputs it accepts. The separate
+`references/template-knowledge/index.yaml` routes unresolved scientific intent to one concise topic
+file; recommendation prose never enters the registry. `references/figure-intent.md` defines the
+validated data-facing execution record. This separation lets an Agent read the registry, one
+contract, and at most one knowledge topic instead of loading the entire repository.

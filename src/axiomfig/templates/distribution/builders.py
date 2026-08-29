@@ -25,8 +25,13 @@ def _samples(seed: int = 47) -> list[np.ndarray]:
     return [rng.normal(mean, 0.075, 90) for mean in (0.62, 0.74, 0.82)]
 
 
-def _distribution_axis(axis: Axes, samples: list[np.ndarray]) -> None:
-    axis.set_xticks([1, 2, 3], ["Mechanistic", "Neural ODE", "Hybrid ODE"])
+def _distribution_axis(
+    axis: Axes,
+    samples: list[np.ndarray],
+    labels: list[str] | None = None,
+) -> None:
+    selected_labels = labels or ["Mechanistic", "Neural ODE", "Hybrid ODE"]
+    axis.set_xticks(np.arange(1, len(selected_labels) + 1), selected_labels)
     axis.set(ylabel="Normalized score (-)")
     apply_axis_contract(axis, surface="open")
     apply_categorical_axis(axis, coordinate="x")
@@ -97,15 +102,29 @@ def build_box() -> Figure:
     return figure
 
 
-def build_violin() -> Figure:
-    samples = _samples()
+def build_violin(value: object | None = None, category: object | None = None) -> Figure:
+    labels: list[str] | None = None
+    if value is None and category is None:
+        samples = _samples()
+    elif value is not None and category is not None:
+        values = np.asarray(value, dtype=float)
+        categories = np.asarray(category, dtype=object)
+        if values.ndim != 1 or values.shape != categories.shape or values.size < 2:
+            raise ValueError("violin value and category must be equal-length one-dimensional data")
+        labels = list(dict.fromkeys(str(item) for item in categories))
+        category_text = categories.astype(str)
+        samples = [values[category_text == label] for label in labels]
+        if any(sample.size < 2 for sample in samples):
+            raise ValueError("each violin category requires at least two observations")
+    else:
+        raise ValueError("violin requires value and category together")
     figure, axis = plt.subplots()
     parts = axis.violinplot(samples, showmedians=True, showextrema=True)
     colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
     for body, color in zip(parts["bodies"], colors, strict=False):
         body.set_facecolor(color)
     apply_violin_contract(parts)
-    _distribution_axis(axis, samples)
+    _distribution_axis(axis, samples, labels)
     return figure
 
 

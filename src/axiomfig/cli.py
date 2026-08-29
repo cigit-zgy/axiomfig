@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 
 from axiomfig.config import build_rcparams, load_contracts
 from axiomfig.gallery import build_gallery, expected_gallery_stems
+from axiomfig.intent import build_intent_figure, load_dataset, load_figure_intent
 from axiomfig.rendering import render_figure
 from axiomfig.templates import TEMPLATE_BUILDERS, build_template
 from axiomfig.typography import discover_fonts
@@ -40,6 +41,41 @@ def render_main(argv: list[str] | None = None) -> int:
             work_root=work_root,
             typography=args.typography,
             geometry=args.geometry,
+        )
+        plt.close(figure)
+    validate_pair(result.pdf, result.png, tectonic_log=result.log)
+    print(result.pdf)
+    print(result.png)
+    return 0
+
+
+def intent_main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Render a validated AxiomFig Figure Intent")
+    parser.add_argument("intent", type=Path, help="Figure Intent YAML or JSON")
+    parser.add_argument("--data", type=Path, help="Mapped CSV or JSON dataset")
+    parser.add_argument("--output", type=Path, required=True, help="Output stem without extension")
+    parser.add_argument("--work-root", type=Path, default=Path("tmp/intent"))
+    args = parser.parse_args(argv)
+
+    intent = load_figure_intent(args.intent)
+    dataset = None if args.data is None else load_dataset(args.data)
+    discover_fonts(mode=intent.typography)
+    output = args.output.expanduser().resolve()
+    work_root = args.work_root.expanduser().resolve()
+    params = build_rcparams(
+        load_contracts(),
+        geometry=intent.geometry,
+        typography=intent.typography,
+    )
+    with mpl.rc_context(rc=params):
+        figure = build_intent_figure(intent, dataset)
+        figure.set_size_inches(params["figure.figsize"], forward=False)
+        result = render_figure(
+            figure,
+            output,
+            work_root=work_root,
+            typography=intent.typography,
+            geometry=intent.geometry,
         )
         plt.close(figure)
     validate_pair(result.pdf, result.png, tectonic_log=result.log)

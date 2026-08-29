@@ -37,19 +37,72 @@ def _scatter_groups(axis: plt.Axes, groups: tuple[np.ndarray, np.ndarray]) -> No
         apply_scatter_contract(collection)
 
 
-def _ordination_axes(axis: plt.Axes, xlabel: str, ylabel: str) -> None:
+def _ordination_axes(
+    axis: plt.Axes,
+    xlabel: str,
+    ylabel: str,
+    limits: tuple[tuple[float, float], tuple[float, float]] | None = None,
+) -> None:
     axis.set(xlabel=xlabel, ylabel=ylabel)
     apply_axis_contract(axis, surface="open")
-    apply_nice_linear_axis(axis, -2.5, 2.5, coordinate="x")
-    apply_nice_linear_axis(axis, -2.0, 2.0, coordinate="y")
+    selected = limits or ((-2.5, 2.5), (-2.0, 2.0))
+    apply_nice_linear_axis(axis, *selected[0], coordinate="x")
+    apply_nice_linear_axis(axis, *selected[1], coordinate="y")
 
 
-def build_pca_scores() -> Figure:
-    groups = _coordinates(157)
+def build_pca_scores(
+    coordinates: object | None = None,
+    explained_variance: object | None = None,
+    group: object | None = None,
+) -> Figure:
     figure, axis = plt.subplots()
-    _scatter_groups(axis, groups)
-    _ordination_axes(axis, "PC1 (46.2%)", "PC2 (21.4%)")
-    place_legend_above(axis)
+    if coordinates is None and explained_variance is None and group is None:
+        groups = _coordinates(157)
+        _scatter_groups(axis, groups)
+        variance = (46.2, 21.4)
+        limits = None
+        legend = True
+    elif coordinates is not None and explained_variance is not None:
+        values = np.asarray(coordinates, dtype=float)
+        variance_values = np.asarray(explained_variance, dtype=float)
+        if values.ndim != 2 or values.shape[1] != 2 or values.shape[0] < 2:
+            raise ValueError("ordination coordinates must be an n by 2 matrix")
+        if variance_values.shape != (2,):
+            raise ValueError("PCA explained_variance must contain two values")
+        variance = (float(variance_values[0]), float(variance_values[1]))
+        if group is None:
+            collection = axis.scatter(values[:, 0], values[:, 1])
+            apply_scatter_contract(collection)
+            legend = False
+        else:
+            groups_values = np.asarray(group, dtype=object)
+            if groups_values.shape != (values.shape[0],):
+                raise ValueError("ordination group must match coordinate rows")
+            labels = tuple(dict.fromkeys(str(item) for item in groups_values))
+            group_text = groups_values.astype(str)
+            for index, label in enumerate(labels):
+                style = series_style(index)
+                subset = values[group_text == label]
+                collection = axis.scatter(
+                    subset[:, 0],
+                    subset[:, 1],
+                    color=style["color"],
+                    marker=style["marker"],
+                    label=label,
+                )
+                apply_scatter_contract(collection)
+            legend = len(labels) > 1
+        x_padding = max(float(np.ptp(values[:, 0])) * 0.06, 0.1)
+        y_padding = max(float(np.ptp(values[:, 1])) * 0.06, 0.1)
+        limits = (
+            (float(values[:, 0].min()) - x_padding, float(values[:, 0].max()) + x_padding),
+            (float(values[:, 1].min()) - y_padding, float(values[:, 1].max()) + y_padding),
+        )
+    else:
+        raise ValueError("PCA scores require coordinates and explained_variance together")
+    _ordination_axes(axis, f"PC1 ({variance[0]:.1f}%)", f"PC2 ({variance[1]:.1f}%)", limits)
+    if legend:
+        place_legend_above(axis)
     return figure
 
 

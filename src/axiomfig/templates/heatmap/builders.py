@@ -132,16 +132,41 @@ def build_basic() -> Figure:
     )
 
 
-def build_correlation() -> Figure:
-    matrix = CORRELATION * np.array([[1, 1, -1, -1], [1, 1, 1, -1], [-1, 1, 1, 1], [-1, -1, 1, 1]])
+def build_correlation(
+    matrix: object | None = None,
+    labels: object | None = None,
+    center: object | None = None,
+) -> Figure:
+    if matrix is None and labels is None and center is None:
+        selected_matrix = CORRELATION * np.array(
+            [[1, 1, -1, -1], [1, 1, 1, -1], [-1, 1, 1, 1], [-1, -1, 1, 1]]
+        )
+        selected_labels = CORRELATION_LABELS
+        selected_center = 0.0
+    elif matrix is not None and labels is not None and center is not None:
+        selected_matrix = np.asarray(matrix, dtype=float)
+        selected_labels = [str(item) for item in labels]  # type: ignore[union-attr]
+        if (
+            selected_matrix.ndim != 2
+            or selected_matrix.shape[0] != selected_matrix.shape[1]
+            or selected_matrix.shape[0] != len(selected_labels)
+        ):
+            raise ValueError("correlation matrix must be square and match labels")
+        selected_center = float(center)
+        if float(selected_matrix.min()) < -1.0 or float(selected_matrix.max()) > 1.0:
+            raise ValueError("correlation values must lie between -1 and 1")
+        if not float(selected_matrix.min()) < selected_center < float(selected_matrix.max()):
+            raise ValueError("correlation center must lie inside the data range")
+    else:
+        raise ValueError("correlation heatmap requires matrix, labels, and center together")
     return _heatmap_figure(
-        matrix,
-        CORRELATION_LABELS,
+        selected_matrix,
+        selected_labels,
         colorbar_label="Pearson r",
         vmin=-1.0,
         vmax=1.0,
         color_semantics="diverging",
-        center=0.0,
+        center=selected_center,
     )
 
 

@@ -25,18 +25,56 @@ def _open(axis: plt.Axes, xlim: tuple[float, float], ylim: tuple[float, float]) 
     apply_nice_linear_axis(axis, *ylim, coordinate="y")
 
 
-def build_residual() -> Figure:
-    rng = np.random.default_rng(137)
-    fitted = np.linspace(0.8, 20.0, 54)
-    residual = rng.normal(0.0, 0.55 + 0.035 * fitted, fitted.size)
-    trend = 0.13 * np.sin(fitted / 3.5)
+def build_residual(
+    fitted: object | None = None,
+    residual: object | None = None,
+    trend: object | None = None,
+) -> Figure:
+    if fitted is None and residual is None and trend is None:
+        rng = np.random.default_rng(137)
+        fitted_values = np.linspace(0.8, 20.0, 54)
+        residual_values = rng.normal(0.0, 0.55 + 0.035 * fitted_values, fitted_values.size)
+        trend_values: np.ndarray | None = 0.13 * np.sin(fitted_values / 3.5)
+        limits = ((0.0, 21.0), (-3.5, 3.5))
+    elif fitted is not None and residual is not None:
+        fitted_values = np.asarray(fitted, dtype=float)
+        residual_values = np.asarray(residual, dtype=float)
+        if (
+            fitted_values.ndim != 1
+            or fitted_values.shape != residual_values.shape
+            or fitted_values.size < 2
+        ):
+            raise ValueError("fitted and residual must be equal-length one-dimensional data")
+        trend_values = None if trend is None else np.asarray(trend, dtype=float)
+        if trend_values is not None and trend_values.shape != fitted_values.shape:
+            raise ValueError("residual trend must match fitted data")
+        x_padding = max(float(np.ptp(fitted_values)) * 0.04, 0.1)
+        y_padding = max(float(np.ptp(residual_values)) * 0.08, 0.1)
+        limits = (
+            (
+                float(fitted_values.min()) - x_padding,
+                float(fitted_values.max()) + x_padding,
+            ),
+            (
+                float(residual_values.min()) - y_padding,
+                float(residual_values.max()) + y_padding,
+            ),
+        )
+    else:
+        raise ValueError("residual diagnostic requires fitted and residual together")
     figure, axis = plt.subplots()
-    collection = axis.scatter(fitted, residual)
+    collection = axis.scatter(fitted_values, residual_values)
     apply_scatter_contract(collection)
-    axis.plot(fitted, trend, label="Smoothed trend", **series_style(1, include_marker=False))
+    if trend_values is not None:
+        axis.plot(
+            fitted_values,
+            trend_values,
+            label="Smoothed trend",
+            **series_style(1, include_marker=False),
+        )
     axis.axhline(0.0, **reference_line_kwargs())
     axis.set(xlabel="Fitted value", ylabel="Standardized residual")
-    _open(axis, (0.0, 21.0), (-3.5, 3.5))
+    _open(axis, *limits)
     return figure
 
 

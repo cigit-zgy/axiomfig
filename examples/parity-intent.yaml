@@ -1,0 +1,6 @@
+template: scatter.parity
+data:
+  observed: observed
+  predicted: predicted
+geometry: single-column
+typography: sans

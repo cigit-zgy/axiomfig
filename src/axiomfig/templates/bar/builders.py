@@ -23,12 +23,22 @@ def _vertical_axes(axis: Axes, labels: list[str], upper: float) -> None:
     apply_nice_linear_axis(axis, 0.0, upper, coordinate="y")
 
 
-def build_vertical() -> Figure:
-    labels = ["COD", "Nitrogen", "Phosphorus"]
+def build_vertical(category: object | None = None, value: object | None = None) -> Figure:
+    if category is None and value is None:
+        labels = ["COD", "Nitrogen", "Phosphorus"]
+        values = np.array([0.84, 0.76, 0.71])
+    elif category is not None and value is not None:
+        labels = [str(item) for item in category]  # type: ignore[union-attr]
+        values = np.asarray(value, dtype=float)
+        if values.ndim != 1 or len(labels) != values.size or values.size < 1:
+            raise ValueError("bar category and value must be equal-length one-dimensional data")
+    else:
+        raise ValueError("bar requires category and value together")
     figure, axis = plt.subplots()
-    bars = axis.bar(np.arange(3), [0.84, 0.76, 0.71], width=bar_width())
+    bars = axis.bar(np.arange(len(labels)), values, width=bar_width())
     axis.set(ylabel="Validation score (-)")
-    _vertical_axes(axis, labels, 1.0)
+    upper = max(float(values.max()) * 1.18, 0.1)
+    _vertical_axes(axis, labels, upper)
     add_bar_value_labels(axis, [bars])
     return figure
 

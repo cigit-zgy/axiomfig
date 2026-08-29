@@ -15,20 +15,51 @@ from axiomfig.template_helpers import (
 )
 
 
-def build_forest() -> Figure:
-    labels = ["Hybrid ODE", "Neural ODE", "ASM baseline", "Linear model"]
-    estimates = np.array([0.84, 0.73, 0.59, 0.46])
-    errors = np.array([0.07, 0.09, 0.08, 0.11])
+def build_forest(
+    label: object | None = None,
+    estimate: object | None = None,
+    interval: object | None = None,
+    uncertainty_type: object | None = None,
+) -> Figure:
+    if label is None and estimate is None and interval is None and uncertainty_type is None:
+        labels = ["Hybrid ODE", "Neural ODE", "ASM baseline", "Linear model"]
+        estimates = np.array([0.84, 0.73, 0.59, 0.46])
+        errors: np.ndarray = np.array([0.07, 0.09, 0.08, 0.11])
+        uncertainty_label = "95% CI"
+        limits = (0.25, 1.0)
+    elif label is not None and estimate is not None and interval is not None and uncertainty_type:
+        labels = [str(item) for item in label]  # type: ignore[union-attr]
+        estimates = np.asarray(estimate, dtype=float)
+        supplied = np.asarray(interval, dtype=float)
+        if estimates.ndim != 1 or estimates.size != len(labels) or estimates.size < 1:
+            raise ValueError("forest labels and estimates must be equal-length data")
+        if supplied.shape == estimates.shape:
+            errors = supplied
+            lower = estimates - errors
+            upper = estimates + errors
+        elif supplied.shape == (estimates.size, 2):
+            lower = supplied[:, 0]
+            upper = supplied[:, 1]
+            if np.any(lower > estimates) or np.any(upper < estimates):
+                raise ValueError("forest interval bounds must contain each estimate")
+            errors = np.vstack((estimates - lower, upper - estimates))
+        else:
+            raise ValueError("forest interval must be half-widths or lower/upper pairs")
+        uncertainty_label = str(uncertainty_type)
+        padding = max(float(upper.max() - lower.min()) * 0.05, 0.05)
+        limits = (float(lower.min()) - padding, float(upper.max()) + padding)
+    else:
+        raise ValueError("forest requires label, estimate, interval, and uncertainty_type together")
     positions = np.arange(len(labels))
     figure, axis = plt.subplots()
     axis.errorbar(estimates, positions, xerr=errors, **errorbar_kwargs())
     axis.axvline(0.5, **reference_line_kwargs())
     axis.set_yticks(positions, labels)
-    axis.set(xlabel="Effect estimate (95% CI)")
+    axis.set(xlabel=f"Effect estimate ({uncertainty_label})")
     axis.invert_yaxis()
     apply_axis_contract(axis, surface="open")
     apply_categorical_axis(axis, coordinate="y")
-    apply_nice_linear_axis(axis, 0.25, 1.0, coordinate="x")
+    apply_nice_linear_axis(axis, *limits, coordinate="x")
     return figure
 
 
