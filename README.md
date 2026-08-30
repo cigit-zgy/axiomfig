@@ -19,12 +19,12 @@ recommendation knowledge), while the Python package is the deterministic runtime
 install alone does not install the Skill documents. Keep a Skill checkout available to the Agent
 and install the runtime into its execution environment.
 
-AxiomFig requires Python 3.11 or 3.12, Tectonic, and Poppler. On macOS, the immutable v1.0.0 runtime
-can be installed with:
+AxiomFig requires Python 3.11 or 3.12, Tectonic, and Poppler. On macOS, the v1.1.0 runtime can be
+installed with:
 
 ```bash
 brew install tectonic poppler
-python -m pip install "axiomfig @ git+https://github.com/cigit-zgy/axiomfig-skill.git@v1.0.0"
+python -m pip install "axiomfig @ git+https://github.com/cigit-zgy/axiomfig-skill.git@v1.1.0"
 ```
 
 For a source checkout, run `python -m pip install -e .` from the repository root.
@@ -68,7 +68,7 @@ legend coordinates, panel offsets, or colorbar geometry.
 
 ## Template coverage
 
-AxiomFig v1 provides 55 public templates across 13 plot families. All 55 accept external structured
+AxiomFig v1.1 provides 55 public templates across 13 plot families. All 55 accept external structured
 input: 28 direct-data paths and 27 explicit precomputed-result paths. There are no canonical-only
 public plot templates.
 

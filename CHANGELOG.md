@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.1.0 — 2026-08-31
+
 - converged publication contracts across the full 55-template Gallery, including distribution raw-point density, bounded ECDF markers, hexbin continuous count colorbars, and quiver boundary protection;
 - rebuilt Mantel as a deterministic matrix/coupling composition with a collinear SourceRail, shared curve grammar, renderer-aware source packing, scatter-derived nodes, square primary geometry, and compact global vertical Colorbar behavior;
 - added Primary Visual Area protection so measured ornaments reserve only their required physical strips and registered square scientific content is maximized deterministically;
