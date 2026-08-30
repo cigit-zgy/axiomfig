@@ -28,7 +28,7 @@ Precomputed association results use structured JSON/YAML data rather than parall
 ```yaml
 template: association.mantel
 data: {correlation_matrix: correlation_matrix, labels: labels, links: mantel_links}
-semantics: {matrix_method: square, matrix_type: lower, nonsignificant_links: fade}
+semantics: {matrix_region: lower_left, matrix_method: circle, nonsignificant_links: fade}
 ```
 
 Each Mantel link contains `source`, `target`, `mantel_r`, and `p_value`. The plotting layer validates

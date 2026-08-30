@@ -9,6 +9,7 @@ variants:
       - upper_ci
       - matrix_method
       - matrix_type
+      - matrix_region
       - diagonal
       - order
       - hclust_method
@@ -23,6 +24,7 @@ variants:
       - coupling
       - nonsignificant_links
       - link_width_mode
+      - p_value_mode
       - show_nonsignificant
     link_fields: [source, target, mantel_r, p_value]
     advanced_reference: references/mantel.md

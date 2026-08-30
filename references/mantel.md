@@ -29,8 +29,12 @@ matrices matching the correlation matrix.
 
 ## Advanced semantics
 
-Canonical defaults are square glyphs, a lower matrix, hidden diagonal, original order, curved links,
-and faded non-significant links.
+Canonical defaults are circle glyphs, a lower-left matrix region, a hidden matrix diagonal,
+original order, explicit source/target nodes, three p-value categories, and faded
+non-significant links. The lower-left matrix owns left and bottom variable labels; its coupling
+occupies the complementary upper-right triangle. `upper_right` is the exact geometric mirror and
+owns top and right labels. Label edges and the coupling triangle are derived from the matrix region,
+not selected independently.
 
 ```yaml
 template: association.mantel
@@ -39,8 +43,8 @@ data:
   labels: variables
   links: mantel_links
 semantics:
-  matrix_method: square
-  matrix_type: lower
+  matrix_region: lower_left
+  matrix_method: circle
   diagonal: hide
   order: original
   nonsignificant_links: fade
@@ -51,6 +55,7 @@ Supported high-level semantics are:
 | Semantic | Values |
 |---|---|
 | `matrix_method` | `circle`, `square`, `ellipse`, `number`, `shade`, `color`, `pie` |
+| `matrix_region` | `lower_left`, `upper_right`; the two mirrored triangular layouts |
 | `matrix_type` | `full`, `upper`, `lower`, `mixed` |
 | `diagonal` | `show`, `hide` |
 | `lower_method`, `upper_method` | any matrix method; used by `mixed` |
@@ -63,6 +68,7 @@ Supported high-level semantics are:
 | `significance_thresholds` | explicit decreasing thresholds; default `[0.05, 0.01, 0.001]` |
 | `ci_mode` | `none`, `square`, `circle`, `rect` |
 | `link_width_mode` | `binned`, `continuous` |
+| `p_value_mode` | `canonical` (three bins), `detailed` (four bins) |
 | `nonsignificant_links` | `hide`, `fade`, `show` |
 
 Mixed rendering remains one public template:
@@ -84,10 +90,11 @@ branches:
 
 ```text
 MantelComposition
-  -> MatrixSpec                 structural mask, ordering, diagonal, target rail
+  -> MatrixSpec                 structural mask, ordering, diagonal, label-edge contract
   -> GlyphSpec[]               one reusable cell primitive per structural region
   -> StatisticalOverlay[]      coefficient, significance, CI, cluster outline
-  -> CouplingSpec              source groups and Mantel relationships
+  -> NodeLayer                 source nodes and diagonal target nodes
+  -> CouplingSpec              source fans, lanes, and Mantel relationships
   -> OrnamentLayer             Pearson colorbar and Mantel legends
 ```
 
@@ -98,10 +105,11 @@ path, not 49 implementations. Statistical overlays are independent artists and c
 the supplied scientific inputs make the combination valid.
 
 Layout uses a fixed two-pass renderer-aware solve. The first pass creates the Figure, Primary Axes,
-Auxiliary colorbar Axes, and the final legend grammar, then measures the selected-font label and
-legend extents in physical points. The second pass solves matrix cell size, label gutters, source
-strip, target rail, and ornament anchors. Character count is not a layout input and the solver does
-not perform iterative visual search.
+Auxiliary colorbar Axes, and the final legend grammar, then measures the selected-font variable
+labels, source labels, and legends in physical points. The second pass solves matrix cell size,
+matrix-edge label gutters, source positions, the diagonal interface, and ornament anchors. Source
+labels may wrap once at a measured word boundary. Character count is not a layout input and the
+solver does not perform iterative visual search.
 
 Ordering is a single data transformation before rendering. It applies the same permutation to the
 matrix, labels, p values, CI bounds, cluster membership, and Mantel target mapping. No artist layer
@@ -109,7 +117,8 @@ may reorder its own data.
 
 ## Visual grammar
 
-- `square` and `circle` use area, not side or radius, to encode `abs(r)`.
+- `circle` is the canonical Mantel glyph. `square` and `circle` use area, not side or radius, to
+  encode `abs(r)`.
 - `ellipse` uses orientation for sign and eccentricity for magnitude.
 - `number` renders the coefficient with deterministic precision.
 - `color` uses a fixed cell area and signed diverging fill.
@@ -118,19 +127,22 @@ may reorder its own data.
 - `mark` and `p_value` identify non-significant cells, `blank` suppresses them, and `label_sig`
   labels significant cells using the explicit thresholds.
 - CI modes visualize supplied bounds with vector artists; they never estimate intervals.
-- Coupling routes source nodes directly to matrix-owned target anchors. A lower triangle uses a
-  measured horizontal source rail at the lower edge of the unused triangle and a
-  lower-left-to-upper-right target rail; an upper triangle is its physical mirror at the upper edge.
-  Source labels occupy a renderer-measured outward strip, while routes remain on the matrix side.
-  Target names are not repeated in a detached link column and target circles are hidden by default.
-- Each link is one deterministic rail-normal cubic. Its clearance derives from source order, target
-  order, link density, orientation, and lane index; there is no gate column or stochastic graph
+- A lower-left matrix places labels on its left and bottom edges and coupling in the upper-right
+  triangle. An upper-right matrix places labels on its top and right edges and coupling in the
+  lower-left triangle. These are the only two triangular orientations and are exact mirrors.
+- The shared diagonal is an interface, not a label rail. Each variable owns one small visible
+  target node on that interface; variable names are not repeated there. Each source group owns a
+  larger node distributed in two dimensions through the coupling triangle. Every link begins and
+  ends at those explicit node coordinates.
+- Each route is a deterministic two-cubic fan. Its envelope derives from source order, target
+  order, link density, orientation, and lane allocation; convex control geometry keeps it inside
+  the complementary triangle. There is no gate column, detached network panel, or stochastic graph
   layout.
-- Pearson color is constructed from `AxiomRed -> AxiomWhite -> AxiomBlue`. Mantel p-value bins use
-  `AxiomOrange`, `AxiomGreen`, `AxiomPurple`, and `AxiomGrey`; all tokens originate in
-  `resources/styles/colors.yaml`.
-- Mantel p bins (`<0.001`, `0.001-0.01`, `0.01-0.05`, `>=0.05`) and strength bins remain in the
-  legends even when a dataset does not use every bin.
+- Pearson color is constructed from `AxiomRed -> AxiomWhite -> AxiomBlue`. Canonical Mantel p-value
+  bins are `<0.01` (`AxiomOrange`), `0.01-0.05` (`AxiomGreen`), and `>=0.05` (faint `AxiomGrey`).
+  Detailed mode retains `<0.001`, `0.001-0.01`, `0.01-0.05`, and `>=0.05` using `AxiomOrange`,
+  `AxiomGreen`, `AxiomPurple`, and `AxiomGrey`. All tokens originate in
+  `resources/styles/colors.yaml`, and every active mode shows all of its bins in the legend.
 - The Pearson key is a true Matplotlib colorbar on a registered Auxiliary Axes. Mantel strength and
   p-value legends are measured before their side-by-side or stacked placement is selected.
 

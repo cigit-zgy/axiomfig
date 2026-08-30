@@ -28,6 +28,7 @@ SIGNIFICANCE_MODES = ("none", "mark", "p_value", "blank", "label_sig")
 CI_MODES = ("none", "square", "circle", "rect")
 NONSIGNIFICANT_MODES = ("hide", "fade", "show")
 LINK_WIDTH_MODES = ("binned", "continuous")
+P_VALUE_MODES = ("canonical", "detailed")
 
 _CHOICES = {
     "matrix_method": GLYPH_METHODS,
@@ -38,6 +39,7 @@ _CHOICES = {
     "ci_mode": CI_MODES,
     "nonsignificant_links": NONSIGNIFICANT_MODES,
     "link_width_mode": LINK_WIDTH_MODES,
+    "p_value_mode": P_VALUE_MODES,
     "lower_method": GLYPH_METHODS,
     "upper_method": GLYPH_METHODS,
     "coefficient_format": ("decimal", "percent"),
@@ -91,6 +93,7 @@ class CouplingSpec:
     enabled: bool = True
     nonsignificant: Literal["hide", "fade", "show"] = "fade"
     width_mode: Literal["binned", "continuous"] = "binned"
+    p_value_mode: Literal["canonical", "detailed"] = "canonical"
 
 
 @dataclass(frozen=True)
@@ -135,7 +138,23 @@ def _boolean(values: Mapping[str, object], name: str, default: bool) -> bool:
 
 def normalize_composition(values: Mapping[str, object], *, size: int) -> MantelComposition:
     """Translate flat public scientific semantics into independent immutable layers."""
-    matrix_type = _choice(values, "matrix_type", "lower")
+    region_alias = values.get("matrix_region")
+    if region_alias is not None:
+        if not isinstance(region_alias, str):
+            raise ValueError("matrix_region must be a string")
+        region_mapping = {"lower_left": "lower", "upper_right": "upper"}
+        try:
+            region_matrix_type = region_mapping[region_alias.strip().lower()]
+        except KeyError as exc:
+            raise ValueError("matrix_region must be lower_left or upper_right") from exc
+        if (
+            "matrix_type" in values
+            and str(values["matrix_type"]).strip().lower() != region_matrix_type
+        ):
+            raise ValueError("matrix_region and matrix_type must describe the same matrix mask")
+        matrix_type = region_matrix_type
+    else:
+        matrix_type = _choice(values, "matrix_type", "lower")
     diagonal_value = values.get("diagonal", "hide")
     if isinstance(diagonal_value, bool):
         diagonal_value = "show" if diagonal_value else "hide"
@@ -186,7 +205,7 @@ def normalize_composition(values: Mapping[str, object], *, size: int) -> MantelC
         region: CellRegion = "full" if matrix_type == "full" else matrix_type  # type: ignore[assignment]
         glyphs = (
             GlyphSpec(
-                method=_choice(values, "matrix_method", "square"),  # type: ignore[arg-type]
+                method=_choice(values, "matrix_method", "circle"),  # type: ignore[arg-type]
                 region=region,
                 number_format=number_format,  # type: ignore[arg-type]
             ),
@@ -212,9 +231,10 @@ def normalize_composition(values: Mapping[str, object], *, size: int) -> MantelC
         show = _boolean(values, "show_nonsignificant", False)
         nonsignificant_default = "show" if show else "hide"
     coupling = CouplingSpec(
-        enabled=_boolean(values, "coupling", True),
+        enabled=_boolean(values, "coupling", matrix_type in {"lower", "upper"}),
         nonsignificant=_choice(values, "nonsignificant_links", nonsignificant_default),  # type: ignore[arg-type]
         width_mode=_choice(values, "link_width_mode", "binned"),  # type: ignore[arg-type]
+        p_value_mode=_choice(values, "p_value_mode", "canonical"),  # type: ignore[arg-type]
     )
     return MantelComposition(matrix, glyphs, tuple(overlays), coupling)
 
@@ -227,6 +247,7 @@ __all__ = [
     "MATRIX_TYPES",
     "NONSIGNIFICANT_MODES",
     "ORDERING_MODES",
+    "P_VALUE_MODES",
     "SIGNIFICANCE_MODES",
     "ClusterOutlineOverlay",
     "CoefficientOverlay",

@@ -247,7 +247,7 @@ def render_glyph_layer(
             geometry.bounds,
             row,
             column,
-            matrix_type=geometry.target_rail.orientation.split("-", maxsplit=1)[0],
+            matrix_type=geometry.matrix_type,
         )
         color = cmap(norm(value)) if np.isfinite(value) else mantel_visual_color("missing")
         rendered.append(

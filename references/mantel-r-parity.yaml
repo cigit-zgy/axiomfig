@@ -14,6 +14,35 @@ upstream:
     license: GPL-2
 
 examples:
+  - id: axiom-canonical-circle-lower-left
+    source: AxiomFig
+    source_ref: references/mantel.md
+    source_call: association.mantel(matrix_region="lower_left", matrix_method="circle")
+    fixture: environmental
+    composition: {matrix_region: lower_left, matrix_method: circle, coupling: true}
+    expected_output: gallery/parity/mantel/canonical/circle-lower-left
+  - id: axiom-canonical-circle-upper-right
+    source: AxiomFig
+    source_ref: references/mantel.md
+    source_call: association.mantel(matrix_region="upper_right", matrix_method="circle")
+    fixture: environmental
+    composition: {matrix_region: upper_right, matrix_method: circle, coupling: true}
+    expected_output: gallery/parity/mantel/canonical/circle-upper-right
+  - id: axiom-square-lower-left
+    source: AxiomFig
+    source_ref: references/mantel.md
+    source_call: association.mantel(matrix_region="lower_left", matrix_method="square")
+    fixture: environmental
+    composition: {matrix_region: lower_left, matrix_method: square, coupling: true}
+    expected_output: gallery/parity/mantel/canonical/square-lower-left
+  - id: axiom-square-upper-right
+    source: AxiomFig
+    source_ref: references/mantel.md
+    source_call: association.mantel(matrix_region="upper_right", matrix_method="square")
+    fixture: environmental
+    composition: {matrix_region: upper_right, matrix_method: square, coupling: true}
+    expected_output: gallery/parity/mantel/canonical/square-upper-right
+
   - id: corrplot-circle-full
     source: corrplot
     source_ref: vignettes/example-corrplot.R
@@ -207,7 +236,14 @@ examples:
     source_call: mantel_test(..., spec_select=list(Spec01,Spec02,Spec03,Spec04)) + geom_couple(...)
     fixture: environmental
     composition: {matrix_type: lower, matrix_method: square, coupling: true}
-    expected_output: gallery/parity/mantel/coupling/multi-source
+    expected_output: gallery/parity/mantel/coupling/multi-source-3
+  - id: axiom-multi-source-four
+    source: AxiomFig
+    source_ref: references/mantel.md
+    source_call: association.mantel(matrix_region="lower_left", sources=4)
+    fixture: dense
+    composition: {matrix_region: lower_left, matrix_method: circle, coupling: true}
+    expected_output: gallery/parity/mantel/coupling/multi-source-4
   - id: linket-sparse-coupling
     source: linkET
     source_ref: R/geom-couple.R

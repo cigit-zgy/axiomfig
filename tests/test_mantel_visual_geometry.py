@@ -44,7 +44,7 @@ def test_triangular_masks_are_logically_distinct(matrix_type: str, relation: str
 
 @pytest.mark.parametrize(
     ("matrix_type", "corner"),
-    [("upper", "upper-left"), ("lower", "lower-left")],
+    [("upper", "lower-left"), ("lower", "upper-right")],
 )
 def test_sources_live_inside_unused_matrix_triangle(matrix_type: str, corner: str) -> None:
     figure = build_template("association/mantel", matrix_type=matrix_type)
@@ -104,7 +104,7 @@ def test_target_anchors_are_geometry_only_and_colorbar_is_auxiliary(matrix_type:
 
 @pytest.mark.parametrize("source_count", [1, 2, 3, 5])
 @pytest.mark.parametrize("matrix_type", ["lower", "upper"])
-def test_source_rail_scales_without_collapsing(
+def test_source_layout_scales_without_collapsing(
     matrix_type: str,
     source_count: int,
 ) -> None:
@@ -119,8 +119,15 @@ def test_source_rail_scales_without_collapsing(
 
     positions = np.asarray(tuple(geometry.source_positions.values()), dtype=float)
     assert len(positions) == source_count
-    assert np.all(np.diff(positions[:, 0]) > 0) if source_count > 1 else True
-    np.testing.assert_allclose(positions[:, 1], positions[0, 1])
+    distances = [
+        np.linalg.norm(first - second)
+        for index, first in enumerate(positions)
+        for second in positions[index + 1 :]
+    ]
+    assert min(distances, default=1.0) > 0.25
+    if source_count > 1:
+        assert np.ptp(positions[:, 0]) > 0.25
+        assert np.ptp(positions[:, 1]) > 0.25
 
     rail = np.asarray(tuple(geometry.target_positions.values()), dtype=float)
     a, b = rail[0], rail[-1]

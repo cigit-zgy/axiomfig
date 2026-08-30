@@ -377,6 +377,9 @@ def test_canonical_fixture_is_valid_compact_and_exercises_all_link_bins() -> Non
         for link in links
     } == {0, 1, 2}
     assert {
+        0 if link["p_value"] < 0.01 else 1 if link["p_value"] < 0.05 else 2 for link in links
+    } == {0, 1, 2}
+    assert {
         0
         if link["p_value"] < 0.001
         else 1
@@ -388,7 +391,8 @@ def test_canonical_fixture_is_valid_compact_and_exercises_all_link_bins() -> Non
     } == {0, 1, 2, 3}
     figure = build_template("association/mantel")
     figure.canvas.draw()
-    assert len(_artists(figure, "axiomfig-mantel-variable-label")) == 10
+    assert len(_artists(figure, "axiomfig-mantel-variable-label")) == 20
+    assert len(_artists(figure, "axiomfig-mantel-target-node")) == 10
     assert len(_artists(figure, "axiomfig-mantel-source-node")) == 3
     assert len(_artists(figure, "axiomfig-mantel-link")) == len(links)
     rendered_links = _artists(figure, "axiomfig-mantel-link")

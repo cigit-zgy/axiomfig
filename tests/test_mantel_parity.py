@@ -17,7 +17,12 @@ def _entries() -> list[dict[str, object]]:
 def test_r_parity_manifest_covers_all_reference_projects_and_visual_grammar() -> None:
     entries = _entries()
     assert len(entries) >= 30
-    assert {entry["source"] for entry in entries} == {"corrplot", "linkET", "ggcor"}
+    assert {entry["source"] for entry in entries} == {
+        "AxiomFig",
+        "corrplot",
+        "linkET",
+        "ggcor",
+    }
     assert len({entry["id"] for entry in entries}) == len(entries)
     assert len({entry["expected_output"] for entry in entries}) == len(entries)
 
@@ -68,8 +73,9 @@ def test_every_manifest_example_has_a_committed_pdf_png_pair() -> None:
 def test_permanent_mantel_review_contact_sheets_are_committed() -> None:
     review = ROOT / "gallery" / "parity" / "mantel" / "review"
     assert {path.name for path in review.glob("*.png")} == {
-        "01-canonical-coupling.png",
-        "02-correlation-glyphs.png",
-        "03-mixed-ordering.png",
-        "04-significance-ci.png",
+        "canonical-orientations.png",
+        "circle-vs-square.png",
+        "coupling-density.png",
+        "source-node-layouts.png",
+        "r-grammar-overview.png",
     }

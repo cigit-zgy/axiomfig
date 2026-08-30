@@ -39,6 +39,7 @@ class TextExtents:
     variable_height_pt: float
     source_width_pt: float
     source_height_pt: float
+    source_labels: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -106,6 +107,9 @@ class MantelGeometry:
     legend_arrangement: str
     cell_size_pt: float
     measurements: MantelLayoutMeasurements
+    matrix_region: str
+    coupling_region: str
+    label_edges: tuple[str, ...]
 
     @property
     def source_positions(self) -> dict[str, tuple[float, float]]:
@@ -163,13 +167,49 @@ def measure_text_extents(
         variable,
         dpi=figure.dpi,
     )
-    source_width, source_height = _maximum_text_extent(
-        renderer,
-        source_groups,
-        source,
-        dpi=figure.dpi,
+    contract = mantel_plot_contract()["matrix"]
+    assert isinstance(contract, Mapping)
+    maximum_source_width = float(contract["source_label_max_width_pt"])
+    source_labels: list[str] = []
+    source_dimensions: list[tuple[float, float]] = []
+    for value in source_groups:
+        words = value.split()
+        candidates = [value]
+        if len(words) > 1:
+            candidates.extend(
+                " ".join(words[:index]) + "\n" + " ".join(words[index:])
+                for index in range(1, len(words))
+            )
+        measured: list[tuple[float, float, str]] = []
+        for candidate in candidates:
+            lines = candidate.splitlines()
+            line_dimensions = [
+                _maximum_text_extent(renderer, (line,), source, dpi=figure.dpi) for line in lines
+            ]
+            measured.append(
+                (
+                    max(width for width, _ in line_dimensions),
+                    sum(height for _, height in line_dimensions) * 1.12,
+                    candidate,
+                )
+            )
+        unwrapped = measured[0]
+        selected = (
+            min(measured[1:], key=lambda item: (item[0], item[1], item[2]))
+            if unwrapped[0] > maximum_source_width and len(measured) > 1
+            else unwrapped
+        )
+        source_dimensions.append((selected[0], selected[1]))
+        source_labels.append(selected[2])
+    source_width = max((width for width, _ in source_dimensions), default=0.0)
+    source_height = max((height for _, height in source_dimensions), default=0.0)
+    return TextExtents(
+        variable_width,
+        variable_height,
+        source_width,
+        source_height,
+        tuple(source_labels),
     )
-    return TextExtents(variable_width, variable_height, source_width, source_height)
 
 
 def cell_center(
@@ -180,19 +220,8 @@ def cell_center(
     matrix_type: str,
 ) -> tuple[float, float]:
     """Map logical matrix indices into the orientation-owned display coordinate system."""
-    if matrix_type == "lower":
-        x = bounds.x0 + column + 0.5
-        y = bounds.y0 + row + 0.5
-    elif matrix_type == "upper":
-        # Upper presentation is the physical horizontal mirror of the lower composition.
-        # Swapping row/column ownership before mirroring preserves scientific upper-mask
-        # indexing while placing its visible cells opposite the mirrored source region.
-        x = bounds.x0 + row + 0.5
-        y = bounds.y1 - column - 0.5
-    else:
-        x = bounds.x0 + column + 0.5
-        y = bounds.y1 - row - 0.5
-    return x, y
+    del matrix_type
+    return bounds.x0 + column + 0.5, bounds.y1 - row - 0.5
 
 
 def _target_anchor(
@@ -203,9 +232,7 @@ def _target_anchor(
     rail_offset: float,
 ) -> tuple[float, float]:
     x, y = cell_center(bounds, index, index, matrix_type=matrix_type)
-    if matrix_type == "lower":
-        return x + rail_offset, y - rail_offset
-    if matrix_type == "upper":
+    if matrix_type in {"lower", "upper"}:
         return x + rail_offset, y + rail_offset
     return bounds.x0 - 0.05, y
 
@@ -217,33 +244,41 @@ def _source_positions(
     matrix_type: str,
     source_width_units: float,
     source_height_units: float,
+    source_label_offset_units: float,
 ) -> SourceRegion:
-    """Place sources on a measured horizontal rail at the empty triangle's outer edge."""
+    """Distribute sources in two dimensions through the complementary triangle."""
     count = len(source_groups)
     if count == 0:
         return SourceRegion("none", {})
-    label_half = source_width_units / 2.0
-    first_x = max(0.65, label_half + 0.24)
-    step = source_width_units + 0.38
-    last_x = first_x + step * (count - 1)
-    available_last = bounds.size - max(0.35, label_half)
-    if count == 1:
-        x_positions = np.asarray((min(first_x, available_last),))
-    else:
-        x_positions = np.linspace(first_x, min(last_x, available_last), count)
-    relative_y = max(0.16, source_height_units * 0.34)
-    lower_positions = {
-        source: (bounds.x0 + float(x), bounds.y0 + relative_y)
-        for source, x in zip(source_groups, x_positions, strict=True)
-    }
-
-    if matrix_type == "lower":
-        return SourceRegion("lower-left", lower_positions)
-    if matrix_type == "upper":
-        mirrored = {
-            source: (x, bounds.y0 + bounds.y1 - y) for source, (x, y) in lower_positions.items()
-        }
-        return SourceRegion("upper-left", mirrored)
+    if matrix_type in {"lower", "upper"}:
+        fractions = (np.arange(count, dtype=float) + 0.5) / count
+        target_fraction = 0.16 + 0.68 * fractions
+        depth_pattern = np.asarray((0.46, 0.68, 0.54, 0.72), dtype=float)
+        positions: dict[str, tuple[float, float]] = {}
+        normal_sign = 1.0 if matrix_type == "lower" else -1.0
+        normal = normal_sign * np.asarray((1.0, 1.0), dtype=float) / np.sqrt(2.0)
+        label_margin = max(
+            0.28,
+            source_height_units * 1.6,
+            source_width_units / np.sqrt(2.0) + np.sqrt(2.0) * source_label_offset_units,
+        )
+        for index, (source, fraction) in enumerate(
+            zip(source_groups, target_fraction, strict=True)
+        ):
+            diagonal = np.asarray(
+                (
+                    bounds.x0 + bounds.size * fraction,
+                    bounds.y1 - bounds.size * fraction,
+                ),
+                dtype=float,
+            )
+            maximum_depth = np.sqrt(2.0) * bounds.size * min(fraction, 1.0 - fraction)
+            depth = max(0.42, maximum_depth * depth_pattern[index % len(depth_pattern)])
+            depth = min(depth, max(0.30, maximum_depth - label_margin))
+            point = diagonal + normal * depth
+            positions[source] = (float(point[0]), float(point[1]))
+        corner = "upper-right" if matrix_type == "lower" else "lower-left"
+        return SourceRegion(corner, positions)
 
     source_y = np.linspace(bounds.y1 - 0.75, bounds.y0 + 0.75, count)
     return SourceRegion(
@@ -256,9 +291,7 @@ def _source_positions(
 
 
 def _rail_orientation(matrix_type: str) -> str:
-    if matrix_type == "lower":
-        return "lower-left-to-upper-right"
-    if matrix_type == "upper":
+    if matrix_type in {"lower", "upper"}:
         return "upper-left-to-lower-right"
     return "left-vertical"
 
@@ -278,13 +311,20 @@ def _point_gutters(
         left = measurements.variable_width_pt + padding
         right = projection + padding * 2.0
         top = projection + padding * 2.0
+        bottom = padding
+    elif matrix_type == "lower":
+        left = measurements.variable_width_pt + padding * 2.0
+        right = padding
+        top = padding
+        bottom = measurements.variable_width_pt + padding * 2.0
     else:
         left = padding
-        right = measurements.variable_width_pt + padding
-        top = padding if coupling_enabled else measurements.variable_width_pt + padding * 2.0
+        right = measurements.variable_width_pt + padding * 2.0
+        top = measurements.variable_width_pt + padding * 2.0
+        bottom = padding
 
     if not coupling_enabled:
-        return left, right, padding, top, "none"
+        return left, right, bottom, top, "none"
     combined_width = (
         measurements.strength_legend_width_pt
         + measurements.p_legend_width_pt
@@ -292,7 +332,7 @@ def _point_gutters(
         + padding * 2.0
     )
     if combined_width <= measurements.available_width_pt:
-        bottom = (
+        legend_bottom = (
             max(
                 measurements.strength_legend_height_pt,
                 measurements.p_legend_height_pt,
@@ -301,19 +341,23 @@ def _point_gutters(
         )
         arrangement = "side-by-side"
     else:
-        bottom = (
+        legend_bottom = (
             measurements.strength_legend_height_pt
             + measurements.p_legend_height_pt
             + legend_gap
             + padding * 2.0
         )
         arrangement = "stacked"
-    source_label_strip = measurements.source_height_pt + 6.0
-    if matrix_type == "lower":
-        bottom += source_label_strip
-    elif matrix_type == "upper":
-        top += source_label_strip
+    bottom += legend_bottom
     return left, right, bottom, top, arrangement
+
+
+def _region_contract(matrix_type: str) -> tuple[str, str, tuple[str, ...]]:
+    if matrix_type == "lower":
+        return "lower-left", "upper-right", ("left", "bottom")
+    if matrix_type == "upper":
+        return "upper-right", "lower-left", ("top", "right")
+    return "full", "none", ("left", "top")
 
 
 def solve_geometry(
@@ -365,7 +409,9 @@ def solve_geometry(
         matrix_type=matrix_type,
         source_width_units=measurements.source_width_pt / cell_size_pt,
         source_height_units=measurements.source_height_pt / cell_size_pt,
+        source_label_offset_units=float(matrix_contract["source_label_offset_pt"]) / cell_size_pt,
     )
+    matrix_region, coupling_region, label_edges = _region_contract(matrix_type)
 
     padding_units = 4.0 / cell_size_pt
     legend_gap_units = 6.0 / cell_size_pt
@@ -395,6 +441,9 @@ def solve_geometry(
         legend_arrangement=arrangement,
         cell_size_pt=cell_size_pt,
         measurements=measurements,
+        matrix_region=matrix_region,
+        coupling_region=coupling_region,
+        label_edges=label_edges,
     )
 
 

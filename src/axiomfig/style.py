@@ -105,21 +105,35 @@ def mantel_link_width(mantel_r: float) -> float:
     return widths[index]
 
 
-def mantel_p_style(p_value: float) -> dict[str, object]:
+def mantel_p_style(p_value: float, *, mode: str = "canonical") -> dict[str, object]:
     """Map precomputed P to the canonical color and opacity tokens."""
     if not math.isfinite(p_value) or not 0.0 <= p_value <= 1.0:
         raise ValueError("p_value must be between 0 and 1")
     links = mantel_plot_contract()["links"]
     assert isinstance(links, Mapping)
-    breaks = tuple(float(value) for value in links["p_value_breaks"])
-    references = tuple(links["p_value_colors"])
-    index = (
-        0 if p_value < breaks[0] else 1 if p_value < breaks[1] else 2 if p_value < breaks[2] else 3
+    modes = links["p_value_modes"]
+    if mode not in modes:
+        raise ValueError(f"unknown Mantel P-value mode: {mode!r}")
+    selected = modes[mode]
+    breaks = tuple(float(value) for value in selected["breaks"])
+    references = tuple(selected["colors"])
+    index = next(
+        (index for index, boundary in enumerate(breaks) if p_value < boundary), len(breaks)
     )
     palette_name, color_name = references[index]
     color = palette_color(str(color_name), palette_name=str(palette_name))
-    alpha_key = "significant_alpha" if index < 3 else "nonsignificant_alpha"
-    return {"color": color, "alpha": float(links[alpha_key]), "significant": index < 3}
+    significant = index < len(breaks)
+    alpha_key = "significant_alpha" if significant else "nonsignificant_alpha"
+    if mode == "canonical":
+        labels = ("p<0.01", "0.01<=p<0.05", "p>=0.05")
+    else:
+        labels = ("p<0.001", "0.001<=p<0.01", "0.01<=p<0.05", "p>=0.05")
+    return {
+        "color": color,
+        "alpha": float(links[alpha_key]),
+        "significant": significant,
+        "bin": labels[index],
+    }
 
 
 def render_xcolor(contracts: Contracts | None = None) -> str:

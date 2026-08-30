@@ -203,11 +203,15 @@ def normalized_public_values(values: Mapping[str, object]) -> dict[str, object]:
         normalized["upper_ci"] = data.upper_ci
     normalized_values = {
         "matrix_type": composition.matrix.matrix_type,
+        "matrix_region": (
+            "lower_left" if composition.matrix.matrix_type == "lower" else "upper_right"
+        ),
         "diagonal": composition.matrix.diagonal,
         "order": composition.matrix.order,
         "hclust_method": composition.matrix.hclust_method,
         "nonsignificant_links": composition.coupling.nonsignificant,
         "link_width_mode": composition.coupling.width_mode,
+        "p_value_mode": composition.coupling.p_value_mode,
         "coupling": composition.coupling.enabled,
     }
     normalized_values.update(

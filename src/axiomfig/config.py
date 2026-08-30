@@ -207,15 +207,22 @@ def _validate_style(style: Mapping[str, Any]) -> None:
         raise ValueError("Mantel cell sides must be ordered and no larger than one cell")
     link_contract = mantel["links"]
     strength_breaks = tuple(float(value) for value in link_contract["strength_breaks"])
-    p_value_breaks = tuple(float(value) for value in link_contract["p_value_breaks"])
     widths = tuple(link_contract["widths_pt"])
-    color_references = tuple(link_contract["p_value_colors"])
     if strength_breaks != tuple(sorted(strength_breaks)) or len(strength_breaks) != 2:
         raise ValueError("Mantel strength breaks must contain two ordered values")
-    if p_value_breaks != tuple(sorted(p_value_breaks)) or len(p_value_breaks) != 3:
-        raise ValueError("Mantel P-value breaks must contain three ordered values")
-    if len(widths) != 3 or len(color_references) != 4:
-        raise ValueError("Mantel link widths and colors must match their bins")
+    if len(widths) != 3:
+        raise ValueError("Mantel link widths must match their bins")
+    p_value_modes = link_contract["p_value_modes"]
+    expected_bins = {"canonical": 3, "detailed": 4}
+    if set(p_value_modes) != set(expected_bins):
+        raise ValueError("Mantel P-value modes must contain canonical and detailed")
+    for mode, bin_count in expected_bins.items():
+        p_value_breaks = tuple(float(value) for value in p_value_modes[mode]["breaks"])
+        color_references = tuple(p_value_modes[mode]["colors"])
+        if p_value_breaks != tuple(sorted(p_value_breaks)) or len(p_value_breaks) != bin_count - 1:
+            raise ValueError(f"Mantel {mode} P-value breaks do not match their bins")
+        if len(color_references) != bin_count:
+            raise ValueError(f"Mantel {mode} P-value colors do not match their bins")
     for index, width in enumerate(widths):
         _finite_number(width, f"plots.mantel.links.widths_pt[{index}]", positive=True)
     if link_contract["nonsignificant_mode"] not in {"hide", "fade", "show"}:

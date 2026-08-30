@@ -131,8 +131,14 @@ plots:
       background_color: [axiom_neutral, AxiomWhite]
       missing_color: [axiom_classic, AxiomGrey]
       colormap: axiom_diverging
-      source_node_radius: 0.075
-      target_anchor_radius: 0.035
+      source_node_radius: 0.115
+      target_node_radius: 0.060
+      source_label_offset_pt: 12.0
+      source_label_max_width_pt: 42.0
+      source_node_fill_color: [axiom_neutral, AxiomWhite]
+      source_node_edge_color: [axiom_neutral, AxiomBlack]
+      target_node_fill_color: [axiom_neutral, AxiomWhite]
+      target_node_edge_color: [axiom_neutral, AxiomBlack]
       target_rail_offset: 0.0
       route_clearance: 0.34
       route_lane_spacing: 0.055
@@ -148,12 +154,20 @@ plots:
     links:
       strength_breaks: [0.25, 0.50]
       widths_pt: [0.8, 1.4, 2.2]
-      p_value_breaks: [0.001, 0.01, 0.05]
-      p_value_colors:
-        - [axiom_classic, AxiomOrange]
-        - [axiom_classic, AxiomGreen]
-        - [axiom_classic, AxiomPurple]
-        - [axiom_classic, AxiomGrey]
+      p_value_modes:
+        canonical:
+          breaks: [0.01, 0.05]
+          colors:
+            - [axiom_classic, AxiomOrange]
+            - [axiom_classic, AxiomGreen]
+            - [axiom_classic, AxiomGrey]
+        detailed:
+          breaks: [0.001, 0.01, 0.05]
+          colors:
+            - [axiom_classic, AxiomOrange]
+            - [axiom_classic, AxiomGreen]
+            - [axiom_classic, AxiomPurple]
+            - [axiom_classic, AxiomGrey]
       significant_alpha: 0.90
       nonsignificant_alpha: 0.24
       nonsignificant_mode: fade

@@ -67,8 +67,9 @@ def _cubic(vertices: np.ndarray, t: float) -> np.ndarray:
 
 def _route_samples(link: object, count: int = 49) -> np.ndarray:
     vertices = np.asarray(link.get_path().vertices, dtype=float)  # type: ignore[attr-defined]
-    values = np.linspace(0.04, 0.96, count)
-    data = np.asarray([_cubic(vertices, float(value)) for value in values])
+    segments = (vertices[index : index + 4] for index in range(0, len(vertices) - 1, 3))
+    values = np.linspace(0.04, 0.96, max(9, count // 2))
+    data = np.asarray([_cubic(segment, float(value)) for segment in segments for value in values])
     return link.get_transform().transform(data)  # type: ignore[attr-defined]
 
 
@@ -116,7 +117,7 @@ def _route_separation_pt(figure: object, links: list[object]) -> float:
     grouped: dict[str, list[np.ndarray]] = defaultdict(list)
     for link in links:
         vertices = np.asarray(link.get_path().vertices, dtype=float)  # type: ignore[attr-defined]
-        midpoint = _cubic(vertices, 0.5)
+        midpoint = _cubic(vertices[3:7], 0.5)
         grouped[str(link._axiomfig_source)].append(  # type: ignore[attr-defined]
             link.get_transform().transform(midpoint)  # type: ignore[attr-defined]
         )

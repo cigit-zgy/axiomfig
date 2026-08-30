@@ -6,7 +6,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import pytest
 from matplotlib.legend import Legend
-from matplotlib.patches import PathPatch, Rectangle
+from matplotlib.patches import Circle, PathPatch
 
 from axiomfig.config import build_rcparams, load_contracts
 from axiomfig.style import mantel_link_width, mantel_p_style
@@ -152,14 +152,13 @@ def test_mantel_style_bins_are_deterministic_at_exact_boundaries() -> None:
     ]
 
 
-def test_mantel_uses_one_lower_triangular_square_matrix() -> None:
+def test_mantel_uses_one_lower_triangular_circle_matrix() -> None:
     figure = _build(SPARSE)
     cells = _gid_children(figure, "axiomfig-mantel-glyph")
 
     assert len(cells) == 4 * 3 // 2
-    assert all(isinstance(cell, Rectangle) for cell in cells)
-    assert all(cell.get_width() == pytest.approx(cell.get_height()) for cell in cells)
-    assert len({round(cell.get_width(), 3) for cell in cells}) > 2
+    assert all(isinstance(cell, Circle) for cell in cells)
+    assert len({round(cell.radius, 3) for cell in cells}) > 2
     assert all(cell._axiomfig_row > cell._axiomfig_column for cell in cells)
     plt.close(figure)
 

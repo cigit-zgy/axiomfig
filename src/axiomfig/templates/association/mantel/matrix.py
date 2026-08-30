@@ -63,7 +63,7 @@ def _draw_labels(
     geometry: MantelGeometry,
     matrix_type: str,
 ) -> tuple[object, ...]:
-    """Use the matrix edges and target rail as the only variable-label anatomy."""
+    """Place variable identity only on the two edges adjacent to colored matrix cells."""
     bounds = geometry.bounds
     size = variable_label_size(len(labels))
     rendered: list[object] = []
@@ -83,6 +83,7 @@ def _draw_labels(
                 zorder=5,
             )
             artist.set_gid("axiomfig-mantel-variable-label")
+            artist._axiomfig_edge = "top"
             rendered.append(artist)
             _, y = cell_center(bounds, index, 0, matrix_type=matrix_type)
             artist = axis.text(
@@ -96,41 +97,37 @@ def _draw_labels(
                 zorder=5,
             )
             artist.set_gid("axiomfig-mantel-variable-label")
+            artist._axiomfig_edge = "left"
             rendered.append(artist)
         return tuple(rendered)
 
-    if not geometry.source_positions:
-        for index, label in enumerate(labels):
-            x = bounds.x0 + index + 0.5
-            top = axis.text(
-                x,
-                bounds.y1 + 0.10,
+    for index, label in enumerate(labels):
+        x, y = cell_center(bounds, index, index, matrix_type=matrix_type)
+        for edge in geometry.label_edges:
+            if edge == "left":
+                position = (bounds.x0 - 0.12, y)
+                options = {"ha": "right", "va": "center", "rotation": 0}
+            elif edge == "bottom":
+                position = (x, bounds.y0 - 0.12)
+                options = {"ha": "right", "va": "center", "rotation": 90}
+            elif edge == "top":
+                position = (x, bounds.y1 + 0.12)
+                options = {"ha": "left", "va": "center", "rotation": 90}
+            else:
+                position = (bounds.x1 + 0.12, y)
+                options = {"ha": "left", "va": "center", "rotation": 0}
+            artist = axis.text(
+                *position,
                 label,
-                ha="center",
-                va="bottom",
-                rotation=90,
+                rotation_mode="anchor",
                 fontsize=size,
                 clip_on=True,
                 zorder=5,
+                **options,
             )
-            top.set_gid("axiomfig-mantel-column-label")
-            rendered.append(top)
-
-    for label in labels:
-        anchor_x, anchor_y = geometry.target_rail.anchors[label]
-        x_text, y_text, va = anchor_x + 0.08, anchor_y + 0.10, "bottom"
-        rail_label = axis.text(
-            x_text,
-            y_text,
-            label,
-            ha="left",
-            va=va,
-            fontsize=size,
-            clip_on=True,
-            zorder=5,
-        )
-        rail_label.set_gid("axiomfig-mantel-variable-label")
-        rendered.append(rail_label)
+            artist.set_gid("axiomfig-mantel-variable-label")
+            artist._axiomfig_edge = edge
+            rendered.append(artist)
     return tuple(rendered)
 
 
@@ -156,8 +153,8 @@ def render_matrix_layer(
             0.96,
             facecolor="none",
             edgecolor=grid_color,
-            linewidth=FILL_EDGE_PT * 0.45,
-            alpha=0.36,
+            linewidth=FILL_EDGE_PT * 0.32,
+            alpha=0.24,
             zorder=1,
         )
         grid.set_gid("axiomfig-mantel-grid-cell")

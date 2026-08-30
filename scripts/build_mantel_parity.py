@@ -25,14 +25,34 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MANIFEST = ROOT / "references" / "mantel-r-parity.yaml"
 DEFAULT_GALLERY = ROOT / "gallery"
 REVIEW_SHEETS: dict[str, tuple[str, ...]] = {
-    "01-canonical-coupling.png": (
+    "canonical-orientations.png": (
+        "canonical/circle-lower-left",
+        "canonical/circle-upper-right",
         "linket/lower-coupling",
         "linket/upper-coupling",
-        "coupling/multi-source",
+    ),
+    "circle-vs-square.png": (
+        "canonical/circle-lower-left",
+        "canonical/square-lower-left",
+        "canonical/circle-upper-right",
+        "canonical/square-upper-right",
+        "corrplot/circle-full",
+        "corrplot/square-lower",
+    ),
+    "coupling-density.png": (
         "coupling/sparse",
         "coupling/dense",
+        "coupling/nonsignificant-fade",
+        "coupling/nonsignificant-hide",
     ),
-    "02-correlation-glyphs.png": (
+    "source-node-layouts.png": (
+        "canonical/circle-lower-left",
+        "canonical/circle-upper-right",
+        "coupling/multi-source-3",
+        "coupling/multi-source-4",
+        "coupling/dense",
+    ),
+    "r-grammar-overview.png": (
         "corrplot/circle-full",
         "corrplot/square-lower",
         "corrplot/ellipse-upper-aoe",
@@ -40,26 +60,12 @@ REVIEW_SHEETS: dict[str, tuple[str, ...]] = {
         "corrplot/shade-aoe",
         "corrplot/color-aoe",
         "corrplot/pie-aoe",
-    ),
-    "03-mixed-ordering.png": (
         "mixed/circle-ellipse",
         "mixed/square-number",
         "mixed/shade-pie",
-        "ordering/original",
-        "ordering/alphabet",
-        "ordering/aoe",
-        "ordering/fpc",
         "ordering/hclust-clusters",
-    ),
-    "04-significance-ci.png": (
-        "corrplot/circle-coefficients",
-        "significance/mark",
-        "significance/p-value",
-        "significance/blank",
         "significance/stars",
-        "confidence_interval/square",
         "confidence_interval/circle",
-        "confidence_interval/rect",
     ),
 }
 
@@ -172,24 +178,31 @@ def _statistical_arrays(matrix: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.
 
 def _dense_fixture() -> dict[str, object]:
     labels = (
-        "DO",
-        "NH4-N",
-        "NO3-N",
-        "TN",
-        "PO4-P",
-        "TP",
-        "COD",
+        "N",
+        "P",
+        "K",
+        "Ca",
+        "Mg",
+        "S",
+        "Al",
+        "Fe",
+        "Mn",
+        "Zn",
+        "Mo",
+        "Baresoil",
+        "Humdepth",
         "pH",
-        "Temp",
-        "ORP",
-        "Turbidity",
-        "Conductivity",
     )
     coordinates = np.linspace(-1.2, 1.2, len(labels))
     matrix = np.clip(np.cos(np.subtract.outer(coordinates, coordinates) * 1.65), -1.0, 1.0)
     np.fill_diagonal(matrix, 1.0)
-    sources = ("Surface", "Water column", "Sediment", "Biofilm")
-    target_ranges = (range(0, 6), range(2, 8), range(4, 10), range(6, 12))
+    sources = ("Spec01", "Spec02", "Spec03", "Spec04")
+    target_ranges = (
+        (0, 1, 2, 3, 4, 5, 6),
+        (2, 3, 4, 5, 6, 7, 8),
+        (5, 6, 7, 8, 9, 10, 11),
+        (7, 8, 9, 10, 11, 12, 13),
+    )
     links = tuple(
         {
             "source": source,

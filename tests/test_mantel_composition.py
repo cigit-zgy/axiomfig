@@ -60,7 +60,7 @@ def test_default_composition_has_explicit_independent_layers() -> None:
 
     assert composition.matrix.matrix_type == "lower"
     assert composition.matrix.diagonal == "hide"
-    assert [(layer.region, layer.method) for layer in composition.glyphs] == [("lower", "square")]
+    assert [(layer.region, layer.method) for layer in composition.glyphs] == [("lower", "circle")]
     assert composition.overlays == ()
     assert composition.coupling.enabled is True
     assert composition.coupling.nonsignificant == "fade"
@@ -126,7 +126,7 @@ def test_matrix_mask_is_independent_from_glyph_method(matrix_type: str, expected
     assert len(first_cells) == expected
 
 
-def test_lower_and_upper_target_rails_are_geometric_mirrors() -> None:
+def test_lower_and_upper_share_a_diagonal_interface_and_mirror_coupling_regions() -> None:
     labels = ("A", "B", "C", "D")
     sources = ("Source 1", "Source 2")
     lower = solve_geometry(labels, sources, matrix_type="lower")
@@ -135,23 +135,21 @@ def test_lower_and_upper_target_rails_are_geometric_mirrors() -> None:
     lower_points = np.asarray([lower.target_rail.anchors[label] for label in labels])
     upper_points = np.asarray([upper.target_rail.anchors[label] for label in labels])
     assert np.all(np.diff(lower_points[:, 0]) > 0.0)
-    assert np.all(np.diff(lower_points[:, 1]) > 0.0)
+    assert np.all(np.diff(lower_points[:, 1]) < 0.0)
     assert np.all(np.diff(upper_points[:, 0]) > 0.0)
     assert np.all(np.diff(upper_points[:, 1]) < 0.0)
     np.testing.assert_allclose(
-        lower_points[:, 0] - lower.bounds.x0,
-        upper_points[:, 0] - upper.bounds.x0,
+        lower_points - np.asarray((lower.bounds.x0, lower.bounds.y0)),
+        upper_points - np.asarray((upper.bounds.x0, upper.bounds.y0)),
     )
-    np.testing.assert_allclose(
-        lower_points[:, 1] - lower.bounds.y0,
-        upper.bounds.y1 - upper_points[:, 1],
-    )
-    assert lower.source_region.corner == "lower-left"
-    assert upper.source_region.corner == "upper-left"
+    assert lower.source_region.corner == "upper-right"
+    assert upper.source_region.corner == "lower-left"
+    assert lower.label_edges == ("left", "bottom")
+    assert upper.label_edges == ("top", "right")
 
 
 @pytest.mark.parametrize("matrix_type", ["lower", "upper"])
-def test_coupling_uses_one_rail_normal_cubic_and_exact_target_endpoints(
+def test_coupling_uses_two_triangle_fan_cubics_and_exact_target_endpoints(
     matrix_type: str,
 ) -> None:
     figure = build_template("association/mantel", **_case(6), matrix_type=matrix_type)
@@ -161,13 +159,8 @@ def test_coupling_uses_one_rail_normal_cubic_and_exact_target_endpoints(
 
     assert links
     for link in links:
-        assert tuple(link.get_path().codes) == (
-            Path.MOVETO,
-            Path.CURVE4,
-            Path.CURVE4,
-            Path.CURVE4,
-        )
-        assert link._axiomfig_route_model == "rail-normal-cubic"
+        assert tuple(link.get_path().codes) == (Path.MOVETO, *(Path.CURVE4,) * 6)
+        assert link._axiomfig_route_model == "triangle-fan-double-cubic"
         np.testing.assert_allclose(link.get_path().vertices[-1], anchors[link._axiomfig_target])
     plt.close(figure)
 
@@ -239,12 +232,20 @@ def test_pearson_and_mantel_colors_resolve_from_axiom_palette_tokens() -> None:
 
     expected = (
         (0.0005, "AxiomOrange"),
-        (0.005, "AxiomGreen"),
-        (0.025, "AxiomPurple"),
+        (0.005, "AxiomOrange"),
+        (0.025, "AxiomGreen"),
         (0.10, "AxiomGrey"),
     )
     for value, token in expected:
         assert mantel_p_style(value)["color"] == palette_color(token)
+    detailed = (
+        (0.0005, "AxiomOrange"),
+        (0.005, "AxiomGreen"),
+        (0.025, "AxiomPurple"),
+        (0.10, "AxiomGrey"),
+    )
+    for value, token in detailed:
+        assert mantel_p_style(value, mode="detailed")["color"] == palette_color(token)
 
 
 def test_mantel_engine_contains_no_raw_hex_or_matplotlib_rdbu_palette() -> None:

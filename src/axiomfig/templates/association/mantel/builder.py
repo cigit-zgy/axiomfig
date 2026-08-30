@@ -26,6 +26,7 @@ from axiomfig.templates.association.mantel.legends import (
     render_ornament_layer,
 )
 from axiomfig.templates.association.mantel.matrix import render_matrix_layer
+from axiomfig.templates.association.mantel.nodes import render_node_layer
 from axiomfig.templates.association.mantel.ordering import order_variables
 from axiomfig.templates.association.mantel.overlays import (
     render_statistical_layers,
@@ -141,6 +142,7 @@ def build_mantel(
     upper_ci: object | None = None,
     matrix_method: object | None = None,
     matrix_type: object | None = None,
+    matrix_region: object | None = None,
     diagonal: object | None = None,
     order: object | None = None,
     hclust_method: object | None = None,
@@ -154,6 +156,7 @@ def build_mantel(
     ci_mode: object | None = None,
     nonsignificant_links: object | None = None,
     link_width_mode: object | None = None,
+    p_value_mode: object | None = None,
     show_nonsignificant: object | None = None,
     coupling: object | None = None,
 ) -> Figure:
@@ -169,6 +172,7 @@ def build_mantel(
         ("upper_ci", upper_ci),
         ("matrix_method", matrix_method),
         ("matrix_type", matrix_type),
+        ("matrix_region", matrix_region),
         ("diagonal", diagonal),
         ("order", order),
         ("hclust_method", hclust_method),
@@ -182,6 +186,7 @@ def build_mantel(
         ("ci_mode", ci_mode),
         ("nonsignificant_links", nonsignificant_links),
         ("link_width_mode", link_width_mode),
+        ("p_value_mode", p_value_mode),
         ("show_nonsignificant", show_nonsignificant),
         ("coupling", coupling),
     ):
@@ -212,7 +217,7 @@ def build_mantel(
     figure.canvas.draw()
     renderer = figure.canvas.get_renderer()
     text = measure_text_extents(figure, renderer, ordered.labels, source_groups)
-    legends = measure_link_legends(axis)
+    legends = measure_link_legends(axis, composition.coupling.p_value_mode)
     scale = 72.0 / figure.dpi
     geometry = solve_geometry(
         ordered.labels,
@@ -264,17 +269,38 @@ def build_mantel(
         norm=norm,
         cluster_positions=cluster_positions,
     )
-    render_coupling_layer(axis, ordered.links, composition.coupling, geometry)
     axis.set_xlim(*geometry.x_limits)
     axis.set_ylim(*geometry.y_limits)
     axis.set_aspect("equal", adjustable="box")
     axis.set_axis_off()
+    label_obstacles = ()
+    if composition.coupling.enabled:
+        nodes = render_node_layer(
+            axis,
+            geometry,
+            source_labels=dict(zip(source_groups, text.source_labels, strict=True)),
+        )
+        figure.canvas.draw()
+        renderer = figure.canvas.get_renderer()
+        inverse = axis.transData.inverted()
+        label_obstacles = tuple(
+            inverse.transform_bbox(label.get_window_extent(renderer))
+            for label in nodes.source_labels
+        )
+    render_coupling_layer(
+        axis,
+        ordered.links,
+        composition.coupling,
+        geometry,
+        label_obstacles=label_obstacles,
+    )
     render_ornament_layer(
         axis,
         colorbar_axis,
         geometry,
         coupling_enabled=composition.coupling.enabled,
         colorbar=colorbar,
+        p_value_mode=composition.coupling.p_value_mode,
     )
     figure._axiomfig_mantel_composition = composition
     figure._axiomfig_mantel_geometry = geometry

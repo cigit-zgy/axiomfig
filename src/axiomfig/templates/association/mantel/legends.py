@@ -52,7 +52,7 @@ def render_colorbar(axis: Axes, colorbar_axis: Axes) -> Colorbar:
     return colorbar
 
 
-def _legend_handles() -> tuple[list[Line2D], list[Line2D]]:
+def _legend_handles(p_value_mode: str) -> tuple[list[Line2D], list[Line2D]]:
     strength = [
         Line2D(
             [],
@@ -63,21 +63,28 @@ def _legend_handles() -> tuple[list[Line2D], list[Line2D]]:
         )
         for value, label in ((0.1, "< 0.25"), (0.35, "0.25-0.50"), (0.65, ">= 0.50"))
     ]
-    p_values = [
-        Line2D(
-            [],
-            [],
-            color=str(mantel_p_style(value)["color"]),
-            alpha=(float(mantel_p_style(value)["alpha"]) if value < 0.05 else 0.62),
-            linewidth=MAIN_STROKE_PT * 1.8,
-            label=label,
-        )
-        for value, label in (
+    bins = (
+        ((0.005, "< 0.01"), (0.025, "0.01-0.05"), (0.10, ">= 0.05"))
+        if p_value_mode == "canonical"
+        else (
             (0.0005, "< 0.001"),
             (0.005, "0.001-0.01"),
             (0.025, "0.01-0.05"),
             (0.10, ">= 0.05"),
         )
+    )
+    p_values = [
+        Line2D(
+            [],
+            [],
+            color=str(mantel_p_style(value, mode=p_value_mode)["color"]),
+            alpha=(
+                float(mantel_p_style(value, mode=p_value_mode)["alpha"]) if value < 0.05 else 0.52
+            ),
+            linewidth=MAIN_STROKE_PT * 1.8,
+            label=label,
+        )
+        for value, label in bins
     ]
     return strength, p_values
 
@@ -88,8 +95,9 @@ def _create_link_legends(
     strength_anchor: tuple[float, float],
     p_anchor: tuple[float, float],
     transform: object,
+    p_value_mode: str,
 ) -> tuple[object, object]:
-    strength_handles, p_handles = _legend_handles()
+    strength_handles, p_handles = _legend_handles(p_value_mode)
     common = {
         "frameon": False,
         "handlelength": 1.0,
@@ -117,20 +125,21 @@ def _create_link_legends(
         loc="lower left",
         bbox_to_anchor=p_anchor,
         bbox_transform=transform,
-        ncol=2,
+        ncol=3 if p_value_mode == "canonical" else 2,
         **common,
     )
     p_legend.set_gid("axiomfig-mantel-legend")
     return strength, p_legend
 
 
-def measure_link_legends(axis: Axes) -> LegendExtents:
+def measure_link_legends(axis: Axes, p_value_mode: str = "canonical") -> LegendExtents:
     """Create the final legend grammar once, measure it, then remove probe artists."""
     strength, p_legend = _create_link_legends(
         axis,
         strength_anchor=(0.0, 0.0),
         p_anchor=(0.0, 0.0),
         transform=axis.transAxes,
+        p_value_mode=p_value_mode,
     )
     axis.figure.canvas.draw()
     renderer = axis.figure.canvas.get_renderer()
@@ -148,12 +157,18 @@ def measure_link_legends(axis: Axes) -> LegendExtents:
     return extents
 
 
-def render_link_legends(axis: Axes, geometry: MantelGeometry) -> tuple[object, object]:
+def render_link_legends(
+    axis: Axes,
+    geometry: MantelGeometry,
+    *,
+    p_value_mode: str,
+) -> tuple[object, object]:
     return _create_link_legends(
         axis,
         strength_anchor=geometry.strength_legend_anchor,
         p_anchor=geometry.p_legend_anchor,
         transform=axis.transData,
+        p_value_mode=p_value_mode,
     )
 
 
@@ -164,9 +179,12 @@ def render_ornament_layer(
     *,
     coupling_enabled: bool,
     colorbar: Colorbar | None = None,
+    p_value_mode: str = "canonical",
 ) -> OrnamentRenderResult:
     colorbar = colorbar or render_colorbar(axis, colorbar_axis)
-    legends = render_link_legends(axis, geometry) if coupling_enabled else ()
+    legends = (
+        render_link_legends(axis, geometry, p_value_mode=p_value_mode) if coupling_enabled else ()
+    )
     return OrnamentRenderResult(colorbar, legends)
 
 
