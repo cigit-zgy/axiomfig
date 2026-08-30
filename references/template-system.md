@@ -26,6 +26,10 @@ A template ID is `<family>/<variant>`, such as `scatter/parity`. Palette, marker
 figure width changes do not create variants. Multi-panel composition changes layout, not plot
 identity.
 
+The registered layout builders currently provide validated canonical composition fixtures. They
+are not external-data adapters and do not make nested panel Figure Intent user-operable. See the
+explicit PARTIAL status in `references/figure-intent.md`.
+
 ## Discovery and execution
 
 ```text

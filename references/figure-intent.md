@@ -56,3 +56,19 @@ axiomfig-intent intent.yaml --data observations.csv --output output/figure
 
 The command builds the selected canonical grammar, applies the geometry and typography contracts,
 renders PDF through the Tectonic wrapper, creates PNG from that PDF, and runs runtime validation.
+
+## Multi-panel composition status
+
+**Verdict: PARTIAL.** The four `layouts/*` IDs are reachable through a no-data Figure Intent and
+render deterministic canonical composition examples. They are not currently a user-data
+composition interface:
+
+- layout contracts declare `panels`, but layouts have no family data adapter;
+- `Figure Intent.data` maps roles to scalar CSV columns or JSON keys, not nested panel intents;
+- `axiomfig-intent` therefore cannot compose independent external datasets into user-specified
+  panels.
+
+A future composition design may add `panels` containing ordinary Figure Intents, but it must retain
+one public boundary, reuse the same panel schema, expose no visual coordinates, and preserve the
+deterministic layout engine. That public-schema change is deferred rather than implied by the
+current canonical layout builders.

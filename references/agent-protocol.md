@@ -56,3 +56,12 @@ Return the validated PDF and PNG plus minimal provenance: selected template, dir
 input mode, source file identity, and explicit scientific semantics. Distinguish user-supplied
 results from deterministic visual defaults. If input, runtime, or artifact validation fails, report
 the failure and required correction rather than presenting partial output as publication-ready.
+
+## Installation boundary
+
+AxiomFig intentionally has two installable concerns. A Skill checkout owns `SKILL.md`, references,
+recommendation knowledge, examples, and Agent routing. The Python wheel owns the deterministic
+runtime, CLI, registry, family contracts, builders, adapters, fonts, styles, and LaTeX resources.
+Installing the wheel alone does not install the Agent Skill documents; an Agent needs the Skill
+checkout as well as an available runtime. Do not duplicate all references into the wheel or make
+the runtime depend on a repository root.

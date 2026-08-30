@@ -14,7 +14,13 @@ geometry, typography, color, ornaments, and validation out of the prompt.
 
 ## Installation
 
-AxiomFig requires Python 3.11 or 3.12, Tectonic, and Poppler. On macOS:
+AxiomFig has two deliberate parts: this repository is the Agent Skill (`SKILL.md`, references, and
+recommendation knowledge), while the Python package is the deterministic runtime and CLI. A pip
+install alone does not install the Skill documents. Keep a Skill checkout available to the Agent
+and install the runtime into its execution environment.
+
+AxiomFig requires Python 3.11 or 3.12, Tectonic, and Poppler. On macOS, the immutable v1.0.0 runtime
+can be installed with:
 
 ```bash
 brew install tectonic poppler
@@ -116,8 +122,9 @@ See [Typography](references/typography.md) and [LaTeX syntax](references/latex-c
 
 ## Agent Skill usage
 
-An Agent reads [SKILL.md](SKILL.md), the small registry, and one selected family contract. If the
-scientific mapping is unclear, it reads only the routed topic under
+An Agent follows the [execution protocol](references/agent-protocol.md): inspect the request and
+data, resolve scientific ambiguity, then read the small registry and one selected family contract.
+If recommendation help is needed, it reads only the routed topic under
 `references/template-knowledge/`. Normal use does not require reading Python builders.
 
 ## Development
