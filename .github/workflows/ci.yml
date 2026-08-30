@@ -34,7 +34,9 @@ jobs:
           ruff check .
           ruff format --check .
       - name: Validate Agent Skill
-        run: python scripts/validate_skill.py
+        run: |
+          python scripts/validate_skill.py
+          python -m tests.evaluation.agent_protocol
       - name: Run fast deterministic tests
         run: python -m pytest -q -m "not e2e"
       - name: Evaluate registry and Figure Intent routing

@@ -1,0 +1,376 @@
+version: 1
+description: >-
+  Specification corpus for future Agent evaluation. Structural validation proves coverage and
+  contract consistency only; these prompts are not executed against an LLM in this repository.
+cases:
+  - id: R01-line-single
+    request: Plot concentration against time as one line from the time and concentration columns.
+    classes: [implicit_template, direct_data, column_mapping]
+    available_data: {format: csv, columns: [x, y]}
+    expected: {action: render, template: line.single, input_mode: direct, required_roles: [x, y]}
+  - id: R02-line-multi
+    request: Show the three treatment trajectories in one multi-series line figure.
+    classes: [implicit_template, direct_data]
+    available_data: {format: json, keys: [x, series_values, series_labels]}
+    expected: {action: render, template: line.multi, input_mode: direct, required_roles: [x, series_values, series_labels]}
+  - id: R03-line-marker
+    request: Use the registered line-marker template for these ordered measurements.
+    classes: [explicit_template, direct_data]
+    available_data: {format: csv, columns: [x, y]}
+    expected: {action: render, template: line.marker, input_mode: direct, required_roles: [x, y]}
+  - id: R04-line-confidence-band
+    request: Plot the supplied estimate and 95 percent confidence limits over time.
+    classes: [implicit_template, precomputed_result]
+    available_data: {format: csv, columns: [x, estimate, lower, upper, uncertainty_type]}
+    expected: {action: render, template: line.confidence_band, input_mode: precomputed, required_roles: [x, estimate, lower, upper, uncertainty_type]}
+  - id: R05-line-errorbar
+    request: Plot the supplied means with standard-error error bars.
+    classes: [implicit_template, precomputed_result]
+    available_data: {format: csv, columns: [x, estimate, error, uncertainty_type]}
+    expected: {action: render, template: line.errorbar, input_mode: precomputed, required_roles: [x, estimate, error, uncertainty_type]}
+  - id: R06-line-step
+    request: Render these ordered event values using line.step.
+    classes: [explicit_template, direct_data]
+    available_data: {format: csv, columns: [x, y]}
+    expected: {action: render, template: line.step, input_mode: direct, required_roles: [x, y]}
+  - id: R07-line-area
+    request: Show cumulative production as a filled area from the zero baseline.
+    classes: [implicit_template, direct_data]
+    available_data: {format: csv, columns: [x, y]}
+    expected: {action: render, template: line.area, input_mode: direct, required_roles: [x, y]}
+
+  - id: R08-scatter-simple
+    request: Show the relationship between temperature and reaction rate.
+    classes: [implicit_template, direct_data, column_mapping]
+    available_data: {format: csv, columns: [x, y]}
+    expected: {action: render, template: scatter.simple, input_mode: direct, required_roles: [x, y]}
+  - id: R09-scatter-grouped
+    request: Plot x versus y and distinguish the supplied treatment groups.
+    classes: [implicit_template, direct_data]
+    available_data: {format: csv, columns: [x, y, group]}
+    expected: {action: render, template: scatter.grouped, input_mode: direct, required_roles: [x, y, group]}
+  - id: R10-scatter-regression
+    request: Display observations and the already fitted regression values.
+    classes: [implicit_template, precomputed_result]
+    available_data: {format: csv, columns: [x, y, fitted]}
+    expected: {action: render, template: scatter.regression, input_mode: precomputed, required_roles: [x, y, fitted]}
+  - id: R11-scatter-parity
+    request: Make a parity plot of observed versus predicted values.
+    classes: [implicit_template, direct_data, column_mapping]
+    available_data: {format: csv, columns: [observed, predicted]}
+    expected: {action: render, template: scatter.parity, input_mode: direct, required_roles: [observed, predicted]}
+  - id: R12-scatter-bubble
+    request: Plot abundance against diversity with population encoded by bubble area.
+    classes: [implicit_template, direct_data]
+    available_data: {format: csv, columns: [x, y, size]}
+    expected: {action: render, template: scatter.bubble, input_mode: direct, required_roles: [x, y, size]}
+  - id: R13-scatter-hexbin
+    request: Use a hexbin plot for these dense x and y observations.
+    classes: [explicit_template, direct_data]
+    available_data: {format: csv, columns: [x, y]}
+    expected: {action: render, template: scatter.hexbin, input_mode: direct, required_roles: [x, y]}
+
+  - id: R14-bar-vertical
+    request: Compare the category values with vertical bars.
+    classes: [implicit_template, direct_data]
+    available_data: {format: csv, columns: [category, value]}
+    expected: {action: render, template: bar.vertical, input_mode: direct, required_roles: [category, value]}
+  - id: R15-bar-horizontal
+    request: Use horizontal bars for the long category names and their values.
+    classes: [implicit_template, direct_data]
+    available_data: {format: csv, columns: [category, value]}
+    expected: {action: render, template: bar.horizontal, input_mode: direct, required_roles: [category, value]}
+  - id: R16-bar-grouped
+    request: Compare each treatment across sites with grouped bars.
+    classes: [implicit_template, direct_data]
+    available_data: {format: csv, columns: [category, value, group]}
+    expected: {action: render, template: bar.grouped, input_mode: direct, required_roles: [category, value, group]}
+  - id: R17-bar-stacked
+    request: Show each category total split by measured component.
+    classes: [implicit_template, direct_data]
+    available_data: {format: csv, columns: [category, value, component]}
+    expected: {action: render, template: bar.stacked, input_mode: direct, required_roles: [category, value, component]}
+  - id: R18-bar-normalized
+    request: Show component proportions within each category using normalized stacked bars.
+    classes: [explicit_template, direct_data]
+    available_data: {format: csv, columns: [category, value, component, normalization]}
+    expected: {action: render, template: bar.normalized_stacked, input_mode: direct, required_roles: [category, value, component, normalization]}
+  - id: R19-bar-dot
+    request: Make a categorical dot chart for these category values.
+    classes: [implicit_template, direct_data]
+    available_data: {format: csv, columns: [category, value]}
+    expected: {action: render, template: bar.dot, input_mode: direct, required_roles: [category, value]}
+
+  - id: R20-distribution-histogram
+    request: Show the frequency distribution of all measured concentrations.
+    classes: [implicit_template, direct_data]
+    available_data: {format: csv, columns: [value]}
+    expected: {action: render, template: distribution.histogram, input_mode: direct, required_roles: [value]}
+  - id: R21-distribution-density
+    request: Plot the already computed density curve.
+    classes: [implicit_template, precomputed_result]
+    available_data: {format: csv, columns: [x, density]}
+    expected: {action: render, template: distribution.density, input_mode: precomputed, required_roles: [x, density]}
+  - id: R22-distribution-ecdf
+    request: Display the empirical cumulative distribution of the observations.
+    classes: [implicit_template, direct_data]
+    available_data: {format: csv, columns: [value]}
+    expected: {action: render, template: distribution.ecdf, input_mode: direct, required_roles: [value]}
+  - id: R23-distribution-box
+    request: Compare the measured distributions by category with boxplots.
+    classes: [implicit_template, direct_data]
+    available_data: {format: csv, columns: [value, category]}
+    expected: {action: render, template: distribution.box, input_mode: direct, required_roles: [value, category]}
+  - id: R24-distribution-violin
+    request: Show the full response distributions for the three groups as violins.
+    classes: [implicit_template, direct_data]
+    available_data: {format: csv, columns: [value, category]}
+    expected: {action: render, template: distribution.violin, input_mode: direct, required_roles: [value, category]}
+  - id: R25-distribution-box-violin
+    request: Combine violin shapes with box summaries for each treatment.
+    classes: [implicit_template, direct_data]
+    available_data: {format: csv, columns: [value, category]}
+    expected: {action: render, template: distribution.box_violin, input_mode: direct, required_roles: [value, category]}
+  - id: R26-distribution-strip
+    request: Show every observation by category with a strip plot.
+    classes: [implicit_template, direct_data]
+    available_data: {format: csv, columns: [value, category]}
+    expected: {action: render, template: distribution.strip, input_mode: direct, required_roles: [value, category]}
+  - id: R27-distribution-raincloud
+    request: Use a raincloud view for the complete grouped observations.
+    classes: [explicit_template, direct_data]
+    available_data: {format: csv, columns: [value, category]}
+    expected: {action: render, template: distribution.raincloud, input_mode: direct, required_roles: [value, category]}
+
+  - id: R28-heatmap-basic
+    request: Render this positive concentration matrix with its row and column labels.
+    classes: [implicit_template, direct_data]
+    available_data: {format: json, keys: [matrix, row_labels, column_labels, color_semantics]}
+    expected: {action: render, template: heatmap.basic, input_mode: direct, required_roles: [matrix, row_labels, column_labels, color_semantics]}
+  - id: R29-heatmap-correlation
+    request: Plot the supplied signed correlation matrix centered at zero.
+    classes: [implicit_template, precomputed_result]
+    available_data: {format: json, keys: [matrix, labels, center]}
+    expected: {action: render, template: heatmap.correlation, input_mode: precomputed, required_roles: [matrix, labels, center]}
+  - id: R30-heatmap-clustered
+    request: Display the matrix using the supplied row and column clustering orders.
+    classes: [implicit_template, precomputed_result]
+    available_data: {format: json, keys: [matrix, row_labels, column_labels, row_order, column_order, color_semantics]}
+    expected: {action: render, template: heatmap.clustered, input_mode: precomputed, required_roles: [matrix, row_labels, column_labels, row_order, column_order, color_semantics]}
+  - id: R31-heatmap-confusion
+    request: Visualize this precomputed confusion matrix with the class names.
+    classes: [implicit_template, precomputed_result]
+    available_data: {format: json, keys: [matrix, class_labels]}
+    expected: {action: render, template: heatmap.confusion_matrix, input_mode: precomputed, required_roles: [matrix, class_labels]}
+  - id: R32-heatmap-annotated
+    request: Render an annotated matrix using the supplied values and labels.
+    classes: [explicit_template, direct_data]
+    available_data: {format: json, keys: [matrix, row_labels, column_labels, color_semantics, annotations]}
+    expected: {action: render, template: heatmap.annotated, input_mode: direct, required_roles: [matrix, row_labels, column_labels, color_semantics, annotations]}
+
+  - id: R33-estimation-forest
+    request: Show these odds ratios and supplied 95 percent confidence intervals as a forest plot.
+    classes: [implicit_template, precomputed_result]
+    available_data: {format: csv, columns: [label, estimate, interval, uncertainty_type]}
+    expected: {action: render, template: estimation.forest, input_mode: precomputed, required_roles: [label, estimate, interval, uncertainty_type]}
+  - id: R34-estimation-point-interval
+    request: Plot each estimate with its explicitly labeled credible interval.
+    classes: [implicit_template, precomputed_result]
+    available_data: {format: csv, columns: [label, estimate, interval, uncertainty_type]}
+    expected: {action: render, template: estimation.point_interval, input_mode: precomputed, required_roles: [label, estimate, interval, uncertainty_type]}
+  - id: R35-estimation-coefficient
+    request: Compare the supplied model coefficients and confidence intervals.
+    classes: [implicit_template, precomputed_result]
+    available_data: {format: csv, columns: [term, estimate, interval, uncertainty_type]}
+    expected: {action: render, template: estimation.coefficient, input_mode: precomputed, required_roles: [term, estimate, interval, uncertainty_type]}
+
+  - id: R36-diagnostics-residual
+    request: Plot the precomputed residuals against fitted values.
+    classes: [implicit_template, precomputed_result]
+    available_data: {format: csv, columns: [fitted, residual]}
+    expected: {action: render, template: diagnostics.residual, input_mode: precomputed, required_roles: [fitted, residual]}
+  - id: R37-diagnostics-bland-altman
+    request: Make a Bland-Altman plot from the supplied means, differences, and agreement definition.
+    classes: [explicit_template, precomputed_result]
+    available_data: {format: csv, columns: [mean, difference, agreement_type]}
+    expected: {action: render, template: diagnostics.bland_altman, input_mode: precomputed, required_roles: [mean, difference, agreement_type]}
+  - id: R38-diagnostics-calibration
+    request: Show predicted probability against observed frequency for the calibration bins.
+    classes: [implicit_template, precomputed_result]
+    available_data: {format: csv, columns: [predicted_probability, observed_frequency]}
+    expected: {action: render, template: diagnostics.calibration, input_mode: precomputed, required_roles: [predicted_probability, observed_frequency]}
+  - id: R39-diagnostics-roc
+    request: Plot the supplied false-positive and true-positive rates as an ROC curve.
+    classes: [explicit_template, precomputed_result]
+    available_data: {format: csv, columns: [false_positive_rate, true_positive_rate]}
+    expected: {action: render, template: diagnostics.roc, input_mode: precomputed, required_roles: [false_positive_rate, true_positive_rate]}
+  - id: R40-diagnostics-pr
+    request: Plot the precomputed precision-recall curve.
+    classes: [implicit_template, precomputed_result]
+    available_data: {format: csv, columns: [recall, precision]}
+    expected: {action: render, template: diagnostics.precision_recall, input_mode: precomputed, required_roles: [recall, precision]}
+  - id: R41-diagnostics-learning
+    request: Compare training and validation metrics over the supplied iterations.
+    classes: [implicit_template, precomputed_result]
+    available_data: {format: csv, columns: [iteration, metric, series]}
+    expected: {action: render, template: diagnostics.learning_curve, input_mode: precomputed, required_roles: [iteration, metric, series]}
+  - id: R42-diagnostics-qq
+    request: Make a Q-Q plot from the theoretical and sample quantiles for a normal reference.
+    classes: [implicit_template, precomputed_result]
+    available_data: {format: csv, columns: [theoretical_quantile, sample_quantile, reference_distribution]}
+    expected: {action: render, template: diagnostics.qq, input_mode: precomputed, required_roles: [theoretical_quantile, sample_quantile, reference_distribution]}
+  - id: R43-diagnostics-importance
+    request: Show the supplied permutation importance for each feature.
+    classes: [implicit_template, precomputed_result]
+    available_data: {format: csv, columns: [feature, importance, importance_type]}
+    expected: {action: render, template: diagnostics.feature_importance, input_mode: precomputed, required_roles: [feature, importance, importance_type]}
+
+  - id: R44-ordination-pca-scores
+    request: Plot these precomputed PCA scores and explained variance by treatment.
+    classes: [implicit_template, precomputed_result]
+    available_data: {format: json, keys: [coordinates, explained_variance]}
+    expected: {action: render, template: ordination.pca_scores, input_mode: precomputed, required_roles: [coordinates, explained_variance]}
+  - id: R45-ordination-pca-biplot
+    request: Make a PCA biplot from the supplied scores, loadings, and explained variance.
+    classes: [explicit_template, precomputed_result]
+    available_data: {format: json, keys: [coordinates, loadings, explained_variance]}
+    expected: {action: render, template: ordination.pca_biplot, input_mode: precomputed, required_roles: [coordinates, loadings, explained_variance]}
+  - id: R46-ordination-pcoa
+    request: Plot the supplied PCoA coordinates using the named distance metric.
+    classes: [implicit_template, precomputed_result]
+    available_data: {format: json, keys: [coordinates, explained_variance, distance_metric]}
+    expected: {action: render, template: ordination.pcoa, input_mode: precomputed, required_roles: [coordinates, explained_variance, distance_metric]}
+  - id: R47-ordination-nmds
+    request: Display the NMDS coordinates with their stress and distance metric.
+    classes: [implicit_template, precomputed_result]
+    available_data: {format: json, keys: [coordinates, stress, distance_metric]}
+    expected: {action: render, template: ordination.nmds, input_mode: precomputed, required_roles: [coordinates, stress, distance_metric]}
+
+  - id: R48-association-mantel
+    request: Here are the correlation matrix and Mantel r and p results; make the Mantel figure.
+    classes: [implicit_template, precomputed_result]
+    available_data: {format: json, keys: [correlation_matrix, labels, links]}
+    expected: {action: render, template: association.mantel, input_mode: precomputed, required_roles: [correlation_matrix, labels, links]}
+  - id: R49-association-network
+    request: Visualize this precomputed correlation network with weighted edges.
+    classes: [implicit_template, precomputed_result]
+    available_data: {format: json, keys: [nodes, edges, edge_weight]}
+    expected: {action: render, template: association.correlation_network, input_mode: precomputed, required_roles: [nodes, edges, edge_weight]}
+  - id: R50-flow-sankey
+    request: Show material flow from source to target using the supplied amounts.
+    classes: [implicit_template, direct_data, geometry]
+    available_data: {format: csv, columns: [source, target, value]}
+    expected: {action: render, template: flow.sankey, input_mode: direct, required_roles: [source, target, value], geometry: onehalf-column}
+  - id: R51-field-contour
+    request: Draw a sequential contour field from this x-y grid and z matrix.
+    classes: [implicit_template, direct_data]
+    available_data: {format: json, keys: [x_grid, y_grid, z, color_semantics]}
+    expected: {action: render, template: field.contour, input_mode: direct, required_roles: [x_grid, y_grid, z, color_semantics]}
+  - id: R52-field-quiver
+    request: Display this vector field from the supplied x, y, u, and v arrays.
+    classes: [implicit_template, direct_data]
+    available_data: {format: json, keys: [x, y, u, v, color_semantics]}
+    expected: {action: render, template: field.quiver, input_mode: direct, required_roles: [x, y, u, v, color_semantics]}
+  - id: R53-omics-volcano
+    request: Plot the supplied effect sizes and adjusted p-values with these thresholds.
+    classes: [implicit_template, precomputed_result]
+    available_data: {format: csv, columns: [effect_size, adjusted_p_value, significance_threshold, effect_threshold]}
+    expected: {action: render, template: omics.volcano, input_mode: precomputed, required_roles: [effect_size, adjusted_p_value, significance_threshold, effect_threshold]}
+  - id: R54-omics-enrichment
+    request: Make an enrichment dot plot from the supplied terms, enrichment, significance, and size.
+    classes: [implicit_template, precomputed_result]
+    available_data: {format: csv, columns: [term, enrichment, significance, size]}
+    expected: {action: render, template: omics.enrichment_dot, input_mode: precomputed, required_roles: [term, enrichment, significance, size]}
+  - id: R55-survival-km
+    request: Plot the supplied Kaplan-Meier survival probabilities in serif typography.
+    classes: [explicit_template, precomputed_result, typography]
+    available_data: {format: csv, columns: [time, survival_probability]}
+    expected: {action: render, template: survival.kaplan_meier, input_mode: precomputed, required_roles: [time, survival_probability], typography: serif}
+
+  - id: C01-unknown-uncertainty
+    request: Add error bars to these estimates; the error column meaning is not documented.
+    classes: [ambiguous, forbidden_inference]
+    available_data: {format: csv, columns: [x, estimate, error]}
+    expected: {action: clarify, template: line.errorbar, input_mode: precomputed, required_roles: [x, estimate, error, uncertainty_type], clarification_reason: Ask whether error means SD, SE, CI, or another interval.}
+  - id: C02-ambiguous-parity-columns
+    request: Make a parity plot using one of the two measurement columns and one of the two model columns.
+    classes: [ambiguous, column_mapping]
+    available_data: {format: csv, columns: [measured_a, measured_b, model_a, model_b]}
+    expected: {action: clarify, template: scatter.parity, input_mode: direct, required_roles: [observed, predicted], clarification_reason: Several observed and predicted mappings are plausible.}
+  - id: C03-distribution-or-summary
+    request: Compare the three treatments, but I have not said whether individual observations matter.
+    classes: [ambiguous, forbidden_inference]
+    available_data: {format: csv, columns: [treatment, response]}
+    expected: {action: clarify, template: distribution.violin, input_mode: direct, required_roles: [value, category], clarification_reason: Complete distributions and summary magnitudes answer different questions.}
+  - id: C04-unsigned-matrix-semantics
+    request: Make a heatmap of this matrix; the values may be signed deviations or positive concentrations.
+    classes: [ambiguous, forbidden_inference]
+    available_data: {format: json, keys: [matrix, row_labels, column_labels]}
+    expected: {action: clarify, template: heatmap.basic, input_mode: direct, required_roles: [matrix, row_labels, column_labels, color_semantics], clarification_reason: Sequential and diverging color semantics are scientifically different.}
+  - id: C05-survival-group-mapping
+    request: Plot these survival curves, but two columns could identify the treatment group.
+    classes: [ambiguous, column_mapping]
+    available_data: {format: csv, columns: [time, survival_probability, arm, cohort]}
+    expected: {action: clarify, template: survival.kaplan_meier, input_mode: precomputed, required_roles: [time, survival_probability], clarification_reason: The grouping role is materially ambiguous.}
+  - id: C06-grouped-bar-mapping
+    request: Make grouped bars from value, site, treatment, and season; choose the grouping for me.
+    classes: [ambiguous, column_mapping, forbidden_inference]
+    available_data: {format: csv, columns: [value, site, treatment, season]}
+    expected: {action: clarify, template: bar.grouped, input_mode: direct, required_roles: [category, value, group], clarification_reason: Multiple category and group mappings are scientifically plausible.}
+
+  - id: P01-pca-needs-results
+    request: Compute a PCA biplot from my raw abundance table and draw it.
+    classes: [missing_precomputed, forbidden_inference]
+    available_data: {format: csv, columns: [sample, feature_1, feature_2, feature_3]}
+    expected: {action: require_precomputed, template: ordination.pca_biplot, input_mode: precomputed, required_roles: [coordinates, loadings, explained_variance], reason: AxiomFig visualizes but does not compute PCA scores or loadings.}
+  - id: P02-mantel-needs-results
+    request: Calculate a Mantel test from these two distance matrices and plot the result.
+    classes: [missing_precomputed, forbidden_inference]
+    available_data: {format: json, keys: [distance_matrix_a, distance_matrix_b]}
+    expected: {action: require_precomputed, template: association.mantel, input_mode: precomputed, required_roles: [correlation_matrix, labels, links], reason: Mantel r and p values must be computed upstream.}
+  - id: P03-survival-needs-results
+    request: Fit Kaplan-Meier curves from raw event times and censoring flags and plot them.
+    classes: [missing_precomputed, forbidden_inference]
+    available_data: {format: csv, columns: [duration, event, group]}
+    expected: {action: require_precomputed, template: survival.kaplan_meier, input_mode: precomputed, required_roles: [time, survival_probability], reason: Visualization-ready survival probabilities must be supplied.}
+  - id: P04-clustering-needs-results
+    request: Cluster this matrix and make a clustered heatmap.
+    classes: [missing_precomputed, forbidden_inference]
+    available_data: {format: json, keys: [matrix, row_labels, column_labels]}
+    expected: {action: require_precomputed, template: heatmap.clustered, input_mode: precomputed, required_roles: [matrix, row_labels, column_labels, row_order, column_order, color_semantics], reason: Row and column orders must be computed upstream.}
+  - id: P05-roc-needs-results
+    request: Train a classifier from these predictors and produce its ROC curve.
+    classes: [missing_precomputed, forbidden_inference]
+    available_data: {format: csv, columns: [outcome, predictor_1, predictor_2]}
+    expected: {action: require_precomputed, template: diagnostics.roc, input_mode: precomputed, required_roles: [false_positive_rate, true_positive_rate], reason: AxiomFig does not train models or derive ROC coordinates.}
+
+  - id: U01-composition-not-operable
+    request: Combine four independent datasets into a 2 by 2 Figure 2 through one Figure Intent.
+    classes: [composition, unsupported_domain]
+    available_data: {format: json, keys: [panel_a, panel_b, panel_c, panel_d]}
+    expected: {action: unsupported, template: layouts.grid_2x2, reason: Nested panel Figure Intents are not currently accepted by the public Figure Intent path.}
+  - id: U02-interactive-dashboard
+    request: Build an interactive linked dashboard with brushing and hover tooltips.
+    classes: [unsupported_domain]
+    available_data: {format: csv, columns: [x, y]}
+    expected: {action: unsupported, reason: Interactive dashboard systems are outside AxiomFig scope.}
+  - id: U03-3d-engine
+    request: Create an interactive rotatable 3D molecular surface.
+    classes: [unsupported_domain]
+    available_data: {format: json, keys: [vertices, faces]}
+    expected: {action: unsupported, reason: Interactive 3D rendering is outside AxiomFig scope.}
+  - id: U04-microscopy-segmentation
+    request: Segment the cells in these microscopy images and report morphology.
+    classes: [unsupported_domain]
+    available_data: {format: tiff, keys: [images]}
+    expected: {action: unsupported, reason: Image processing and scientific analysis are outside AxiomFig.}
+  - id: U05-chemical-structure
+    request: Draw a publication chemical structure from this SMILES string.
+    classes: [unsupported_domain]
+    available_data: {format: text, keys: [smiles]}
+    expected: {action: unsupported, reason: Chemical structure drawing is outside AxiomFig scope.}
+  - id: U06-invalid-vague-request
+    request: Make something beautiful; no scientific objective or data are available.
+    classes: [invalid, ambiguous]
+    available_data: {format: none, keys: []}
+    expected: {action: unsupported, reason: No scientific relationship, data, or result is available to specify a figure.}
