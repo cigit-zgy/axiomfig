@@ -114,7 +114,10 @@ def test_source_layout_scales_without_collapsing(
         labels,
         sources,
         matrix_type=matrix_type,
-        measurements=MantelLayoutMeasurements.for_test(source_width_pt=38.0),
+        measurements=MantelLayoutMeasurements.for_test(
+            source_width_pt=38.0,
+            available_height_pt=320.0,
+        ),
     )
 
     positions = np.asarray(tuple(geometry.source_positions.values()), dtype=float)

@@ -4,13 +4,20 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Mapping
+from dataclasses import replace
 
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import Normalize
 from matplotlib.figure import Figure
 
-from axiomfig.layout import add_panel_axes, create_panel_grid, solve_panel_layout
+from axiomfig.layout import (
+    add_panel_axes,
+    create_panel_grid,
+    register_post_layout_callback,
+    register_vertical_colorbar_layout,
+    solve_panel_layout,
+)
 from axiomfig.style import axiom_colormap, mantel_plot_contract
 from axiomfig.templates.association.mantel.coupling import render_coupling_layer
 from axiomfig.templates.association.mantel.data import MantelData, normalize_inputs
@@ -18,6 +25,7 @@ from axiomfig.templates.association.mantel.geometry import (
     MantelLayoutMeasurements,
     measure_text_extents,
     solve_geometry,
+    solve_source_rail,
 )
 from axiomfig.templates.association.mantel.glyphs import render_glyph_layer
 from axiomfig.templates.association.mantel.legends import (
@@ -133,6 +141,70 @@ def _source_groups(data: MantelData) -> tuple[str, ...]:
     )
 
 
+def _artists(figure: Figure, gid: str) -> tuple[object, ...]:
+    return tuple(
+        artist for axis in figure.axes for artist in axis.get_children() if artist.get_gid() == gid
+    )
+
+
+def _reflow_mantel_after_layout(figure: Figure) -> None:
+    """Reapply physical source packing after the final registered panel solve."""
+    geometry = figure._axiomfig_mantel_geometry
+    source_groups = figure._axiomfig_mantel_source_groups
+    if not source_groups:
+        return
+    axis = figure.axes[0]
+    figure.canvas.draw()
+    renderer = figure.canvas.get_renderer()
+    labels = {
+        label._axiomfig_source: label for label in _artists(figure, "axiomfig-mantel-source-label")
+    }
+    scale = 72.0 / figure.dpi
+    source_widths = tuple(
+        labels[source].get_window_extent(renderer).width * scale for source in source_groups
+    )
+    source_heights = tuple(
+        labels[source].get_window_extent(renderer).height * scale for source in source_groups
+    )
+    lower_left, upper_right = axis.transData.transform(
+        (
+            (geometry.bounds.x0, geometry.bounds.y0),
+            (geometry.bounds.x1, geometry.bounds.y1),
+        )
+    )
+    cell_size_pt = abs(float(upper_right[0] - lower_left[0])) * scale / geometry.bounds.size
+    source_rail = solve_source_rail(
+        geometry.bounds,
+        source_groups,
+        matrix_type=geometry.matrix_type,
+        cell_size_pt=cell_size_pt,
+        source_widths_pt=source_widths,
+        source_heights_pt=source_heights,
+    )
+    updated = replace(geometry, source_rail=source_rail, cell_size_pt=cell_size_pt)
+    source_nodes = {
+        node._axiomfig_source: node for node in _artists(figure, "axiomfig-mantel-source-node")
+    }
+    for source in source_groups:
+        center = updated.source_positions[source]
+        source_nodes[source].set_offsets([center])
+        label = labels[source]
+        label.xy = center
+        label.set_position(updated.source_rail.label_offsets_pt[source])
+        horizontal, vertical = updated.source_rail.label_alignments[source]
+        label.set_horizontalalignment(horizontal)
+        label.set_verticalalignment(vertical)
+    for link in _artists(figure, "axiomfig-mantel-link"):
+        link.remove()
+    render_coupling_layer(
+        axis,
+        figure._axiomfig_mantel_ordered_data.links,
+        figure._axiomfig_mantel_composition.coupling,
+        updated,
+    )
+    figure._axiomfig_mantel_geometry = updated
+
+
 def build_mantel(
     correlation_matrix: object | None = None,
     labels: object | None = None,
@@ -230,6 +302,8 @@ def build_mantel(
             variable_height_pt=text.variable_height_pt,
             source_width_pt=text.source_width_pt,
             source_height_pt=text.source_height_pt,
+            source_widths_pt=text.source_widths_pt,
+            source_heights_pt=text.source_heights_pt,
             strength_legend_width_pt=legends.strength_width_pt,
             strength_legend_height_pt=legends.strength_height_pt,
             p_legend_width_pt=legends.p_width_pt,
@@ -273,6 +347,12 @@ def build_mantel(
     axis.set_ylim(*geometry.y_limits)
     axis.set_aspect("equal", adjustable="box")
     axis.set_axis_off()
+    figure.canvas.draw()
+    register_vertical_colorbar_layout(
+        axis,
+        colorbar_axis,
+        (geometry.bounds.x0, geometry.bounds.y0, geometry.bounds.x1, geometry.bounds.y1),
+    )
     if composition.coupling.enabled:
         render_node_layer(
             axis,
@@ -295,6 +375,15 @@ def build_mantel(
     )
     figure._axiomfig_mantel_composition = composition
     figure._axiomfig_mantel_geometry = geometry
+    figure._axiomfig_mantel_ordered_data = ordered
+    figure._axiomfig_mantel_source_groups = source_groups
+    figure._axiomfig_primary_visual_square = (
+        axis,
+        (geometry.bounds.x0, geometry.bounds.y0, geometry.bounds.x1, geometry.bounds.y1),
+        geometry.bounds.size,
+    )
+    register_post_layout_callback(figure, _reflow_mantel_after_layout)
+    _reflow_mantel_after_layout(figure)
     return figure
 
 

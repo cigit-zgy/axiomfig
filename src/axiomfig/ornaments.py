@@ -26,6 +26,9 @@ def apply_colorbar_contract(colorbar: Colorbar) -> None:
     if colorbar.orientation == "vertical":
         from matplotlib.ticker import AutoMinorLocator
 
+        contract = load_contracts().style["colorbar"]["vertical"]
+        axis.yaxis.set_ticks_position(str(contract["tick_side"]))
+        axis.yaxis.set_label_position(str(contract["label_side"]))
         axis.yaxis.set_minor_locator(AutoMinorLocator(2))
         axis.tick_params(
             axis="y",

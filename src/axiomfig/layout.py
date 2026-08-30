@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
@@ -33,6 +34,7 @@ class PanelFootprint:
     auxiliary_axes: list[Axes] = field(default_factory=list)
     artists: list[Artist] = field(default_factory=list)
     panel_label: Artist | None = None
+    vertical_colorbar_reference: tuple[Axes, tuple[float, float, float, float]] | None = None
 
     def bbox(self) -> Bbox:
         return self.spec.get_position(self.figure)
@@ -51,6 +53,7 @@ class FigureLayout:
     legend_requests: list[Axes] = field(default_factory=list)
     legends: list[Legend] = field(default_factory=list)
     figure_ornaments: list[Artist] = field(default_factory=list)
+    post_solve_callbacks: list[Callable[[Figure], None]] = field(default_factory=list)
     solved_size_pt: tuple[float, float] | None = None
 
     def panel_for_axis(self, axis: Axes) -> PanelFootprint | None:
@@ -185,6 +188,14 @@ def invalidate_panel_layout(figure: Figure) -> None:
         layout.solved_size_pt = None
 
 
+def register_post_layout_callback(figure: Figure, callback: Callable[[Figure], None]) -> None:
+    layout = get_figure_layout(figure)
+    if layout is None:
+        raise ValueError("post-layout callback requires a registered panel layout")
+    if callback not in layout.post_solve_callbacks:
+        layout.post_solve_callbacks.append(callback)
+
+
 def add_panel_axes(
     layout: FigureLayout, index: int, *, colorbar: bool = False
 ) -> tuple[Axes, Axes | None]:
@@ -201,6 +212,48 @@ def add_panel_axes(
         auxiliary = None
     panel.primary_axes = primary
     return primary, auxiliary
+
+
+def _place_registered_vertical_colorbar(panel: PanelFootprint) -> None:
+    if panel.vertical_colorbar_reference is None:
+        return
+    primary, (x0, y0, x1, y1) = panel.vertical_colorbar_reference
+    if not panel.auxiliary_axes:
+        raise ValueError("vertical colorbar layout requires a registered auxiliary axes")
+    auxiliary = panel.auxiliary_axes[0]
+    figure = panel.figure
+    lower_left, upper_right = primary.transData.transform(((x0, y0), (x1, y1)))
+    reference = Bbox.from_extents(*lower_left, *upper_right)
+    contract = load_contracts().style["colorbar"]["vertical"]
+    width_px = float(contract["width_pt"]) * figure.dpi / 72.0
+    gap_px = float(contract["gap_pt"]) * figure.dpi / 72.0
+    height_px = float(contract["length_fraction"]) * reference.height
+    center_y = (reference.y0 + reference.y1) / 2.0
+    display = Bbox.from_extents(
+        reference.x1 + gap_px,
+        center_y - height_px / 2.0,
+        reference.x1 + gap_px + width_px,
+        center_y + height_px / 2.0,
+    )
+    auxiliary.set_position(display.transformed(figure.transFigure.inverted()))
+
+
+def register_vertical_colorbar_layout(
+    primary: Axes,
+    auxiliary: Axes,
+    reference_bounds: tuple[float, float, float, float],
+) -> None:
+    """Attach one global vertical Colorbar contract to a data-space reference box."""
+    layout = get_figure_layout(primary.figure)
+    if layout is None:
+        raise ValueError("vertical colorbar layout requires a registered panel layout")
+    panel = layout.panel_for_axis(primary)
+    if panel is None or auxiliary not in panel.auxiliary_axes:
+        raise ValueError("vertical colorbar axes is not owned by the primary panel")
+    panel.vertical_colorbar_reference = (primary, reference_bounds)
+    primary.figure.canvas.draw()
+    _place_registered_vertical_colorbar(panel)
+    primary.figure.canvas.draw()
 
 
 def register_panel_artist(axis: Axes, artist: Artist) -> None:
@@ -286,7 +339,7 @@ def solve_panel_layout(figure: Figure) -> None:
     if layout.solved_size_pt == size_pt:
         return
     style = load_contracts().style
-    colorbar_width = float(style["layout"]["multi_panel"]["colorbar_width_pt"])
+    colorbar_width = float(style["colorbar"]["vertical"]["width_pt"])
     figure_width, figure_height = size_pt
     for legend in tuple(layout.legends):
         legend.remove()
@@ -344,7 +397,7 @@ def solve_panel_layout(figure: Figure) -> None:
     if legend_height:
         common_top += legend_height + float(style["legend"]["top_gap_pt"])
 
-    colorbar_gap = float(style["layout"]["multi_panel"]["colorbar_gap_pt"])
+    colorbar_gap = float(style["colorbar"]["vertical"]["gap_pt"])
     for panel, overhang in zip(layout.panels, primary_overhangs, strict=True):
         assert panel.primary_axes is not None
         footprint = panel.bbox()
@@ -372,4 +425,9 @@ def solve_panel_layout(figure: Figure) -> None:
         panel.primary_axes.set_position(Bbox.from_extents(x0, y0, primary_x1, y1))
         auxiliary.set_position(Bbox.from_extents(auxiliary_x0, y0, x1, y1))
     layout.solved_size_pt = size_pt
+    figure.canvas.draw()
+    for panel in layout.panels:
+        _place_registered_vertical_colorbar(panel)
+    for callback in layout.post_solve_callbacks:
+        callback(figure)
     figure.canvas.draw()

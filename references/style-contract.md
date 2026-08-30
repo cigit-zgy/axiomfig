@@ -60,6 +60,33 @@ Raster measurement confirms that Matplotlib divides an `inout` tick approximatel
 - Histogram: face alpha `0.72` with opaque black `0.6 pt` bin edges.
 - Heatmap/image: filled-surface tick directions; colorbar is separate support axes.
 
+## Square matrix geometry
+
+A matrix whose two axes represent the same variables must render with equal physical width and
+height. Its cells must therefore have equal physical width and height, not merely equal data
+increments. `set_aspect("equal")` is an implementation aid rather than sufficient evidence:
+runtime validation measures the final renderer transform and rejects a primary visual square whose
+width and height differ by more than `0.5 px` or whose cell dimensions differ by more than
+`0.1 px`. Auxiliary axes and outer ornaments must not distort the square.
+
+## Colorbar contract
+
+A Colorbar is the continuous color scale (continuous color legend) for a scalar mapping; it is not
+a categorical legend. The global vertical Colorbar contract is stored only in `style.yaml`:
+
+- physical width: `9 pt`;
+- gap from its reference visual region: `6 pt`;
+- length: `0.72` times the reference square height;
+- alignment: vertically centered on the reference square;
+- position: outside-right;
+- major/minor ticks: the shared filled-axis tick contract;
+- tick labels and the concise scalar label: right side.
+
+The layout subsystem owns the Auxiliary Axes dimensions and placement. A template supplies only
+the scalar mapping, tick values, label, and the data-space reference square. It must not set a local
+box aspect, inset position, width, gap, or length. Categorical keys continue to use ordinary legend
+artists rather than a Colorbar.
+
 ## Redundant series identity
 
 Multi-series graphics use one ordered central cycle that combines palette color, line style, and marker. The first four styles are solid/circle, dash-dot/square, dotted/triangle, and long-dash/diamond. The custom long-dash pattern is `6 pt on, 2 pt off`. Secondary and reference lines default to dash-dot. Templates call the shared helper by series index and do not replace these channels locally.

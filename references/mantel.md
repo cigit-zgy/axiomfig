@@ -109,7 +109,9 @@ Auxiliary colorbar Axes, and the final legend grammar, then measures the selecte
 labels, source labels, and legends in physical points. The second pass solves matrix cell size,
 matrix-edge label gutters, source positions, the diagonal interface, and ornament anchors. Source
 labels may wrap once at a measured word boundary. Character count is not a layout input and the
-solver does not perform iterative visual search.
+solver does not perform iterative visual search. The matrix plus complementary coupling triangle is
+the Primary Visual Square. Runtime validation measures its final renderer transform and enforces
+equal physical width and height as well as equal cell dimensions.
 
 Ordering is a single data transformation before rendering. It applies the same permutation to the
 matrix, labels, p values, CI bounds, cluster membership, and Mantel target mapping. No artist layer
@@ -150,7 +152,31 @@ may reorder its own data.
   `AxiomGreen`, `AxiomPurple`, and `AxiomGrey`. All tokens originate in
   `resources/styles/colors.yaml`, and every active mode shows all of its bins in the legend.
 - The Pearson key is a true Matplotlib colorbar on a registered Auxiliary Axes. Mantel strength and
-  p-value legends are measured before their side-by-side or stacked placement is selected.
+  p-value legends are measured before their side-by-side or stacked placement is selected. Pearson
+  r uses the global vertical Colorbar contract: outside-right and vertically centered on the Primary
+  Visual Square. Mantel supplies the scalar mapping, ticks, and `Pearson r` label but owns no generic
+  Colorbar dimensions.
+
+## SourceRail packing contract
+
+`TargetRail` is the matrix diagonal and `SourceRail` is one parallel line in the complementary
+coupling triangle. SourceNodes remain collinear and preserve deterministic scientific source order.
+Every source label is placed on the same outward normal side of SourceRail. Its visual gap is the
+physical distance from the circular marker edge to the nearest visible text edge, fixed at `1.5 pt`;
+it is not a node-centre offset.
+
+Each SourceNode and its renderer-measured label bbox form one `SourceGroupFootprint`. The solver
+projects those footprints onto the SourceRail tangent and packs adjacent groups with `4 pt` visible
+clearance. The resulting rail uses the shortest feasible content-derived span: short labels reduce
+the span and longer labels expand it only as required. The complete packed rail is then translated
+along the coupling-region outward normal until a source footprint activates the `3 pt` boundary
+padding of the Primary Visual Square. This maximizes distance from TargetRail and gives the shared
+quadratic curves their usable physical length without a link-length option.
+
+All measurements use the selected font renderer, physical marker area, and point-space conversion.
+The solve is deterministic, uses at most two fixed passes, and never reorders sources based on text
+width. Figure Intent may select scientific Mantel semantics but never supplies SourceRail, label,
+marker, Colorbar, or curve coordinates.
 
 ## R capability references and differences
 

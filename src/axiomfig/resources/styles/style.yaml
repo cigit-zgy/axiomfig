@@ -46,6 +46,15 @@ legend:
   frame: false
   prefer_single_row: true
 
+colorbar:
+  vertical:
+    width_pt: 9.0
+    gap_pt: 6.0
+    length_fraction: 0.72
+    alignment: center
+    tick_side: right
+    label_side: right
+
 panel:
   format: "({letter})"
   font_size_pt: 11.0
@@ -67,8 +76,6 @@ layout:
     horizontal_gap_pt: 12.0
     vertical_gap_pt: 16.0
     containment_padding_pt: 1.5
-    colorbar_width_pt: 9.0
-    colorbar_gap_pt: 4.0
 
 series:
   line_styles: [solid, dashdot, dotted, long-dash]
@@ -131,7 +138,9 @@ plots:
       background_color: [axiom_neutral, AxiomWhite]
       missing_color: [axiom_classic, AxiomGrey]
       colormap: axiom_diverging
-      source_label_offset_pt: 12.0
+      source_label_gap_pt: 1.5
+      source_group_gap_pt: 4.0
+      source_boundary_padding_pt: 3.0
       source_label_max_width_pt: 42.0
       target_rail_offset: 0.0
     nodes:

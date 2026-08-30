@@ -47,8 +47,6 @@ def render_colorbar(axis: Axes, colorbar_axis: Axes) -> Colorbar:
     colorbar.set_label("Pearson r")
     apply_colorbar_contract(colorbar)
     colorbar.ax.tick_params(labelsize=mpl.rcParams["xtick.labelsize"])
-    colorbar_axis.set_box_aspect(7.0)
-    colorbar_axis.set_anchor("C")
     return colorbar
 
 

@@ -76,6 +76,22 @@ def _validate_footprints(
             issues.append(f"panel footprint column {column} has misaligned x1")
 
 
+def _validate_primary_visual_square(figure: object, issues: list[str]) -> None:
+    registered = getattr(figure, "_axiomfig_primary_visual_square", None)
+    if registered is None:
+        return
+    axis, (x0, y0, x1, y1), cell_count = registered
+    lower_left, upper_right = axis.transData.transform(((x0, y0), (x1, y1)))
+    width_px = abs(float(upper_right[0] - lower_left[0]))
+    height_px = abs(float(upper_right[1] - lower_left[1]))
+    if abs(width_px - height_px) > 0.5:
+        issues.append("primary visual square has unequal rendered width and height")
+    cell_width_px = width_px / int(cell_count)
+    cell_height_px = height_px / int(cell_count)
+    if abs(cell_width_px - cell_height_px) > 0.1:
+        issues.append("primary visual square has unequal rendered cell dimensions")
+
+
 def validate_figure_anatomy(figure: object, *, tolerance_pt: float = 0.25) -> None:
     """Validate in-memory Figure, Panel, Axes, Artist, and Ornament ownership."""
     layout = get_figure_layout(figure)  # type: ignore[arg-type]
@@ -93,6 +109,7 @@ def validate_figure_anatomy(figure: object, *, tolerance_pt: float = 0.25) -> No
     footprints = [panel.bbox().transformed(layout.figure.transFigure) for panel in layout.panels]
     issues: list[str] = []
     _validate_footprints(layout, footprints, tolerance, issues)
+    _validate_primary_visual_square(layout.figure, issues)
 
     for panel, footprint in zip(layout.panels, footprints, strict=True):
         for auxiliary in panel.auxiliary_axes:

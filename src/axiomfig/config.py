@@ -74,6 +74,7 @@ def _validate_style(style: Mapping[str, Any]) -> None:
         "ticks",
         "axes",
         "legend",
+        "colorbar",
         "panel",
         "output",
         "layout",
@@ -132,8 +133,22 @@ def _validate_style(style: Mapping[str, Any]) -> None:
                 "plots.mantel.matrix.maximum_cell_side",
             ),
             (
-                style["layout"]["multi_panel"]["colorbar_width_pt"],
-                "layout.multi_panel.colorbar_width_pt",
+                style["plots"]["mantel"]["matrix"]["source_label_gap_pt"],
+                "plots.mantel.matrix.source_label_gap_pt",
+            ),
+            (
+                style["plots"]["mantel"]["matrix"]["source_group_gap_pt"],
+                "plots.mantel.matrix.source_group_gap_pt",
+            ),
+            (
+                style["plots"]["mantel"]["matrix"]["source_boundary_padding_pt"],
+                "plots.mantel.matrix.source_boundary_padding_pt",
+            ),
+            (style["colorbar"]["vertical"]["width_pt"], "colorbar.vertical.width_pt"),
+            (style["colorbar"]["vertical"]["gap_pt"], "colorbar.vertical.gap_pt"),
+            (
+                style["colorbar"]["vertical"]["length_fraction"],
+                "colorbar.vertical.length_fraction",
             ),
             (style["rendering"]["dpi"], "rendering.dpi"),
         )
@@ -159,10 +174,6 @@ def _validate_style(style: Mapping[str, Any]) -> None:
             "layout.multi_panel.containment_padding_pt",
         ),
         (
-            style["layout"]["multi_panel"]["colorbar_gap_pt"],
-            "layout.multi_panel.colorbar_gap_pt",
-        ),
-        (
             style["plots"]["violin"]["limit_padding_fraction"],
             "plots.violin.limit_padding_fraction",
         ),
@@ -177,6 +188,15 @@ def _validate_style(style: Mapping[str, Any]) -> None:
         (style["panel"]["top_offset_pt"], "panel.top_offset_pt"),
     ):
         _finite_number(value, name)
+    vertical_colorbar = style["colorbar"]["vertical"]
+    if vertical_colorbar["alignment"] != "center":
+        raise ValueError("colorbar.vertical.alignment must be center")
+    if vertical_colorbar["tick_side"] != "right":
+        raise ValueError("colorbar.vertical.tick_side must be right")
+    if vertical_colorbar["label_side"] != "right":
+        raise ValueError("colorbar.vertical.label_side must be right")
+    if float(vertical_colorbar["length_fraction"]) > 1.0:
+        raise ValueError("colorbar.vertical.length_fraction must not exceed one")
     for dotted, alpha in (
         ("plots.confidence_interval.alpha", style["plots"]["confidence_interval"]["alpha"]),
         ("plots.scatter.alpha", style["plots"]["scatter"]["alpha"]),

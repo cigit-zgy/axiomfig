@@ -46,20 +46,6 @@ def _node(
     return artist
 
 
-def _source_label_placement(
-    geometry: MantelGeometry,
-    center: tuple[float, float],
-    offset: float,
-) -> tuple[tuple[float, float], str, str]:
-    """Place labels diagonally outward from the route fan inside the measured source margin."""
-    del center
-    if geometry.coupling_region == "upper-right":
-        return (offset, offset), "left", "bottom"
-    if geometry.coupling_region == "lower-left":
-        return (-offset, -offset), "right", "top"
-    return (offset, 0.0), "left", "center"
-
-
 def render_node_layer(
     axis: Axes,
     geometry: MantelGeometry,
@@ -67,9 +53,6 @@ def render_node_layer(
     source_labels: Mapping[str, str] | None = None,
 ) -> NodeRenderResult:
     """Render explicit endpoints; target identity remains in matrix-edge labels only."""
-    contract = mantel_plot_contract()["matrix"]
-    assert isinstance(contract, Mapping)
-    source_label_offset = float(contract["source_label_offset_pt"])
     nodes = mantel_plot_contract()["nodes"]
     assert isinstance(nodes, Mapping)
     source_size_ratio = float(nodes["source_size_ratio"])
@@ -88,11 +71,8 @@ def render_node_layer(
                 identity=source,
             )
         )
-        label_offset, horizontal_alignment, vertical_alignment = _source_label_placement(
-            geometry,
-            center,
-            source_label_offset,
-        )
+        label_offset = geometry.source_rail.label_offsets_pt[source]
+        horizontal_alignment, vertical_alignment = geometry.source_rail.label_alignments[source]
         label = axis.annotate(
             source_labels.get(source, source) if source_labels is not None else source,
             center,

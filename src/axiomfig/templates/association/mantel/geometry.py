@@ -14,8 +14,10 @@ import matplotlib as mpl
 import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.font_manager import FontProperties
+from matplotlib.text import Text
 
-from axiomfig.style import mantel_plot_contract
+from axiomfig.config import load_contracts
+from axiomfig.style import FILL_EDGE_PT, mantel_plot_contract
 
 
 @dataclass(frozen=True)
@@ -39,6 +41,8 @@ class TextExtents:
     variable_height_pt: float
     source_width_pt: float
     source_height_pt: float
+    source_widths_pt: tuple[float, ...]
+    source_heights_pt: tuple[float, ...]
     source_labels: tuple[str, ...]
 
 
@@ -52,6 +56,8 @@ class MantelLayoutMeasurements:
     variable_height_pt: float
     source_width_pt: float
     source_height_pt: float
+    source_widths_pt: tuple[float, ...]
+    source_heights_pt: tuple[float, ...]
     strength_legend_width_pt: float
     strength_legend_height_pt: float
     p_legend_width_pt: float
@@ -75,6 +81,8 @@ class MantelLayoutMeasurements:
             variable_height_pt=variable_height_pt,
             source_width_pt=source_width_pt,
             source_height_pt=source_height_pt,
+            source_widths_pt=(),
+            source_heights_pt=(),
             strength_legend_width_pt=116.0,
             strength_legend_height_pt=25.0,
             p_legend_width_pt=118.0,
@@ -95,6 +103,11 @@ class SourceRail:
     start: tuple[float, float] | None
     end: tuple[float, float] | None
     normal_offset: float
+    label_offsets_pt: dict[str, tuple[float, float]]
+    label_alignments: dict[str, tuple[str, str]]
+    group_intervals_pt: dict[str, tuple[float, float]]
+    footprint_span_pt: float
+    boundary_clearance_pt: float
 
 
 @dataclass(frozen=True)
@@ -185,14 +198,13 @@ def measure_text_extents(
             )
         measured: list[tuple[float, float, str]] = []
         for candidate in candidates:
-            lines = candidate.splitlines()
-            line_dimensions = [
-                _maximum_text_extent(renderer, (line,), source, dpi=figure.dpi) for line in lines
-            ]
+            probe = Text(0.0, 0.0, candidate, fontproperties=source, ha="left", va="bottom")
+            probe.set_figure(figure)
+            bbox = probe.get_window_extent(renderer)
             measured.append(
                 (
-                    max(width for width, _ in line_dimensions),
-                    sum(height for _, height in line_dimensions) * 1.12,
+                    bbox.width * 72.0 / figure.dpi,
+                    bbox.height * 72.0 / figure.dpi,
                     candidate,
                 )
             )
@@ -211,6 +223,8 @@ def measure_text_extents(
         variable_height,
         source_width,
         source_height,
+        tuple(width for width, _ in source_dimensions),
+        tuple(height for _, height in source_dimensions),
         tuple(source_labels),
     )
 
@@ -240,62 +254,142 @@ def _target_anchor(
     return bounds.x0 - 0.05, y
 
 
-def _source_positions(
+def solve_source_rail(
     bounds: MatrixBounds,
     source_groups: tuple[str, ...],
     *,
     matrix_type: str,
-    source_width_units: float,
-    source_height_units: float,
-    source_label_offset_units: float,
+    cell_size_pt: float,
+    source_widths_pt: tuple[float, ...],
+    source_heights_pt: tuple[float, ...],
 ) -> SourceRail:
-    """Place sources monotonically on one rail parallel to the target diagonal."""
+    """Pack measured source groups on the outermost feasible rail."""
     count = len(source_groups)
     if count == 0:
-        return SourceRail("none", {}, None, None, 0.0)
+        return SourceRail("none", {}, None, None, 0.0, {}, {}, {}, 0.0, 0.0)
+    matrix_contract = mantel_plot_contract()["matrix"]
+    node_contract = mantel_plot_contract()["nodes"]
+    assert isinstance(matrix_contract, Mapping)
+    assert isinstance(node_contract, Mapping)
+    label_gap = float(matrix_contract["source_label_gap_pt"])
+    scatter_area = float(load_contracts().style["plots"]["scatter"]["marker_size_pt2"])
+    marker_radius = (
+        np.sqrt(scatter_area * float(node_contract["source_size_ratio"])) / 2.0 + FILL_EDGE_PT / 2.0
+    )
     if matrix_type in {"lower", "upper"}:
-        label_margin = max(
-            0.28,
-            source_height_units * 1.6,
-            source_width_units / np.sqrt(2.0) + np.sqrt(2.0) * source_label_offset_units,
-        )
-        endpoint_fraction = float(
-            np.clip(0.14 + 0.015 * count + 0.02 * label_margin / bounds.size, 0.22, 0.28)
-        )
-        normal_sign = 1.0 if matrix_type == "lower" else -1.0
-        normal = normal_sign * np.asarray((1.0, 1.0), dtype=float) / np.sqrt(2.0)
-        maximum_depth = np.sqrt(2.0) * bounds.size * endpoint_fraction - label_margin
-        minimum_clearance = max(0.75, bounds.size * 0.05, source_height_units * 1.6)
-        preferred_depth = max(
-            bounds.size * 0.18,
-            minimum_clearance + min(0.25, 0.04 * max(count - 1, 0)),
-        )
-        depth = min(preferred_depth, max(0.35, maximum_depth))
+        group_gap = float(matrix_contract["source_group_gap_pt"])
+        boundary_padding = float(matrix_contract["source_boundary_padding_pt"])
+        widths = source_widths_pt or (0.0,) * count
+        heights = source_heights_pt or (0.0,) * count
+        if len(widths) != count or len(heights) != count:
+            raise ValueError("source text measurements must match the source count")
 
-        def rail_point(fraction: float) -> np.ndarray:
-            diagonal = np.asarray(
-                (
-                    bounds.x0 + bounds.size * fraction,
-                    bounds.y1 - bounds.size * fraction,
-                ),
-                dtype=float,
+        root_two = np.sqrt(2.0)
+        tangent = np.asarray((1.0, -1.0), dtype=float) / root_two
+        normal = np.asarray((1.0, 1.0), dtype=float) / root_two
+        anchor = normal * (marker_radius + label_gap)
+        relative_boxes: list[tuple[float, float, float, float]] = []
+        relative_intervals: list[tuple[float, float]] = []
+        for width, height in zip(widths, heights, strict=True):
+            x0 = min(-marker_radius, float(anchor[0]))
+            y0 = min(-marker_radius, float(anchor[1]))
+            x1 = max(marker_radius, float(anchor[0]) + width)
+            y1 = max(marker_radius, float(anchor[1]) + height)
+            relative_boxes.append((x0, y0, x1, y1))
+            corners = np.asarray(((x0, y0), (x0, y1), (x1, y0), (x1, y1)))
+            projected = corners @ tangent
+            relative_intervals.append((float(np.min(projected)), float(np.max(projected))))
+
+        centers = [0.0]
+        for previous, current in zip(relative_intervals, relative_intervals[1:], strict=False):
+            centers.append(centers[-1] + previous[1] + group_gap - current[0])
+        footprint_min = min(
+            center + interval[0]
+            for center, interval in zip(centers, relative_intervals, strict=True)
+        )
+        footprint_max = max(
+            center + interval[1]
+            for center, interval in zip(centers, relative_intervals, strict=True)
+        )
+
+        square_side = bounds.size * cell_size_pt
+        square_center = np.asarray((square_side / 2.0, square_side / 2.0))
+        outer = square_side - boundary_padding
+        x_limits = [
+            (outer - square_center[0] - tangent[0] * center - box[2]) / normal[0]
+            for center, box in zip(centers, relative_boxes, strict=True)
+        ]
+        y_limits = [
+            (outer - square_center[1] - tangent[1] * center - box[3]) / normal[1]
+            for center, box in zip(centers, relative_boxes, strict=True)
+        ]
+        x_limit = min(x_limits)
+        y_limit = min(y_limits)
+        tangent_shift = (x_limit - y_limit) / 2.0
+        depth_pt = (x_limit + y_limit) / 2.0
+        if depth_pt <= marker_radius:
+            raise ValueError("measured source groups do not fit inside the primary visual square")
+
+        canonical_points = [
+            square_center + tangent * (center + tangent_shift) + normal * depth_pt
+            for center in centers
+        ]
+        canonical_boxes = [
+            (
+                point[0] + box[0],
+                point[1] + box[1],
+                point[0] + box[2],
+                point[1] + box[3],
             )
-            return diagonal + normal * depth
+            for point, box in zip(canonical_points, relative_boxes, strict=True)
+        ]
+        if any(
+            x0 < boundary_padding - 1e-8
+            or y0 < boundary_padding - 1e-8
+            or x1 > outer + 1e-8
+            or y1 > outer + 1e-8
+            for x0, y0, x1, y1 in canonical_boxes
+        ):
+            raise ValueError(
+                "packed source group footprint falls outside the primary visual square"
+            )
 
-        start = rail_point(endpoint_fraction)
-        end = rail_point(1.0 - endpoint_fraction)
-        points = np.linspace(start, end, count)
+        mirrored = matrix_type == "upper"
+        physical_points = (
+            [np.asarray((square_side, square_side)) - point for point in canonical_points]
+            if mirrored
+            else canonical_points
+        )
+        points = [
+            np.asarray((bounds.x0, bounds.y0)) + point / cell_size_pt for point in physical_points
+        ]
         positions = {
             source: (float(point[0]), float(point[1]))
             for source, point in zip(source_groups, points, strict=True)
         }
         corner = "upper-right" if matrix_type == "lower" else "lower-left"
+        label_direction = -normal if mirrored else normal
+        label_offset = tuple(
+            float(value) for value in label_direction * (marker_radius + label_gap)
+        )
+        alignment = ("right", "top") if mirrored else ("left", "bottom")
+        intervals = {
+            source: (center + interval[0], center + interval[1])
+            for source, center, interval in zip(
+                source_groups, centers, relative_intervals, strict=True
+            )
+        }
         return SourceRail(
             corner,
             positions,
-            (float(start[0]), float(start[1])),
-            (float(end[0]), float(end[1])),
-            float(depth),
+            positions[source_groups[0]],
+            positions[source_groups[-1]],
+            float(depth_pt / cell_size_pt),
+            {source: label_offset for source in source_groups},
+            {source: alignment for source in source_groups},
+            intervals,
+            float(footprint_max - footprint_min),
+            boundary_padding,
         )
 
     source_y = np.linspace(bounds.y1 - 0.75, bounds.y0 + 0.75, count)
@@ -309,6 +403,11 @@ def _source_positions(
         (bounds.x0 - 0.65, float(source_y[0])),
         (bounds.x0 - 0.65, float(source_y[-1])),
         0.65,
+        {source: (marker_radius + label_gap, 0.0) for source in source_groups},
+        {source: ("left", "center") for source in source_groups},
+        {},
+        0.0,
+        0.0,
     )
 
 
@@ -425,13 +524,17 @@ def solve_geometry(
         for index, label in enumerate(labels)
     }
     rail = TargetRail(_rail_orientation(matrix_type), anchors)
-    sources = _source_positions(
+    sources = solve_source_rail(
         bounds,
         source_groups,
         matrix_type=matrix_type,
-        source_width_units=measurements.source_width_pt / cell_size_pt,
-        source_height_units=measurements.source_height_pt / cell_size_pt,
-        source_label_offset_units=float(matrix_contract["source_label_offset_pt"]) / cell_size_pt,
+        cell_size_pt=cell_size_pt,
+        source_widths_pt=(
+            measurements.source_widths_pt or (measurements.source_width_pt,) * len(source_groups)
+        ),
+        source_heights_pt=(
+            measurements.source_heights_pt or (measurements.source_height_pt,) * len(source_groups)
+        ),
     )
     matrix_region, coupling_region, label_edges = _region_contract(matrix_type)
 
@@ -478,6 +581,7 @@ __all__ = [
     "TextExtents",
     "cell_center",
     "measure_text_extents",
+    "solve_source_rail",
     "solve_geometry",
     "source_label_size",
     "variable_label_size",
