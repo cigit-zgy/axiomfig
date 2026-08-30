@@ -89,9 +89,12 @@ class TargetRail:
 
 
 @dataclass(frozen=True)
-class SourceRegion:
+class SourceRail:
     corner: str
     positions: dict[str, tuple[float, float]]
+    start: tuple[float, float] | None
+    end: tuple[float, float] | None
+    normal_offset: float
 
 
 @dataclass(frozen=True)
@@ -99,7 +102,7 @@ class MantelGeometry:
     bounds: MatrixBounds
     matrix_type: str
     target_rail: TargetRail
-    source_region: SourceRegion
+    source_rail: SourceRail
     x_limits: tuple[float, float]
     y_limits: tuple[float, float]
     strength_legend_anchor: tuple[float, float]
@@ -113,7 +116,7 @@ class MantelGeometry:
 
     @property
     def source_positions(self) -> dict[str, tuple[float, float]]:
-        return self.source_region.positions
+        return self.source_rail.positions
 
     @property
     def target_positions(self) -> dict[str, tuple[float, float]]:
@@ -245,26 +248,31 @@ def _source_positions(
     source_width_units: float,
     source_height_units: float,
     source_label_offset_units: float,
-) -> SourceRegion:
-    """Distribute sources in two dimensions through the complementary triangle."""
+) -> SourceRail:
+    """Place sources monotonically on one rail parallel to the target diagonal."""
     count = len(source_groups)
     if count == 0:
-        return SourceRegion("none", {})
+        return SourceRail("none", {}, None, None, 0.0)
     if matrix_type in {"lower", "upper"}:
-        fractions = (np.arange(count, dtype=float) + 0.5) / count
-        target_fraction = 0.16 + 0.68 * fractions
-        depth_pattern = np.asarray((0.46, 0.68, 0.54, 0.72), dtype=float)
-        positions: dict[str, tuple[float, float]] = {}
-        normal_sign = 1.0 if matrix_type == "lower" else -1.0
-        normal = normal_sign * np.asarray((1.0, 1.0), dtype=float) / np.sqrt(2.0)
         label_margin = max(
             0.28,
             source_height_units * 1.6,
             source_width_units / np.sqrt(2.0) + np.sqrt(2.0) * source_label_offset_units,
         )
-        for index, (source, fraction) in enumerate(
-            zip(source_groups, target_fraction, strict=True)
-        ):
+        endpoint_fraction = float(
+            np.clip(0.14 + 0.015 * count + 0.02 * label_margin / bounds.size, 0.22, 0.28)
+        )
+        normal_sign = 1.0 if matrix_type == "lower" else -1.0
+        normal = normal_sign * np.asarray((1.0, 1.0), dtype=float) / np.sqrt(2.0)
+        maximum_depth = np.sqrt(2.0) * bounds.size * endpoint_fraction - label_margin
+        minimum_clearance = max(0.75, bounds.size * 0.05, source_height_units * 1.6)
+        preferred_depth = max(
+            bounds.size * 0.18,
+            minimum_clearance + min(0.25, 0.04 * max(count - 1, 0)),
+        )
+        depth = min(preferred_depth, max(0.35, maximum_depth))
+
+        def rail_point(fraction: float) -> np.ndarray:
             diagonal = np.asarray(
                 (
                     bounds.x0 + bounds.size * fraction,
@@ -272,21 +280,35 @@ def _source_positions(
                 ),
                 dtype=float,
             )
-            maximum_depth = np.sqrt(2.0) * bounds.size * min(fraction, 1.0 - fraction)
-            depth = max(0.42, maximum_depth * depth_pattern[index % len(depth_pattern)])
-            depth = min(depth, max(0.30, maximum_depth - label_margin))
-            point = diagonal + normal * depth
-            positions[source] = (float(point[0]), float(point[1]))
+            return diagonal + normal * depth
+
+        start = rail_point(endpoint_fraction)
+        end = rail_point(1.0 - endpoint_fraction)
+        points = np.linspace(start, end, count)
+        positions = {
+            source: (float(point[0]), float(point[1]))
+            for source, point in zip(source_groups, points, strict=True)
+        }
         corner = "upper-right" if matrix_type == "lower" else "lower-left"
-        return SourceRegion(corner, positions)
+        return SourceRail(
+            corner,
+            positions,
+            (float(start[0]), float(start[1])),
+            (float(end[0]), float(end[1])),
+            float(depth),
+        )
 
     source_y = np.linspace(bounds.y1 - 0.75, bounds.y0 + 0.75, count)
-    return SourceRegion(
+    positions = {
+        source: (bounds.x0 - 0.65, float(y))
+        for source, y in zip(source_groups, source_y, strict=True)
+    }
+    return SourceRail(
         "left",
-        {
-            source: (bounds.x0 - 0.65, float(y))
-            for source, y in zip(source_groups, source_y, strict=True)
-        },
+        positions,
+        (bounds.x0 - 0.65, float(source_y[0])),
+        (bounds.x0 - 0.65, float(source_y[-1])),
+        0.65,
     )
 
 
@@ -433,7 +455,7 @@ def solve_geometry(
         bounds=bounds,
         matrix_type=matrix_type,
         target_rail=rail,
-        source_region=sources,
+        source_rail=sources,
         x_limits=(0.0, bounds.x1 + right),
         y_limits=(0.0, bounds.y1 + top),
         strength_legend_anchor=strength_anchor,
@@ -451,7 +473,7 @@ __all__ = [
     "MantelGeometry",
     "MantelLayoutMeasurements",
     "MatrixBounds",
-    "SourceRegion",
+    "SourceRail",
     "TargetRail",
     "TextExtents",
     "cell_center",

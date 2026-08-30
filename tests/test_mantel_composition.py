@@ -142,28 +142,34 @@ def test_lower_and_upper_share_a_diagonal_interface_and_mirror_coupling_regions(
         lower_points - np.asarray((lower.bounds.x0, lower.bounds.y0)),
         upper_points - np.asarray((upper.bounds.x0, upper.bounds.y0)),
     )
-    assert lower.source_region.corner == "upper-right"
-    assert upper.source_region.corner == "lower-left"
+    assert lower.source_rail.corner == "upper-right"
+    assert upper.source_rail.corner == "lower-left"
     assert lower.label_edges == ("left", "bottom")
     assert upper.label_edges == ("top", "right")
 
 
 @pytest.mark.parametrize("matrix_type", ["lower", "upper"])
-def test_coupling_uses_smooth_subdivided_cubics_and_exact_target_endpoints(
+def test_coupling_uses_one_quadratic_curve_family_and_ordered_curvature_signs(
     matrix_type: str,
 ) -> None:
     figure = build_template("association/mantel", **_case(6), matrix_type=matrix_type)
     figure.canvas.draw()
     links = _artists(figure, "axiomfig-mantel-link")
-    anchors = figure._axiomfig_mantel_geometry.target_positions
+    geometry = figure._axiomfig_mantel_geometry
+    target_order = {label: index for index, label in enumerate(geometry.target_positions)}
+    curvature = float(load_contracts().style["plots"]["mantel"]["links"]["curve_curvature"])
 
     assert links
     for link in links:
-        assert tuple(link.get_path().codes) == (Path.MOVETO, *(Path.CURVE4,) * 6)
-        assert link._axiomfig_route_model == "triangle-fan-cubic"
+        assert tuple(link.get_path().codes) == (Path.MOVETO, Path.CURVE3, Path.CURVE3)
+        assert link._axiomfig_route_model == "source-target-quadratic"
+        assert link._axiomfig_curvature == pytest.approx(curvature)
+        expected_sign = -1 if target_order[link._axiomfig_target] < len(target_order) / 2 else 1
+        assert link._axiomfig_curvature_sign == expected_sign
+        assert not hasattr(link, "_axiomfig_lane_fraction")
         vertices = link.get_path().vertices
-        np.testing.assert_allclose(vertices[3] - vertices[2], vertices[4] - vertices[3])
-        np.testing.assert_allclose(vertices[-1], anchors[link._axiomfig_target])
+        np.testing.assert_allclose(vertices[0], geometry.source_positions[link._axiomfig_source])
+        np.testing.assert_allclose(vertices[-1], geometry.target_positions[link._axiomfig_target])
     plt.close(figure)
 
 

@@ -206,7 +206,15 @@ def _validate_style(style: Mapping[str, Any]) -> None:
     maximum_side = float(matrix_contract["maximum_cell_side"])
     if minimum_side >= maximum_side or maximum_side > 1.0:
         raise ValueError("Mantel cell sides must be ordered and no larger than one cell")
+    node_contract = mantel["nodes"]
+    for name in ("source_size_ratio", "target_size_ratio"):
+        _finite_number(node_contract[name], f"plots.mantel.nodes.{name}", positive=True)
     link_contract = mantel["links"]
+    _finite_number(
+        link_contract["curve_curvature"],
+        "plots.mantel.links.curve_curvature",
+        positive=True,
+    )
     strength_breaks = tuple(float(value) for value in link_contract["strength_breaks"])
     widths = tuple(link_contract["widths_pt"])
     if strength_breaks != tuple(sorted(strength_breaks)) or len(strength_breaks) != 2:

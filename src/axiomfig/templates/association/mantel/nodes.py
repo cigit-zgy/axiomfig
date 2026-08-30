@@ -6,16 +6,21 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 
 from matplotlib.axes import Axes
-from matplotlib.patches import Circle
+from matplotlib.collections import PathCollection
 
-from axiomfig.style import FILL_EDGE_PT, mantel_plot_contract, mantel_visual_color
+from axiomfig.style import (
+    apply_scatter_contract,
+    mantel_plot_contract,
+    palette_color,
+    series_style,
+)
 from axiomfig.templates.association.mantel.geometry import MantelGeometry, source_label_size
 
 
 @dataclass(frozen=True)
 class NodeRenderResult:
-    source_nodes: tuple[Circle, ...]
-    target_nodes: tuple[Circle, ...]
+    source_nodes: tuple[PathCollection, ...]
+    target_nodes: tuple[PathCollection, ...]
     source_labels: tuple[object, ...]
 
 
@@ -23,21 +28,21 @@ def _node(
     axis: Axes,
     center: tuple[float, float],
     *,
-    radius: float,
+    color: object,
+    size_ratio: float,
     kind: str,
     identity: str,
-) -> Circle:
-    artist = Circle(
-        center,
-        radius,
-        facecolor=mantel_visual_color(f"{kind}_node_fill"),
-        edgecolor=mantel_visual_color(f"{kind}_node_edge"),
-        linewidth=FILL_EDGE_PT if kind == "source" else FILL_EDGE_PT * 0.72,
+) -> PathCollection:
+    artist = axis.scatter(
+        [center[0]],
+        [center[1]],
+        color=color,
+        marker="o",
         zorder=7,
     )
+    apply_scatter_contract(artist, size_ratio=size_ratio)
     artist.set_gid(f"axiomfig-mantel-{kind}-node")
     setattr(artist, f"_axiomfig_{kind}", identity)
-    axis.add_patch(artist)
     return artist
 
 
@@ -64,15 +69,24 @@ def render_node_layer(
     """Render explicit endpoints; target identity remains in matrix-edge labels only."""
     contract = mantel_plot_contract()["matrix"]
     assert isinstance(contract, Mapping)
-    source_radius = float(contract["source_node_radius"])
-    target_radius = float(contract["target_node_radius"])
     source_label_offset = float(contract["source_label_offset_pt"])
+    nodes = mantel_plot_contract()["nodes"]
+    assert isinstance(nodes, Mapping)
+    source_size_ratio = float(nodes["source_size_ratio"])
+    target_size_ratio = float(nodes["target_size_ratio"])
 
-    source_nodes: list[Circle] = []
+    source_nodes: list[PathCollection] = []
     rendered_labels: list[object] = []
-    for source, center in geometry.source_positions.items():
+    for source_index, (source, center) in enumerate(geometry.source_positions.items()):
         source_nodes.append(
-            _node(axis, center, radius=source_radius, kind="source", identity=source)
+            _node(
+                axis,
+                center,
+                color=series_style(source_index, include_marker=False)["color"],
+                size_ratio=source_size_ratio,
+                kind="source",
+                identity=source,
+            )
         )
         label_offset, horizontal_alignment, vertical_alignment = _source_label_placement(
             geometry,
@@ -95,7 +109,14 @@ def render_node_layer(
         rendered_labels.append(label)
 
     target_nodes = tuple(
-        _node(axis, center, radius=target_radius, kind="target", identity=target)
+        _node(
+            axis,
+            center,
+            color=palette_color("AxiomWhite", palette_name="axiom_neutral"),
+            size_ratio=target_size_ratio,
+            kind="target",
+            identity=target,
+        )
         for target, center in geometry.target_positions.items()
     )
     return NodeRenderResult(tuple(source_nodes), target_nodes, tuple(rendered_labels))

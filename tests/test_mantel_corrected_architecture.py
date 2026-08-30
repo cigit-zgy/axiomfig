@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-from collections import defaultdict
-from itertools import combinations
-from math import acos
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
+from matplotlib import colors as mcolors
+from matplotlib.collections import PathCollection
 from matplotlib.patches import Circle
 
-from axiomfig.style import mantel_p_style
+from axiomfig.config import load_contracts
+from axiomfig.style import apply_contract_context, mantel_p_style, series_style
 from axiomfig.templates import build_template
 from axiomfig.templates.association.mantel.composition import normalize_composition
 from axiomfig.templates.association.mantel.geometry import cell_center
@@ -20,6 +19,11 @@ def _artists(figure, gid: str):
     return [
         artist for axis in figure.axes for artist in axis.get_children() if artist.get_gid() == gid
     ]
+
+
+def _node_center(node: PathCollection) -> tuple[float, float]:
+    x, y = node.get_offsets()[0]
+    return float(x), float(y)
 
 
 @pytest.mark.parametrize(
@@ -61,10 +65,19 @@ def test_matrix_mask_owns_filled_label_and_complementary_regions(
     plt.close(figure)
 
 
-@pytest.mark.parametrize(("matrix_type", "source_sign"), [("lower", 1), ("upper", -1)])
+@pytest.mark.parametrize(
+    ("matrix_type", "source_sign", "label_offset_sign", "horizontal", "vertical"),
+    [
+        ("lower", 1, 1, "left", "bottom"),
+        ("upper", -1, -1, "right", "top"),
+    ],
+)
 def test_node_layer_connects_every_link_inside_the_complementary_triangle(
     matrix_type: str,
     source_sign: int,
+    label_offset_sign: int,
+    horizontal: str,
+    vertical: str,
 ) -> None:
     figure = build_template("association/mantel", matrix_type=matrix_type)
     figure.canvas.draw()
@@ -72,17 +85,27 @@ def test_node_layer_connects_every_link_inside_the_complementary_triangle(
     diagonal = geometry.bounds.x0 + geometry.bounds.y0 + geometry.bounds.size
     source_nodes = _artists(figure, "axiomfig-mantel-source-node")
     target_nodes = _artists(figure, "axiomfig-mantel-target-node")
+    source_labels = _artists(figure, "axiomfig-mantel-source-label")
     links = _artists(figure, "axiomfig-mantel-link")
 
     assert len(source_nodes) == len(geometry.source_positions)
     assert len(target_nodes) == len(geometry.target_positions)
+    assert len(source_labels) == len(geometry.source_positions)
     assert not _artists(figure, "axiomfig-mantel-target-label")
     for node in source_nodes:
-        x, y = node.center
+        x, y = _node_center(node)
         assert source_sign * (x + y - diagonal) > 0.0
     for node in target_nodes:
-        x, y = node.center
+        x, y = _node_center(node)
         assert x + y == pytest.approx(diagonal)
+    label_positions = {tuple(label.get_position()) for label in source_labels}
+    assert len(label_positions) == 1
+    label_x, label_y = label_positions.pop()
+    assert label_x * label_offset_sign > 0.0
+    assert label_y * label_offset_sign > 0.0
+    for label in source_labels:
+        assert label.get_horizontalalignment() == horizontal
+        assert label.get_verticalalignment() == vertical
     for link in links:
         vertices = link.get_path().vertices
         np.testing.assert_allclose(vertices[0], geometry.source_positions[link._axiomfig_source])
@@ -90,25 +113,32 @@ def test_node_layer_connects_every_link_inside_the_complementary_triangle(
     plt.close(figure)
 
 
-def test_source_nodes_are_two_dimensionally_distributed_and_links_fan() -> None:
-    figure = build_template("association/mantel")
-    figure.canvas.draw()
-    geometry = figure._axiomfig_mantel_geometry
-    positions = np.asarray(tuple(geometry.source_positions.values()), dtype=float)
-    assert np.ptp(positions[:, 0]) > 0.5
-    assert np.ptp(positions[:, 1]) > 0.5
-
-    directions: dict[str, list[np.ndarray]] = defaultdict(list)
-    for link in _artists(figure, "axiomfig-mantel-link"):
-        vertices = np.asarray(link.get_path().vertices, dtype=float)
-        vector = vertices[1] - vertices[0]
-        directions[link._axiomfig_source].append(vector / np.linalg.norm(vector))
-    for vectors in directions.values():
-        angles = [
-            acos(float(np.clip(np.dot(first, second), -1.0, 1.0)))
-            for first, second in combinations(vectors, 2)
+def test_node_layer_reuses_physical_scatter_contract() -> None:
+    with apply_contract_context(geometry="onehalf-column", typography="sans"):
+        figure = build_template("association/mantel")
+        figure.canvas.draw()
+        source_nodes = _artists(figure, "axiomfig-mantel-source-node")
+        target_nodes = _artists(figure, "axiomfig-mantel-target-node")
+        expected_source_colors = [
+            mcolors.to_rgba(str(series_style(index, include_marker=False)["color"]))[:3]
+            for index in range(len(source_nodes))
         ]
-        assert min(angles, default=1.0) > np.deg2rad(4.0)
+
+    scatter = load_contracts().style["plots"]["scatter"]
+    assert all(isinstance(node, PathCollection) for node in (*source_nodes, *target_nodes))
+    assert [node.get_sizes()[0] for node in source_nodes] == pytest.approx(
+        [float(scatter["marker_size_pt2"]) * 1.35] * len(source_nodes)
+    )
+    assert [node.get_sizes()[0] for node in target_nodes] == pytest.approx(
+        [float(scatter["marker_size_pt2"])] * len(target_nodes)
+    )
+    assert [tuple(node.get_facecolors()[0, :3]) for node in source_nodes] == pytest.approx(
+        expected_source_colors
+    )
+    for node in (*source_nodes, *target_nodes):
+        assert node.get_facecolors()[0, 3] == pytest.approx(float(scatter["alpha"]))
+        assert tuple(node.get_edgecolors()[0]) == pytest.approx((0.0, 0.0, 0.0, 1.0))
+        assert node.get_linewidths()[0] == pytest.approx(0.6)
     plt.close(figure)
 
 

@@ -273,26 +273,17 @@ def build_mantel(
     axis.set_ylim(*geometry.y_limits)
     axis.set_aspect("equal", adjustable="box")
     axis.set_axis_off()
-    label_obstacles = ()
     if composition.coupling.enabled:
-        nodes = render_node_layer(
+        render_node_layer(
             axis,
             geometry,
             source_labels=dict(zip(source_groups, text.source_labels, strict=True)),
-        )
-        figure.canvas.draw()
-        renderer = figure.canvas.get_renderer()
-        inverse = axis.transData.inverted()
-        label_obstacles = tuple(
-            inverse.transform_bbox(label.get_window_extent(renderer))
-            for label in nodes.source_labels
         )
     render_coupling_layer(
         axis,
         ordered.links,
         composition.coupling,
         geometry,
-        label_obstacles=label_obstacles,
     )
     render_ornament_layer(
         axis,

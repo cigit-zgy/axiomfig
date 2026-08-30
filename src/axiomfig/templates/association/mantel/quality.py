@@ -55,21 +55,15 @@ def _union_area(boxes: list[Bbox], boundary: Bbox) -> float:
     return float(union.width * union.height)
 
 
-def _cubic(vertices: np.ndarray, t: float) -> np.ndarray:
+def _quadratic(vertices: np.ndarray, t: float) -> np.ndarray:
     one_minus = 1.0 - t
-    return (
-        one_minus**3 * vertices[0]
-        + 3.0 * one_minus**2 * t * vertices[1]
-        + 3.0 * one_minus * t**2 * vertices[2]
-        + t**3 * vertices[3]
-    )
+    return one_minus**2 * vertices[0] + 2.0 * one_minus * t * vertices[1] + t**2 * vertices[2]
 
 
 def _route_samples(link: object, count: int = 49) -> np.ndarray:
     vertices = np.asarray(link.get_path().vertices, dtype=float)  # type: ignore[attr-defined]
-    segments = (vertices[index : index + 4] for index in range(0, len(vertices) - 1, 3))
-    values = np.linspace(0.04, 0.96, max(9, count // 2))
-    data = np.asarray([_cubic(segment, float(value)) for segment in segments for value in values])
+    values = np.linspace(0.02, 0.98, max(9, count))
+    data = np.asarray([_quadratic(vertices, float(value)) for value in values])
     return link.get_transform().transform(data)  # type: ignore[attr-defined]
 
 
@@ -117,7 +111,7 @@ def _route_separation_pt(figure: object, links: list[object]) -> float:
     grouped: dict[str, list[np.ndarray]] = defaultdict(list)
     for link in links:
         vertices = np.asarray(link.get_path().vertices, dtype=float)  # type: ignore[attr-defined]
-        midpoint = _cubic(vertices[3:7], 0.5)
+        midpoint = _quadratic(vertices, 0.5)
         grouped[str(link._axiomfig_source)].append(  # type: ignore[attr-defined]
             link.get_transform().transform(midpoint)  # type: ignore[attr-defined]
         )

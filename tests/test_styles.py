@@ -136,6 +136,8 @@ def test_unknown_geometry_and_missing_token_fail_explicitly() -> None:
         (("typography", "sizes_pt", "base"), float("nan")),
         (("ticks", "geometry", "minor_length_pt"), -1.0),
         (("output", "padding_pt"), -0.1),
+        (("plots", "mantel", "nodes", "source_size_ratio"), 0.0),
+        (("plots", "mantel", "links", "curve_curvature"), -0.1),
     ],
 )
 def test_loader_rejects_invalid_physical_tokens(

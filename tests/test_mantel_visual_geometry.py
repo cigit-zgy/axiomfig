@@ -50,7 +50,7 @@ def test_sources_live_inside_unused_matrix_triangle(matrix_type: str, corner: st
     figure = build_template("association/mantel", matrix_type=matrix_type)
     figure.canvas.draw()
     geometry = figure._axiomfig_mantel_geometry
-    assert geometry.source_region.corner == corner
+    assert geometry.source_rail.corner == corner
     bounds = geometry.bounds
     for x, y in geometry.source_positions.values():
         assert bounds.x0 <= x <= bounds.x1
@@ -125,11 +125,26 @@ def test_source_layout_scales_without_collapsing(
         for second in positions[index + 1 :]
     ]
     assert min(distances, default=1.0) > 0.25
+    rail = np.asarray(tuple(geometry.target_positions.values()), dtype=float)
     if source_count > 1:
         assert np.ptp(positions[:, 0]) > 0.25
         assert np.ptp(positions[:, 1]) > 0.25
+        source_direction = positions[-1] - positions[0]
+        rail_direction = rail[-1] - rail[0]
+        parallel_error = abs(_cross(np.zeros(2), rail_direction, source_direction)) / (
+            np.linalg.norm(rail_direction) * np.linalg.norm(source_direction)
+        )
+        assert parallel_error < 1e-12
+        assert np.all(np.diff(positions @ source_direction) > 0.0)
 
-    rail = np.asarray(tuple(geometry.target_positions.values()), dtype=float)
+    if source_count >= 3:
+        source_a, source_b = positions[0], positions[-1]
+        source_span = np.linalg.norm(source_b - source_a)
+        collinearity_error = np.asarray(
+            [abs(_cross(source_a, source_b, point)) / source_span for point in positions]
+        )
+        assert np.max(collinearity_error) < 1e-12
+
     a, b = rail[0], rail[-1]
     perpendicular = np.asarray([abs(_cross(a, b, point)) for point in positions])
     assert np.all(perpendicular > 0.25)

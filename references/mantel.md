@@ -93,8 +93,8 @@ MantelComposition
   -> MatrixSpec                 structural mask, ordering, diagonal, label-edge contract
   -> GlyphSpec[]               one reusable cell primitive per structural region
   -> StatisticalOverlay[]      coefficient, significance, CI, cluster outline
-  -> NodeLayer                 source nodes and diagonal target nodes
-  -> CouplingSpec              source fans, lanes, and Mantel relationships
+  -> NodeLayer                 parallel SourceRail and diagonal TargetRail nodes
+  -> CouplingSpec              ordered quadratic source-to-target relationships
   -> OrnamentLayer             Pearson colorbar and Mantel legends
 ```
 
@@ -132,12 +132,18 @@ may reorder its own data.
   lower-left triangle. These are the only two triangular orientations and are exact mirrors.
 - The shared diagonal is an interface, not a label rail. Each variable owns one small visible
   target node on that interface; variable names are not repeated there. Each source group owns a
-  larger node distributed in two dimensions through the coupling triangle. Every link begins and
-  ends at those explicit node coordinates.
-- Each route is a deterministic cubic fan. Its envelope derives from source order, target
-  order, link density, orientation, and lane allocation; convex control geometry keeps it inside
-  the complementary triangle. There is no gate column, detached network panel, or stochastic graph
-  layout.
+  larger node on one SourceRail parallel to the target diagonal. Source order maps monotonically
+  along that rail, and all source labels use one measured normal-side placement rule. Every link
+  begins and ends at those explicit node coordinates.
+- Each route is one quadratic Bezier from SourceNode centre to TargetNode centre. All links share
+  one contract-owned curvature magnitude. Targets before the ordered rail midpoint use negative
+  curvature and targets at or after it use positive curvature; for odd target counts the centre is
+  assigned to the second half. Geometry never depends on previously rendered routes, candidate
+  lanes, crossing scores, or stochastic layout.
+- Source and target nodes reuse the shared scatter marker contract: source marker area is 1.35 times
+  the base scatter area, target marker area is the base area, faces use scatter alpha, and edges use
+  the shared black fill-edge stroke. Source fills follow deterministic series colors; target fills
+  use one neutral Axiom color.
 - Pearson color is constructed from `AxiomRed -> AxiomWhite -> AxiomBlue`. Canonical Mantel p-value
   bins are `<0.01` (`AxiomOrange`), `0.01-0.05` (`AxiomGreen`), and `>=0.05` (faint `AxiomGrey`).
   Detailed mode retains `<0.001`, `0.001-0.01`, `0.01-0.05`, and `>=0.05` using `AxiomOrange`,
@@ -169,10 +175,10 @@ user-facing atlas.
 | coefficient annotation | deterministic text overlay | supported | decimal or percent |
 | significance modes | precomputed p-value layer | supported | explicit thresholds |
 | CI square, circle, rect | vector interval layer | supported | precomputed bounds only |
-| `geom_couple` | source-to-target Bézier subsystem | supported | deterministic, no force layout |
-| `nice_curvature` | source/order/density-aware lanes | supported | stable routing signature |
+| `geom_couple` | source-to-target Bezier subsystem | supported | one quadratic curve family |
+| `nice_curvature` principle | target-half curvature sign | supported | no route optimizer or prior-route state |
 | r and p encodings | deterministic width/color mappings | supported | unused bins retained |
-| multi-source coupling | physical-space-aware nodes | supported | arbitrary validated groups |
+| multi-source coupling | parallel physical SourceRail | supported | arbitrary validated groups |
 
 R dendrogram leaf orientation can differ when several merges have identical dissimilarity. AxiomFig
 uses a stable original-index tie rule, while preserving the requested Lance-Williams recurrence and

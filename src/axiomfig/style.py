@@ -368,12 +368,14 @@ def _collection_face_alpha(collection: object, alpha: float) -> None:
     collection.set_alpha(None)  # type: ignore[attr-defined]
 
 
-def apply_scatter_contract(collection: PathCollection) -> None:
+def apply_scatter_contract(collection: PathCollection, *, size_ratio: float = 1.0) -> None:
+    if not math.isfinite(size_ratio) or size_ratio <= 0.0:
+        raise ValueError("scatter marker size ratio must be positive")
     contract = load_contracts().style["plots"]["scatter"]
     _collection_face_alpha(collection, float(contract["alpha"]))
     collection.set_edgecolor(mcolors.to_rgba(str(contract["edge_color"]), 1.0))
     collection.set_linewidth(_stroke_width(contract["edge_width_token"]))
-    collection.set_sizes([float(contract["marker_size_pt2"])])
+    collection.set_sizes([float(contract["marker_size_pt2"]) * size_ratio])
 
 
 def apply_filled_collection_contract(
