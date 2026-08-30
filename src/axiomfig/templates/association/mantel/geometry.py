@@ -72,11 +72,7 @@ def cell_center(
 ) -> tuple[float, float]:
     """Map logical matrix indices into the orientation-owned display coordinate system."""
     x = bounds.x0 + column + 0.5
-    y = (
-        bounds.y0 + row + 0.5
-        if matrix_type == "lower"
-        else bounds.y1 - row - 0.5
-    )
+    y = bounds.y0 + row + 0.5 if matrix_type == "lower" else bounds.y1 - row - 0.5
     return x, y
 
 
