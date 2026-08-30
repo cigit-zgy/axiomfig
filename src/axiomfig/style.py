@@ -11,6 +11,7 @@ import matplotlib as mpl
 from matplotlib import colors as mcolors
 from matplotlib.axes import Axes
 from matplotlib.collections import PathCollection
+from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.container import BarContainer
 from matplotlib.ticker import AutoMinorLocator, MultipleLocator
 
@@ -49,9 +50,46 @@ def semantic_colormap(semantics: str, contracts: Contracts | None = None) -> str
     return value
 
 
+def palette_reference_color(reference: object, *, contracts: Contracts | None = None) -> str:
+    """Resolve a ``[palette, token]`` reference from the canonical color contract."""
+    if (
+        not isinstance(reference, (list, tuple))
+        or len(reference) != 2
+        or not all(isinstance(item, str) for item in reference)
+    ):
+        raise ValueError("palette reference must contain palette and token names")
+    return palette_color(reference[1], palette_name=reference[0], contracts=contracts)
+
+
+def axiom_colormap(name: str, contracts: Contracts | None = None) -> LinearSegmentedColormap:
+    """Construct an Axiom-native colormap exclusively from ``colors.yaml`` tokens."""
+    selected = contracts or load_contracts()
+    definitions = selected.colors.get("constructed_colormaps")
+    if not isinstance(definitions, Mapping) or name not in definitions:
+        raise ValueError(f"unknown Axiom colormap: {name!r}")
+    references = definitions[name]
+    if not isinstance(references, (list, tuple)) or len(references) < 2:
+        raise ValueError(f"invalid Axiom colormap definition: {name!r}")
+    colors = [palette_reference_color(reference, contracts=selected) for reference in references]
+    return LinearSegmentedColormap.from_list(name, colors, N=257)
+
+
 def mantel_plot_contract() -> Mapping[str, object]:
     """Return the central deterministic Mantel visual contract."""
     return load_contracts().style["plots"]["mantel"]
+
+
+def mantel_visual_color(name: str) -> str:
+    """Resolve a Mantel neutral/structural color through the shared contracts."""
+    matrix = mantel_plot_contract()["matrix"]
+    assert isinstance(matrix, Mapping)
+    key = f"{name}_color"
+    if key not in matrix:
+        raise ValueError(f"unknown Mantel visual color: {name!r}")
+    reference = matrix[key]
+    if isinstance(reference, str):
+        return palette_color(reference)
+    return palette_reference_color(reference)
 
 
 def mantel_link_width(mantel_r: float) -> float:

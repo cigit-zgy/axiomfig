@@ -4,42 +4,24 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any
 
 import numpy as np
 
-GLYPH_METHODS = ("circle", "square", "ellipse", "number", "shade", "color", "pie")
-MATRIX_TYPES = ("full", "upper", "lower", "mixed")
-ORDERING_MODES = ("original", "alphabet", "AOE", "FPC", "hclust")
-HCLUST_METHODS = (
-    "complete",
-    "ward",
-    "ward.D",
-    "ward.D2",
-    "single",
-    "average",
-    "mcquitty",
-    "median",
-    "centroid",
+from axiomfig.templates.association.mantel.composition import (
+    CI_MODES,
+    GLYPH_METHODS,
+    HCLUST_METHODS,
+    LINK_WIDTH_MODES,
+    MATRIX_TYPES,
+    NONSIGNIFICANT_MODES,
+    ORDERING_MODES,
+    SIGNIFICANCE_MODES,
+    CoefficientOverlay,
+    ConfidenceIntervalOverlay,
+    MantelComposition,
+    SignificanceOverlay,
+    normalize_composition,
 )
-SIGNIFICANCE_MODES = ("none", "mark", "p_value", "blank", "label_sig")
-CI_MODES = ("none", "square", "circle", "rect")
-NONSIGNIFICANT_MODES = ("hide", "fade", "show")
-LINK_WIDTH_MODES = ("binned", "continuous")
-
-_CHOICES: dict[str, tuple[str, ...]] = {
-    "matrix_method": GLYPH_METHODS,
-    "matrix_type": MATRIX_TYPES,
-    "order": ORDERING_MODES,
-    "hclust_method": HCLUST_METHODS,
-    "significance_mode": SIGNIFICANCE_MODES,
-    "ci_mode": CI_MODES,
-    "nonsignificant_links": NONSIGNIFICANT_MODES,
-    "link_width_mode": LINK_WIDTH_MODES,
-    "lower_method": GLYPH_METHODS,
-    "upper_method": GLYPH_METHODS,
-    "coefficient_format": ("decimal", "percent"),
-}
 
 
 @dataclass(frozen=True)
@@ -60,35 +42,6 @@ class MantelData:
     p_values: np.ndarray | None = None
     lower_ci: np.ndarray | None = None
     upper_ci: np.ndarray | None = None
-
-
-@dataclass(frozen=True)
-class MantelOptions:
-    matrix_method: str = "square"
-    matrix_type: str = "lower"
-    diagonal: str = "hide"
-    order: str = "original"
-    hclust_method: str = "complete"
-    clusters: int | None = None
-    lower_method: str = "square"
-    upper_method: str = "number"
-    coefficients: bool = False
-    coefficient_format: str = "decimal"
-    significance_mode: str = "none"
-    significance_thresholds: tuple[float, ...] = (0.05, 0.01, 0.001)
-    ci_mode: str = "none"
-    nonsignificant_links: str = "fade"
-    link_width_mode: str = "binned"
-
-
-def _choice(value: object, name: str) -> str:
-    if not isinstance(value, str):
-        raise ValueError(f"{name} must be a string")
-    aliases = {candidate.lower(): candidate for candidate in _CHOICES[name]}
-    try:
-        return aliases[value.strip().lower()]
-    except KeyError as exc:
-        raise ValueError(f"{name} must be one of {_CHOICES[name]}") from exc
 
 
 def _text(value: object, name: str) -> str:
@@ -181,54 +134,7 @@ def _links(value: object, labels: tuple[str, ...]) -> tuple[MantelLink, ...]:
     return tuple(normalized)
 
 
-def _thresholds(value: object) -> tuple[float, ...]:
-    if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
-        raise ValueError("significance_thresholds must be a sequence")
-    try:
-        thresholds = tuple(float(item) for item in value)
-    except (TypeError, ValueError) as exc:
-        raise ValueError("significance_thresholds must be numeric") from exc
-    if not thresholds or any(not 0.0 < item < 1.0 for item in thresholds):
-        raise ValueError("significance_thresholds must be between 0 and 1")
-    if any(first <= second for first, second in zip(thresholds, thresholds[1:], strict=False)):
-        raise ValueError("significance_thresholds must be strictly decreasing")
-    return thresholds
-
-
-def normalize_options(values: Mapping[str, object], *, size: int) -> MantelOptions:
-    normalized: dict[str, Any] = {}
-    for name in _CHOICES:
-        if name in values:
-            normalized[name] = _choice(values[name], name)
-    diagonal = values.get("diagonal", "hide")
-    if isinstance(diagonal, bool):
-        diagonal = "show" if diagonal else "hide"
-    if not isinstance(diagonal, str) or diagonal.strip().lower() not in {"show", "hide"}:
-        raise ValueError("diagonal must be 'show' or 'hide'")
-    normalized["diagonal"] = diagonal.strip().lower()
-    if "coefficients" in values:
-        if not isinstance(values["coefficients"], bool):
-            raise ValueError("coefficients must be boolean")
-        normalized["coefficients"] = values["coefficients"]
-    if "significance_thresholds" in values:
-        normalized["significance_thresholds"] = _thresholds(values["significance_thresholds"])
-    if "clusters" in values:
-        clusters = values["clusters"]
-        if isinstance(clusters, bool) or not isinstance(clusters, int) or not 2 <= clusters <= size:
-            raise ValueError(f"clusters must be an integer between 2 and {size}")
-        normalized["clusters"] = clusters
-    if "show_nonsignificant" in values and "nonsignificant_links" not in values:
-        show = values["show_nonsignificant"]
-        if not isinstance(show, bool):
-            raise ValueError("show_nonsignificant must be boolean")
-        normalized["nonsignificant_links"] = "show" if show else "hide"
-    options = MantelOptions(**normalized)
-    if options.clusters is not None and options.order != "hclust":
-        raise ValueError("cluster rectangles require order='hclust'")
-    return options
-
-
-def normalize_inputs(values: Mapping[str, object]) -> tuple[MantelData, MantelOptions]:
+def normalize_inputs(values: Mapping[str, object]) -> tuple[MantelData, MantelComposition]:
     labels = _labels(values["labels"])
     matrix = _matrix(values["correlation_matrix"], "correlation_matrix", size=len(labels))
     if not np.allclose(np.diag(matrix), 1.0, atol=1e-8, rtol=0.0):
@@ -253,17 +159,29 @@ def normalize_inputs(values: Mapping[str, object]) -> tuple[MantelData, MantelOp
             raise ValueError("CI lower bounds must not exceed upper bounds")
         if np.any(lower_ci[finite] > matrix[finite]) or np.any(matrix[finite] > upper_ci[finite]):
             raise ValueError("correlation estimates must lie within CI bounds")
-    options = normalize_options(values, size=len(labels))
-    if options.significance_mode != "none" and p_values is None:
+    composition = normalize_composition(values, size=len(labels))
+    significance = next(
+        (overlay for overlay in composition.overlays if isinstance(overlay, SignificanceOverlay)),
+        None,
+    )
+    confidence_interval = next(
+        (
+            overlay
+            for overlay in composition.overlays
+            if isinstance(overlay, ConfidenceIntervalOverlay)
+        ),
+        None,
+    )
+    if significance is not None and p_values is None:
         raise ValueError("significance_mode requires precomputed p_values")
-    if options.ci_mode != "none" and lower_ci is None:
+    if confidence_interval is not None and lower_ci is None:
         raise ValueError("ci_mode requires precomputed lower_ci and upper_ci")
-    return MantelData(matrix, labels, links, p_values, lower_ci, upper_ci), options
+    return MantelData(matrix, labels, links, p_values, lower_ci, upper_ci), composition
 
 
 def normalized_public_values(values: Mapping[str, object]) -> dict[str, object]:
     """Return adapter-ready values while preserving top-level role ownership."""
-    data, options = normalize_inputs(values)
+    data, composition = normalize_inputs(values)
     normalized = dict(values)
     normalized["correlation_matrix"] = data.correlation_matrix
     normalized["labels"] = np.asarray(data.labels, dtype=object)
@@ -283,25 +201,54 @@ def normalized_public_values(values: Mapping[str, object]) -> dict[str, object]:
     if data.lower_ci is not None:
         normalized["lower_ci"] = data.lower_ci
         normalized["upper_ci"] = data.upper_ci
-    option_values = {
-        "matrix_method": options.matrix_method,
-        "matrix_type": options.matrix_type,
-        "diagonal": options.diagonal,
-        "order": options.order,
-        "hclust_method": options.hclust_method,
-        "lower_method": options.lower_method,
-        "upper_method": options.upper_method,
-        "coefficient_format": options.coefficient_format,
-        "significance_mode": options.significance_mode,
-        "ci_mode": options.ci_mode,
-        "nonsignificant_links": options.nonsignificant_links,
-        "link_width_mode": options.link_width_mode,
+    normalized_values = {
+        "matrix_type": composition.matrix.matrix_type,
+        "diagonal": composition.matrix.diagonal,
+        "order": composition.matrix.order,
+        "hclust_method": composition.matrix.hclust_method,
+        "nonsignificant_links": composition.coupling.nonsignificant,
+        "link_width_mode": composition.coupling.width_mode,
+        "coupling": composition.coupling.enabled,
     }
-    for name in option_values:
+    normalized_values.update(
+        {
+            "matrix_method": composition.glyphs[0].method,
+            "coefficient_format": composition.glyphs[0].number_format,
+        }
+    )
+    if composition.matrix.matrix_type == "mixed":
+        normalized_values.update(
+            lower_method=composition.glyphs[0].method,
+            upper_method=composition.glyphs[1].method,
+        )
+    coefficient = next(
+        (overlay for overlay in composition.overlays if isinstance(overlay, CoefficientOverlay)),
+        None,
+    )
+    significance = next(
+        (overlay for overlay in composition.overlays if isinstance(overlay, SignificanceOverlay)),
+        None,
+    )
+    confidence_interval = next(
+        (
+            overlay
+            for overlay in composition.overlays
+            if isinstance(overlay, ConfidenceIntervalOverlay)
+        ),
+        None,
+    )
+    normalized_values.update(
+        clusters=composition.matrix.clusters,
+        coefficients=coefficient is not None,
+        significance_mode=(significance.mode if significance is not None else "none"),
+        significance_thresholds=(
+            significance.thresholds if significance is not None else (0.05, 0.01, 0.001)
+        ),
+        ci_mode=(confidence_interval.mode if confidence_interval is not None else "none"),
+    )
+    for name, value in normalized_values.items():
         if name in normalized:
-            normalized[name] = option_values[name]
-    if "significance_thresholds" in normalized:
-        normalized["significance_thresholds"] = options.significance_thresholds
+            normalized[name] = value
     return normalized
 
 
@@ -313,7 +260,6 @@ __all__ = [
     "MATRIX_TYPES",
     "MantelData",
     "MantelLink",
-    "MantelOptions",
     "NONSIGNIFICANT_MODES",
     "ORDERING_MODES",
     "SIGNIFICANCE_MODES",

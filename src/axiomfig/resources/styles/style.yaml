@@ -127,17 +127,33 @@ plots:
       minimum_cell_side: 0.18
       maximum_cell_side: 0.86
       grid_edge_color: AxiomGrey
-      cell_edge_color: black
-      color_semantics: diverging
+      cell_edge_color: [axiom_neutral, AxiomBlack]
+      background_color: [axiom_neutral, AxiomWhite]
+      missing_color: [axiom_classic, AxiomGrey]
+      colormap: axiom_diverging
+      source_node_radius: 0.075
+      target_anchor_radius: 0.035
+      target_rail_offset: 0.46
+      route_clearance: 0.34
+      route_lane_spacing: 0.055
+    ornaments:
+      lower:
+        legend_anchor_x_fraction: 0.55
+        p_legend_anchor_y_fraction: 0.02
+        strength_legend_anchor_y_fraction: 0.105
+      upper:
+        legend_anchor_x_fraction: 0.50
+        p_legend_anchor_y_fraction: 0.64
+        strength_legend_anchor_y_fraction: 0.725
     links:
       strength_breaks: [0.25, 0.50]
       widths_pt: [0.8, 1.4, 2.2]
       p_value_breaks: [0.001, 0.01, 0.05]
       p_value_colors:
-        - [axiom_deep, AxiomBlue]
-        - [axiom_classic, AxiomBlue]
-        - [axiom_soft, AxiomBlue]
-        - [axiom_soft, AxiomGrey]
+        - [axiom_classic, AxiomOrange]
+        - [axiom_classic, AxiomGreen]
+        - [axiom_classic, AxiomPurple]
+        - [axiom_classic, AxiomGrey]
       significant_alpha: 0.90
       nonsignificant_alpha: 0.24
       nonsignificant_mode: fade

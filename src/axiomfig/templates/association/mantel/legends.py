@@ -1,6 +1,9 @@
-"""Compact Pearson, Mantel-strength, and Mantel-p information keys."""
+"""Mantel ornament layer: Pearson colorbar and coupling explanation keys."""
 
 from __future__ import annotations
+
+from collections.abc import Mapping
+from dataclasses import dataclass
 
 import matplotlib as mpl
 import numpy as np
@@ -12,16 +15,26 @@ from matplotlib.patches import Rectangle
 from axiomfig.style import (
     FILL_EDGE_PT,
     MAIN_STROKE_PT,
+    axiom_colormap,
     mantel_link_width,
     mantel_p_style,
-    semantic_colormap,
+    mantel_plot_contract,
+    mantel_visual_color,
 )
 from axiomfig.templates.association.mantel.geometry import MantelGeometry
 
 
+@dataclass(frozen=True)
+class OrnamentRenderResult:
+    colorbar: object
+    legends: tuple[object, ...]
+
+
 def render_colorbar(axis: Axes, geometry: MantelGeometry) -> Rectangle:
     """Render a compact vector strip owned by the correlation matrix."""
-    cmap = mpl.colormaps[semantic_colormap("diverging")]
+    matrix_contract = mantel_plot_contract()["matrix"]
+    assert isinstance(matrix_contract, Mapping)
+    cmap = axiom_colormap(str(matrix_contract["colormap"]))
     norm = Normalize(vmin=-1.0, vmax=1.0)
     height = min(3.2, max(2.2, geometry.bounds.size * 0.28))
     width = 0.18
@@ -44,7 +57,7 @@ def render_colorbar(axis: Axes, geometry: MantelGeometry) -> Rectangle:
         width,
         height,
         facecolor="none",
-        edgecolor="black",
+        edgecolor=mantel_visual_color("cell_edge"),
         linewidth=FILL_EDGE_PT,
         zorder=3,
     )
@@ -55,7 +68,7 @@ def render_colorbar(axis: Axes, geometry: MantelGeometry) -> Rectangle:
         axis.plot(
             [x + width, x + width + 0.07],
             [tick_y, tick_y],
-            color="black",
+            color=mantel_visual_color("cell_edge"),
             linewidth=FILL_EDGE_PT,
             clip_on=True,
             zorder=3,
@@ -82,9 +95,15 @@ def render_colorbar(axis: Axes, geometry: MantelGeometry) -> Rectangle:
     return border
 
 
-def render_link_legends(axis: Axes) -> tuple[object, object]:
+def render_link_legends(axis: Axes, geometry: MantelGeometry) -> tuple[object, object]:
     strength_handles = [
-        Line2D([], [], color="black", linewidth=mantel_link_width(value), label=label)
+        Line2D(
+            [],
+            [],
+            color=mantel_visual_color("cell_edge"),
+            linewidth=mantel_link_width(value),
+            label=label,
+        )
         for value, label in ((0.1, "< 0.25"), (0.35, "0.25-0.50"), (0.65, ">= 0.50"))
     ]
     p_handles = [
@@ -117,9 +136,9 @@ def render_link_legends(axis: Axes) -> tuple[object, object]:
         handles=strength_handles,
         title="Mantel |r|",
         loc="lower left",
-        bbox_to_anchor=(0.055, 0.004),
+        bbox_to_anchor=geometry.strength_legend_anchor,
         bbox_transform=axis.transAxes,
-        ncol=1,
+        ncol=len(strength_handles),
         **common,
     )
     strength.set_gid("axiomfig-mantel-legend")
@@ -128,13 +147,24 @@ def render_link_legends(axis: Axes) -> tuple[object, object]:
         handles=p_handles,
         title="P value",
         loc="lower left",
-        bbox_to_anchor=(0.235, 0.004),
+        bbox_to_anchor=geometry.p_legend_anchor,
         bbox_transform=axis.transAxes,
-        ncol=2,
+        ncol=len(p_handles),
         **common,
     )
     p_legend.set_gid("axiomfig-mantel-legend")
     return strength, p_legend
 
 
-__all__ = ["render_colorbar", "render_link_legends"]
+def render_ornament_layer(
+    axis: Axes,
+    geometry: MantelGeometry,
+    *,
+    coupling_enabled: bool,
+) -> OrnamentRenderResult:
+    colorbar = render_colorbar(axis, geometry)
+    legends = render_link_legends(axis, geometry) if coupling_enabled else ()
+    return OrnamentRenderResult(colorbar, legends)
+
+
+__all__ = ["OrnamentRenderResult", "render_ornament_layer"]

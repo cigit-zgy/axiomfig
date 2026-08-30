@@ -71,11 +71,13 @@ def _assert_generated_tree(path: Path) -> None:
 
 def _prepare_gallery(root: Path) -> None:
     root.mkdir(parents=True, exist_ok=True)
-    allowed_roots = {*GALLERY_MODES, "latex", "technical"}
+    allowed_roots = {*GALLERY_MODES, "latex", "technical", "parity"}
     for path in root.iterdir():
         if not path.is_dir() or path.name not in allowed_roots:
             raise RuntimeError(f"unexpected Gallery content: {path}")
         _assert_generated_tree(path)
+        if path.name == "parity":
+            continue
         shutil.rmtree(path)
     for mode in GALLERY_MODES:
         (root / mode).mkdir()

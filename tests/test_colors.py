@@ -66,6 +66,7 @@ def test_round04_palettes_are_complete_and_have_stable_axiom_tokens() -> None:
         "tol_bright",
         "tol_muted",
         "axiom_classic",
+        "axiom_neutral",
         "axiom_soft",
         "axiom_deep",
         "axiom_warm",

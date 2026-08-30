@@ -65,8 +65,16 @@ def test_committed_gallery_has_no_numbered_flat_or_orphan_artifacts() -> None:
 
     gallery = Path(__file__).resolve().parents[1] / "gallery"
     expected = set(expected_gallery_stems())
-    pdfs = {path.relative_to(gallery).with_suffix("").as_posix() for path in gallery.rglob("*.pdf")}
-    pngs = {path.relative_to(gallery).with_suffix("").as_posix() for path in gallery.rglob("*.png")}
+    pdfs = {
+        path.relative_to(gallery).with_suffix("").as_posix()
+        for path in gallery.rglob("*.pdf")
+        if not path.relative_to(gallery).as_posix().startswith("parity/")
+    }
+    pngs = {
+        path.relative_to(gallery).with_suffix("").as_posix()
+        for path in gallery.rglob("*.png")
+        if not path.relative_to(gallery).as_posix().startswith("parity/")
+    }
 
     assert pdfs == pngs == expected
     assert not any(re.match(r"(?:^|/)\d+_", stem) for stem in pdfs)

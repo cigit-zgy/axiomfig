@@ -1,16 +1,20 @@
-"""Vector-native corrplot-style correlation glyph grammars."""
+"""Reusable vector correlation glyph primitives and glyph-layer rendering."""
 
 from __future__ import annotations
 
 import math
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping, Sequence
 
 import matplotlib as mpl
+import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.colors import Normalize
 from matplotlib.patches import Circle, Ellipse, Rectangle, Wedge
 
-from axiomfig.style import FILL_EDGE_PT, MAIN_STROKE_PT, mantel_plot_contract
+from axiomfig.style import FILL_EDGE_PT, mantel_plot_contract, mantel_visual_color
+from axiomfig.templates.association.mantel.composition import GlyphSpec
+from axiomfig.templates.association.mantel.data import MantelData
+from axiomfig.templates.association.mantel.geometry import MantelGeometry, cell_center
 
 
 def _cell_side() -> float:
@@ -19,18 +23,144 @@ def _cell_side() -> float:
     return float(matrix["maximum_cell_side"])
 
 
-def _tag(artist, *, method: str, row: int, column: int, value: float, triangle: str):
+def _tag(artist, *, method: str, row: int, column: int, value: float, region: str):
     artist.set_gid("axiomfig-mantel-glyph")
     artist._axiomfig_method = method
     artist._axiomfig_row = row
     artist._axiomfig_column = column
     artist._axiomfig_value = value
-    artist._axiomfig_triangle = triangle
+    artist._axiomfig_triangle = region
     return artist
 
 
-def _signed_color(cmap: mpl.colors.Colormap, norm: Normalize, value: float):
-    return cmap(norm(value))
+def _square(axis: Axes, x: float, y: float, value: float, color: object, _format: str):
+    side = _cell_side() * math.sqrt(abs(value))
+    artist = Rectangle(
+        (x - side / 2.0, y - side / 2.0),
+        side,
+        side,
+        facecolor=color,
+        edgecolor=mantel_visual_color("cell_edge"),
+        linewidth=FILL_EDGE_PT,
+        zorder=2,
+    )
+    axis.add_patch(artist)
+    return artist
+
+
+def _circle(axis: Axes, x: float, y: float, value: float, color: object, _format: str):
+    artist = Circle(
+        (x, y),
+        _cell_side() / 2.0 * math.sqrt(abs(value)),
+        facecolor=color,
+        edgecolor=mantel_visual_color("cell_edge"),
+        linewidth=FILL_EDGE_PT,
+        zorder=2,
+    )
+    axis.add_patch(artist)
+    return artist
+
+
+def _ellipse(axis: Axes, x: float, y: float, value: float, color: object, _format: str):
+    major = _cell_side()
+    minor = max(0.025, major * math.sqrt((1.0 - abs(value)) / (1.0 + abs(value))))
+    artist = Ellipse(
+        (x, y),
+        width=major,
+        height=minor,
+        angle=45.0 if value >= 0.0 else -45.0,
+        facecolor=color,
+        edgecolor=mantel_visual_color("cell_edge"),
+        linewidth=FILL_EDGE_PT,
+        zorder=2,
+    )
+    axis.add_patch(artist)
+    return artist
+
+
+def _number(axis: Axes, x: float, y: float, value: float, color: object, number_format: str):
+    label = f"{value * 100:.0f}%" if number_format == "percent" else f"{value:.2f}"
+    return axis.text(
+        x,
+        y,
+        label,
+        ha="center",
+        va="center",
+        color=color,
+        fontsize=mpl.rcParams["font.size"] * 0.80,
+        zorder=3,
+    )
+
+
+def _shade(axis: Axes, x: float, y: float, value: float, color: object, _format: str):
+    side = _cell_side()
+    artist = Rectangle(
+        (x - side / 2.0, y - side / 2.0),
+        side,
+        side,
+        facecolor=color,
+        edgecolor=mantel_visual_color("cell_edge"),
+        linewidth=FILL_EDGE_PT,
+        hatch="///" if value >= 0.0 else "\\\\\\",
+        zorder=2,
+    )
+    axis.add_patch(artist)
+    return artist
+
+
+def _color(axis: Axes, x: float, y: float, _value: float, color: object, _format: str):
+    side = _cell_side()
+    artist = Rectangle(
+        (x - side / 2.0, y - side / 2.0),
+        side,
+        side,
+        facecolor=color,
+        edgecolor=mantel_visual_color("cell_edge"),
+        linewidth=FILL_EDGE_PT,
+        zorder=2,
+    )
+    axis.add_patch(artist)
+    return artist
+
+
+def _pie(axis: Axes, x: float, y: float, value: float, color: object, _format: str):
+    radius = _cell_side() / 2.0
+    axis.add_patch(
+        Circle(
+            (x, y),
+            radius,
+            facecolor=mantel_visual_color("background"),
+            edgecolor=mantel_visual_color("missing"),
+            linewidth=FILL_EDGE_PT,
+            zorder=1.8,
+        )
+    )
+    sweep = 360.0 * abs(value)
+    theta1, theta2 = (90.0 - sweep, 90.0) if value < 0.0 else (90.0, 90.0 + sweep)
+    artist = Wedge(
+        (x, y),
+        radius,
+        theta1,
+        theta2,
+        facecolor=color,
+        edgecolor=mantel_visual_color("cell_edge"),
+        linewidth=FILL_EDGE_PT,
+        zorder=2,
+    )
+    axis.add_patch(artist)
+    return artist
+
+
+GlyphPrimitive = Callable[[Axes, float, float, float, object, str], object]
+GLYPH_PRIMITIVES: Mapping[str, GlyphPrimitive] = {
+    "circle": _circle,
+    "square": _square,
+    "ellipse": _ellipse,
+    "number": _number,
+    "shade": _shade,
+    "color": _color,
+    "pie": _pie,
+}
 
 
 def draw_missing_glyph(
@@ -40,7 +170,7 @@ def draw_missing_glyph(
     *,
     row: int,
     column: int,
-    triangle: str,
+    region: str,
 ):
     artist = axis.text(
         x,
@@ -48,7 +178,7 @@ def draw_missing_glyph(
         "×",
         ha="center",
         va="center",
-        color="#777777",
+        color=mantel_visual_color("missing"),
         fontsize=mpl.rcParams["font.size"] * 0.88,
         zorder=3,
     )
@@ -58,7 +188,7 @@ def draw_missing_glyph(
         row=row,
         column=column,
         value=float("nan"),
-        triangle=triangle,
+        region=region,
     )
 
 
@@ -69,229 +199,72 @@ def draw_glyph(
     y: float,
     value: float,
     *,
-    cmap: mpl.colors.Colormap,
-    norm: Normalize,
+    color: object,
     row: int,
     column: int,
-    triangle: str,
+    region: str,
     number_format: str = "decimal",
 ):
-    """Draw one correlation glyph and return its primary traceable artist."""
+    """Draw one cell-local primitive without knowing matrix masks or ordering."""
     if not math.isfinite(value):
-        return draw_missing_glyph(
-            axis,
-            x,
-            y,
-            row=row,
-            column=column,
-            triangle=triangle,
-        )
-    magnitude = abs(value)
-    color = _signed_color(cmap, norm, value)
-    cell_side = _cell_side()
-    if method == "square":
-        side = cell_side * math.sqrt(magnitude)
-        artist = Rectangle(
-            (x - side / 2.0, y - side / 2.0),
-            side,
-            side,
-            facecolor=color,
-            edgecolor="black",
-            linewidth=FILL_EDGE_PT,
-            zorder=2,
-        )
-    elif method == "circle":
-        artist = Circle(
-            (x, y),
-            cell_side / 2.0 * math.sqrt(magnitude),
-            facecolor=color,
-            edgecolor="black",
-            linewidth=FILL_EDGE_PT,
-            zorder=2,
-        )
-    elif method == "ellipse":
-        major = cell_side
-        minor = max(0.025, major * math.sqrt((1.0 - magnitude) / (1.0 + magnitude)))
-        artist = Ellipse(
-            (x, y),
-            width=major,
-            height=minor,
-            angle=45.0 if value >= 0.0 else -45.0,
-            facecolor=color,
-            edgecolor="black",
-            linewidth=FILL_EDGE_PT,
-            zorder=2,
-        )
-    elif method == "number":
-        label = f"{value * 100:.0f}%" if number_format == "percent" else f"{value:.2f}"
-        artist = axis.text(
-            x,
-            y,
-            label,
-            ha="center",
-            va="center",
-            color=color,
-            fontsize=mpl.rcParams["font.size"] * 0.80,
-            zorder=3,
-        )
-    elif method == "shade":
-        artist = Rectangle(
-            (x - cell_side / 2.0, y - cell_side / 2.0),
-            cell_side,
-            cell_side,
-            facecolor=color,
-            edgecolor="black",
-            linewidth=FILL_EDGE_PT,
-            hatch="///" if value >= 0.0 else "\\\\\\",
-            zorder=2,
-        )
-    elif method == "color":
-        artist = Rectangle(
-            (x - cell_side / 2.0, y - cell_side / 2.0),
-            cell_side,
-            cell_side,
-            facecolor=color,
-            edgecolor="black",
-            linewidth=FILL_EDGE_PT,
-            zorder=2,
-        )
-    elif method == "pie":
-        outline = Circle(
-            (x, y),
-            cell_side / 2.0,
-            facecolor="white",
-            edgecolor="#777777",
-            linewidth=FILL_EDGE_PT,
-            zorder=1.8,
-        )
-        axis.add_patch(outline)
-        sweep = 360.0 * magnitude
-        theta1, theta2 = (90.0 - sweep, 90.0) if value < 0.0 else (90.0, 90.0 + sweep)
-        artist = Wedge(
-            (x, y),
-            cell_side / 2.0,
-            theta1,
-            theta2,
-            facecolor=color,
-            edgecolor="black",
-            linewidth=FILL_EDGE_PT,
-            zorder=2,
-        )
-    else:
-        raise ValueError(f"unknown correlation glyph method: {method!r}")
-    if hasattr(axis, "add_patch") and isinstance(artist, (Rectangle, Circle, Ellipse, Wedge)):
-        axis.add_patch(artist)
+        return draw_missing_glyph(axis, x, y, row=row, column=column, region=region)
+    try:
+        primitive = GLYPH_PRIMITIVES[method]
+    except KeyError as exc:
+        raise ValueError(f"unknown correlation glyph method: {method!r}") from exc
+    artist = primitive(axis, x, y, value, color, number_format)
     return _tag(
         artist,
         method=method,
         row=row,
         column=column,
         value=value,
-        triangle=triangle,
+        region=region,
     )
 
 
-def draw_confidence_interval(
+def render_glyph_layer(
     axis: Axes,
-    mode: str,
-    x: float,
-    y: float,
-    estimate: float,
-    lower: float,
-    upper: float,
+    data: MantelData,
+    cells: Sequence[object],
+    spec: GlyphSpec,
+    geometry: MantelGeometry,
     *,
     cmap: mpl.colors.Colormap,
     norm: Normalize,
-    row: int,
-    column: int,
-):
-    """Draw one precomputed correlation interval using vector artists only."""
-    edge_lower = _signed_color(cmap, norm, lower)
-    edge_upper = _signed_color(cmap, norm, upper)
-    estimate_color = _signed_color(cmap, norm, estimate)
-    cell_side = _cell_side()
-    if mode == "square":
-        outer = cell_side * math.sqrt(max(abs(lower), abs(upper)))
-        artist = Rectangle(
-            (x - outer / 2.0, y - outer / 2.0),
-            outer,
-            outer,
-            facecolor="none",
-            edgecolor=edge_upper,
-            linewidth=MAIN_STROKE_PT,
-            zorder=2,
+    visible: set[tuple[int, int]],
+) -> tuple[object, ...]:
+    """Render one glyph primitive over one structural matrix region."""
+    rendered: list[object] = []
+    for cell in cells:
+        row, column, region = cell.row, cell.column, cell.region
+        if (row, column) not in visible:
+            continue
+        if spec.region != "full" and region != spec.region:
+            continue
+        value = float(data.correlation_matrix[row, column])
+        x, y = cell_center(
+            geometry.bounds,
+            row,
+            column,
+            matrix_type=geometry.target_rail.orientation.split("-", maxsplit=1)[0],
         )
-        inner = cell_side * math.sqrt(min(abs(lower), abs(upper)))
-        axis.add_patch(
-            Rectangle(
-                (x - inner / 2.0, y - inner / 2.0),
-                inner,
-                inner,
-                facecolor="none",
-                edgecolor=edge_lower,
-                linewidth=FILL_EDGE_PT,
-                zorder=2.1,
-            )
-        )
-    elif mode == "circle":
-        outer = cell_side / 2.0 * math.sqrt(max(abs(lower), abs(upper)))
-        artist = Circle(
-            (x, y),
-            outer,
-            facecolor="none",
-            edgecolor=edge_upper,
-            linewidth=MAIN_STROKE_PT,
-            zorder=2,
-        )
-        inner = cell_side / 2.0 * math.sqrt(min(abs(lower), abs(upper)))
-        axis.add_patch(
-            Circle(
-                (x, y),
-                inner,
-                facecolor="none",
-                edgecolor=edge_lower,
-                linewidth=FILL_EDGE_PT,
-                zorder=2.1,
-            )
-        )
-    elif mode == "rect":
-        low_y = y + 0.40 * lower
-        high_y = y + 0.40 * upper
-        artist = Rectangle(
-            (x - 0.20, low_y),
-            0.40,
-            max(high_y - low_y, 0.006),
-            facecolor=(*estimate_color[:3], 0.16),
-            edgecolor="black",
-            linewidth=FILL_EDGE_PT,
-            zorder=2,
-        )
-        for value, color in ((lower, edge_lower), (estimate, estimate_color), (upper, edge_upper)):
-            line_y = y + 0.40 * value
-            axis.plot(
-                [x - 0.24, x + 0.24],
-                [line_y, line_y],
+        color = cmap(norm(value)) if np.isfinite(value) else mantel_visual_color("missing")
+        rendered.append(
+            draw_glyph(
+                axis,
+                spec.method,
+                x,
+                y,
+                value,
                 color=color,
-                linewidth=MAIN_STROKE_PT,
-                zorder=2.2,
+                row=row,
+                column=column,
+                region=region,
+                number_format=spec.number_format,
             )
-    else:
-        raise ValueError(f"unknown CI mode: {mode!r}")
-    axis.add_patch(artist)
-    center = Circle(
-        (x, y),
-        0.035,
-        facecolor=estimate_color,
-        edgecolor="black",
-        linewidth=FILL_EDGE_PT,
-        zorder=2.4,
-    )
-    axis.add_patch(center)
-    artist.set_gid("axiomfig-mantel-confidence-interval")
-    artist._axiomfig_ci_mode = mode
-    artist._axiomfig_row = row
-    artist._axiomfig_column = column
-    return artist
+        )
+    return tuple(rendered)
 
 
-__all__ = ["draw_confidence_interval", "draw_glyph"]
+__all__ = ["GLYPH_PRIMITIVES", "draw_glyph", "render_glyph_layer"]

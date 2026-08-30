@@ -1,0 +1,245 @@
+version: 1
+upstream:
+  corrplot:
+    repository: https://github.com/taiyun/corrplot
+    revision: 62532f700e6c9d04b93ffbf0bf56e264b0e0368e
+    license: MIT
+  linkET:
+    repository: https://github.com/Hy4m/linkET
+    revision: fa26a874b59cffad730f8fadc860d3750f59c37b
+    license: GPL-2
+  ggcor:
+    repository: https://github.com/hannet91/ggcor
+    revision: 2e3f892919bf3c73f0d271df51708cc204a2d070
+    license: GPL-2
+
+examples:
+  - id: corrplot-circle-full
+    source: corrplot
+    source_ref: vignettes/example-corrplot.R
+    source_call: corrplot(M, method="circle")
+    fixture: matrix
+    composition: {matrix_type: full, matrix_method: circle, diagonal: show, coupling: false}
+    expected_output: gallery/parity/mantel/corrplot/circle-full
+  - id: corrplot-square-lower
+    source: corrplot
+    source_ref: vignettes/example-corrplot.R
+    source_call: corrplot(M, method="square", type="lower", diag=FALSE)
+    fixture: matrix
+    composition: {matrix_type: lower, matrix_method: square, diagonal: hide, coupling: false}
+    expected_output: gallery/parity/mantel/corrplot/square-lower
+  - id: corrplot-ellipse-upper-aoe
+    source: corrplot
+    source_ref: vignettes/example-corrplot.R
+    source_call: corrplot(M, method="ellipse", type="upper", order="AOE")
+    fixture: matrix
+    composition: {matrix_type: upper, matrix_method: ellipse, order: AOE, coupling: false}
+    expected_output: gallery/parity/mantel/corrplot/ellipse-upper-aoe
+  - id: corrplot-number-full
+    source: corrplot
+    source_ref: vignettes/example-corrplot.R
+    source_call: corrplot(M, method="number")
+    fixture: matrix
+    composition: {matrix_type: full, matrix_method: number, coupling: false}
+    expected_output: gallery/parity/mantel/corrplot/number-full
+  - id: corrplot-shade-aoe
+    source: corrplot
+    source_ref: vignettes/example-corrplot.R
+    source_call: corrplot(M, method="shade", order="AOE")
+    fixture: matrix
+    composition: {matrix_type: full, matrix_method: shade, order: AOE, coupling: false}
+    expected_output: gallery/parity/mantel/corrplot/shade-aoe
+  - id: corrplot-color-aoe
+    source: corrplot
+    source_ref: vignettes/example-corrplot.R
+    source_call: corrplot(M, method="color", order="AOE")
+    fixture: matrix
+    composition: {matrix_type: full, matrix_method: color, order: AOE, coupling: false}
+    expected_output: gallery/parity/mantel/corrplot/color-aoe
+  - id: corrplot-pie-aoe
+    source: corrplot
+    source_ref: vignettes/example-corrplot.R
+    source_call: corrplot(M, method="pie", order="AOE")
+    fixture: matrix
+    composition: {matrix_type: full, matrix_method: pie, order: AOE, coupling: false}
+    expected_output: gallery/parity/mantel/corrplot/pie-aoe
+  - id: corrplot-coefficients
+    source: corrplot
+    source_ref: vignettes/example-corrplot.R
+    source_call: corrplot(M, order="AOE", addCoef.col="grey")
+    fixture: matrix
+    composition: {matrix_type: lower, matrix_method: circle, order: AOE, coefficients: true, coupling: false}
+    expected_output: gallery/parity/mantel/corrplot/circle-coefficients
+
+  - id: corrplot-mixed-circle-ellipse
+    source: corrplot
+    source_ref: vignettes/example-corrplot.mixed.R
+    source_call: corrplot.mixed(M, lower="ellipse", upper="circle")
+    fixture: matrix
+    composition: {matrix_type: mixed, lower_method: ellipse, upper_method: circle, coupling: false}
+    expected_output: gallery/parity/mantel/mixed/circle-ellipse
+  - id: corrplot-mixed-square-number
+    source: corrplot
+    source_ref: vignettes/example-corrplot.mixed.R
+    source_call: corrplot.mixed(M, lower="square", upper="number")
+    fixture: matrix
+    composition: {matrix_type: mixed, lower_method: square, upper_method: number, coupling: false}
+    expected_output: gallery/parity/mantel/mixed/square-number
+  - id: corrplot-mixed-shade-pie
+    source: corrplot
+    source_ref: vignettes/example-corrplot.mixed.R
+    source_call: corrplot.mixed(M, lower="shade", upper="pie")
+    fixture: matrix
+    composition: {matrix_type: mixed, lower_method: shade, upper_method: pie, coupling: false}
+    expected_output: gallery/parity/mantel/mixed/shade-pie
+  - id: ggcor-mixed-square-mark
+    source: ggcor
+    source_ref: README.Rmd
+    source_call: quickcor(mtcars, cor.test=TRUE) + geom_square(lower) + geom_mark(upper)
+    fixture: statistical
+    composition: {matrix_type: mixed, lower_method: square, upper_method: color, significance_mode: mark, coupling: false}
+    expected_output: gallery/parity/mantel/mixed/ggcor-square-mark
+
+  - id: corrplot-order-original
+    source: corrplot
+    source_ref: vignettes/example-corrMatOrder.R
+    source_call: corrplot(M, order="original")
+    fixture: matrix
+    composition: {matrix_type: lower, matrix_method: square, order: original, coupling: false}
+    expected_output: gallery/parity/mantel/ordering/original
+  - id: corrplot-order-alphabet
+    source: corrplot
+    source_ref: R/corrMatOrder.R
+    source_call: corrplot(M, order="alphabet")
+    fixture: matrix
+    composition: {matrix_type: lower, matrix_method: square, order: alphabet, coupling: false}
+    expected_output: gallery/parity/mantel/ordering/alphabet
+  - id: corrplot-order-aoe
+    source: corrplot
+    source_ref: vignettes/example-corrMatOrder.R
+    source_call: corrplot(M, order="AOE")
+    fixture: matrix
+    composition: {matrix_type: lower, matrix_method: square, order: AOE, coupling: false}
+    expected_output: gallery/parity/mantel/ordering/aoe
+  - id: corrplot-order-fpc
+    source: corrplot
+    source_ref: vignettes/example-corrMatOrder.R
+    source_call: corrplot(M, order="FPC")
+    fixture: matrix
+    composition: {matrix_type: lower, matrix_method: square, order: FPC, coupling: false}
+    expected_output: gallery/parity/mantel/ordering/fpc
+  - id: corrplot-order-hclust-clusters
+    source: corrplot
+    source_ref: vignettes/example-corrplot.R
+    source_call: corrplot(M, order="hclust", addrect=3)
+    fixture: matrix
+    composition: {matrix_type: lower, matrix_method: square, order: hclust, clusters: 3, coupling: false}
+    expected_output: gallery/parity/mantel/ordering/hclust-clusters
+
+  - id: corrplot-significance-mark
+    source: corrplot
+    source_ref: vignettes/example-corrplot.R
+    source_call: corrplot(M, p.mat=P, insig="pch")
+    fixture: statistical
+    composition: {matrix_type: lower, matrix_method: circle, significance_mode: mark, coupling: false}
+    expected_output: gallery/parity/mantel/significance/mark
+  - id: corrplot-significance-p-value
+    source: corrplot
+    source_ref: vignettes/example-corrplot.R
+    source_call: corrplot(M, p.mat=P, insig="p-value")
+    fixture: statistical
+    composition: {matrix_type: lower, matrix_method: circle, significance_mode: p_value, coupling: false}
+    expected_output: gallery/parity/mantel/significance/p-value
+  - id: corrplot-significance-blank
+    source: corrplot
+    source_ref: vignettes/example-corrplot.R
+    source_call: corrplot(M, p.mat=P, type="lower", insig="blank", diag=FALSE)
+    fixture: statistical
+    composition: {matrix_type: lower, matrix_method: circle, significance_mode: blank, coupling: false}
+    expected_output: gallery/parity/mantel/significance/blank
+  - id: corrplot-significance-stars
+    source: corrplot
+    source_ref: vignettes/example-corrplot.R
+    source_call: corrplot(M, p.mat=P, insig="label_sig", sig.level=c(.001,.01,.05))
+    fixture: statistical
+    composition: {matrix_type: upper, matrix_method: color, order: AOE, significance_mode: label_sig, coupling: false}
+    expected_output: gallery/parity/mantel/significance/stars
+
+  - id: corrplot-ci-square
+    source: corrplot
+    source_ref: vignettes/example-corrplot.R
+    source_call: corrplot(M, low=lowCI, upp=uppCI, plotCI="square")
+    fixture: statistical
+    composition: {matrix_type: lower, matrix_method: square, ci_mode: square, coupling: false}
+    expected_output: gallery/parity/mantel/confidence_interval/square
+  - id: corrplot-ci-circle
+    source: corrplot
+    source_ref: vignettes/example-corrplot.R
+    source_call: corrplot(M, low=lowCI, upp=uppCI, plotCI="circle")
+    fixture: statistical
+    composition: {matrix_type: lower, matrix_method: circle, ci_mode: circle, coupling: false}
+    expected_output: gallery/parity/mantel/confidence_interval/circle
+  - id: corrplot-ci-rect
+    source: corrplot
+    source_ref: vignettes/example-corrplot.R
+    source_call: corrplot(M, lowCI=lowCI, uppCI=uppCI, plotC="rect")
+    fixture: statistical
+    composition: {matrix_type: lower, matrix_method: color, ci_mode: rect, coupling: false}
+    expected_output: gallery/parity/mantel/confidence_interval/rect
+
+  - id: linket-lower-coupling
+    source: linkET
+    source_ref: README.Rmd
+    source_call: qcorrplot(correlate(varechem), type="lower", diag=FALSE) + geom_square() + geom_couple(...)
+    fixture: canonical
+    composition: {matrix_type: lower, matrix_method: square, coupling: true}
+    expected_output: gallery/parity/mantel/linket/lower-coupling
+  - id: ggcor-upper-coupling
+    source: ggcor
+    source_ref: README.Rmd
+    source_call: quickcor(varechem, type="upper") + geom_square() + add_link(mantel02)
+    fixture: canonical
+    composition: {matrix_type: upper, matrix_method: square, coupling: true}
+    expected_output: gallery/parity/mantel/linket/upper-coupling
+  - id: linket-multi-source
+    source: linkET
+    source_ref: README.Rmd
+    source_call: mantel_test(..., spec_select=list(Spec01,Spec02,Spec03,Spec04)) + geom_couple(...)
+    fixture: canonical
+    composition: {matrix_type: lower, matrix_method: square, coupling: true}
+    expected_output: gallery/parity/mantel/coupling/multi-source
+  - id: linket-sparse-coupling
+    source: linkET
+    source_ref: R/geom-couple.R
+    source_call: geom_couple(data=sparse_mantel, curvature=nice_curvature())
+    fixture: sparse
+    composition: {matrix_type: lower, matrix_method: square, coupling: true}
+    expected_output: gallery/parity/mantel/coupling/sparse
+  - id: linket-dense-coupling
+    source: linkET
+    source_ref: R/geom-couple.R
+    source_call: geom_couple(data=dense_mantel, curvature=nice_curvature())
+    fixture: dense
+    composition: {matrix_type: lower, matrix_method: square, coupling: true}
+    expected_output: gallery/parity/mantel/coupling/dense
+  - id: linket-nonsignificant-hide
+    source: linkET
+    source_ref: README.Rmd
+    source_call: geom_couple(data=mantel |> filter(p < .05))
+    fixture: canonical
+    composition: {matrix_type: lower, matrix_method: square, coupling: true, nonsignificant_links: hide}
+    expected_output: gallery/parity/mantel/coupling/nonsignificant-hide
+  - id: linket-nonsignificant-fade
+    source: linkET
+    source_ref: README.Rmd
+    source_call: geom_couple(aes(colour=pd, size=rd), data=mantel)
+    fixture: canonical
+    composition: {matrix_type: lower, matrix_method: square, coupling: true, nonsignificant_links: fade}
+    expected_output: gallery/parity/mantel/coupling/nonsignificant-fade
+  - id: ggcor-upper-circle
+    source: ggcor
+    source_ref: README.Rmd
+    source_call: quickcor(mtcars, type="upper") + geom_circle2()
+    fixture: matrix
+    composition: {matrix_type: upper, matrix_method: circle, coupling: false}
+    expected_output: gallery/parity/mantel/corrplot/ggcor-upper-circle

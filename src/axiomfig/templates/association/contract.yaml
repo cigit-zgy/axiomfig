@@ -20,6 +20,7 @@ variants:
       - significance_mode
       - significance_thresholds
       - ci_mode
+      - coupling
       - nonsignificant_links
       - link_width_mode
       - show_nonsignificant

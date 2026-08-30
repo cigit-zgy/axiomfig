@@ -1,18 +1,28 @@
-"""Orchestration for the canonical Mantel visualization engine."""
+"""Orchestrate normalized Mantel data through independent visual layers."""
 
 from __future__ import annotations
 
+from collections import defaultdict
+from collections.abc import Mapping
+
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.colors import Normalize
 from matplotlib.figure import Figure
 
 from axiomfig.layout import add_panel_axes, create_panel_grid
-from axiomfig.templates.association.mantel.coupling import render_coupling
+from axiomfig.style import axiom_colormap, mantel_plot_contract
+from axiomfig.templates.association.mantel.coupling import render_coupling_layer
 from axiomfig.templates.association.mantel.data import MantelData, normalize_inputs
 from axiomfig.templates.association.mantel.geometry import solve_geometry
-from axiomfig.templates.association.mantel.legends import render_colorbar, render_link_legends
-from axiomfig.templates.association.mantel.matrix import render_matrix
+from axiomfig.templates.association.mantel.glyphs import render_glyph_layer
+from axiomfig.templates.association.mantel.legends import render_ornament_layer
+from axiomfig.templates.association.mantel.matrix import render_matrix_layer
 from axiomfig.templates.association.mantel.ordering import order_variables
+from axiomfig.templates.association.mantel.overlays import (
+    render_statistical_layers,
+    visible_glyph_cells,
+)
 
 _CANONICAL_LABELS = (
     "DO",
@@ -95,6 +105,25 @@ def _ordered_data(data: MantelData, indices: np.ndarray) -> MantelData:
     )
 
 
+def _source_groups(data: MantelData) -> tuple[str, ...]:
+    target_order = {label: index for index, label in enumerate(data.labels)}
+    grouped: dict[str, list[int]] = defaultdict(list)
+    first_seen: dict[str, int] = {}
+    for link in data.links:
+        first_seen.setdefault(link.source, len(first_seen))
+        grouped[link.source].append(target_order[link.target])
+    return tuple(
+        sorted(
+            grouped,
+            key=lambda source: (
+                float(np.mean(grouped[source])),
+                first_seen[source],
+                source,
+            ),
+        )
+    )
+
+
 def build_mantel(
     correlation_matrix: object | None = None,
     labels: object | None = None,
@@ -118,17 +147,14 @@ def build_mantel(
     nonsignificant_links: object | None = None,
     link_width_mode: object | None = None,
     show_nonsignificant: object | None = None,
+    coupling: object | None = None,
 ) -> Figure:
     if correlation_matrix is None and labels is None and links is None:
         values = canonical_mantel_values()
     elif correlation_matrix is None or labels is None or links is None:
         raise ValueError("Mantel requires correlation_matrix, labels, and links together")
     else:
-        values = {
-            "correlation_matrix": correlation_matrix,
-            "labels": labels,
-            "links": links,
-        }
+        values = {"correlation_matrix": correlation_matrix, "labels": labels, "links": links}
     for name, value in (
         ("p_values", p_values),
         ("lower_ci", lower_ci),
@@ -149,15 +175,17 @@ def build_mantel(
         ("nonsignificant_links", nonsignificant_links),
         ("link_width_mode", link_width_mode),
         ("show_nonsignificant", show_nonsignificant),
+        ("coupling", coupling),
     ):
         _provided(name, value, values)
-    data, options = normalize_inputs(values)
+
+    data, composition = normalize_inputs(values)
     ordering = order_variables(
         data.correlation_matrix,
         data.labels,
-        mode=options.order,
-        hclust_method=options.hclust_method,
-        clusters=options.clusters,
+        mode=composition.matrix.order,
+        hclust_method=composition.matrix.hclust_method,
+        clusters=composition.matrix.clusters,
     )
     ordered = _ordered_data(data, ordering.indices)
     original_to_position = {
@@ -166,26 +194,58 @@ def build_mantel(
     cluster_positions = tuple(
         tuple(original_to_position[index] for index in cluster) for cluster in ordering.clusters
     )
-    source_groups = tuple(dict.fromkeys(link.source for link in ordered.links))
-    geometry = solve_geometry(ordered.labels, source_groups, matrix_type=options.matrix_type)
+    source_groups = _source_groups(ordered) if composition.coupling.enabled else ()
+    geometry = solve_geometry(
+        ordered.labels,
+        source_groups,
+        matrix_type=composition.matrix.matrix_type,
+    )
 
     figure = plt.figure()
     layout = create_panel_grid(figure, 1, 1, panel_labels=False)
     axis, _ = add_panel_axes(layout, 0)
-    render_matrix(
+    matrix_result = render_matrix_layer(
         axis,
         ordered,
-        options,
+        composition.matrix,
         geometry,
+        show_target_anchors=composition.coupling.enabled,
+    )
+    matrix_contract = mantel_plot_contract()["matrix"]
+    assert isinstance(matrix_contract, Mapping)
+    cmap = axiom_colormap(str(matrix_contract["colormap"]))
+    norm = Normalize(vmin=-1.0, vmax=1.0)
+    visible = visible_glyph_cells(ordered, matrix_result.cells, composition.overlays)
+    for glyph in composition.glyphs:
+        render_glyph_layer(
+            axis,
+            ordered,
+            matrix_result.cells,
+            glyph,
+            geometry,
+            cmap=cmap,
+            norm=norm,
+            visible=visible,
+        )
+    render_statistical_layers(
+        axis,
+        ordered,
+        matrix_result.cells,
+        composition.overlays,
+        geometry,
+        matrix_type=composition.matrix.matrix_type,
+        cmap=cmap,
+        norm=norm,
         cluster_positions=cluster_positions,
     )
-    render_coupling(axis, ordered.links, options, geometry)
-    render_colorbar(axis, geometry)
-    render_link_legends(axis)
+    render_coupling_layer(axis, ordered.links, composition.coupling, geometry)
+    render_ornament_layer(axis, geometry, coupling_enabled=composition.coupling.enabled)
     axis.set_xlim(*geometry.x_limits)
     axis.set_ylim(*geometry.y_limits)
     axis.set_aspect("equal", adjustable="box")
     axis.set_axis_off()
+    figure._axiomfig_mantel_composition = composition
+    figure._axiomfig_mantel_geometry = geometry
     return figure
 
 

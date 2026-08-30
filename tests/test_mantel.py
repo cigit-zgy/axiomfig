@@ -191,12 +191,14 @@ def test_mantel_dense_case_keeps_nonsignificant_links_faint_and_contained() -> N
     plt.close(figure)
 
 
-def test_mantel_legends_labels_and_matrix_have_disjoint_footprints() -> None:
-    figure = _build(DENSE)
+@pytest.mark.parametrize("matrix_type", ["lower", "upper"])
+def test_mantel_legends_labels_and_matrix_have_disjoint_footprints(matrix_type: str) -> None:
+    figure = _build({**DENSE, "matrix_type": matrix_type})
     renderer = figure.canvas.get_renderer()
     legends = _gid_children(figure, "axiomfig-mantel-legend")
     cells = _gid_children(figure, "axiomfig-mantel-glyph")
     labels = _gid_children(figure, "axiomfig-mantel-variable-label")
+    source_labels = _gid_children(figure, "axiomfig-mantel-source-label")
 
     assert len(legends) == 2
     assert all(isinstance(legend, Legend) for legend in legends)
@@ -205,5 +207,12 @@ def test_mantel_legends_labels_and_matrix_have_disjoint_footprints() -> None:
     label_boxes = [label.get_window_extent(renderer) for label in labels]
     assert not legend_boxes[0].overlaps(legend_boxes[1])
     assert not any(legend.overlaps(cell) for legend in legend_boxes for cell in cell_boxes)
+    assert not any(
+        legend.overlaps(source.get_window_extent(renderer))
+        for legend in legend_boxes
+        for source in source_labels
+    )
     assert not any(first.overlaps(second) for first, second in combinations(label_boxes, 2))
+    source_boxes = [label.get_window_extent(renderer) for label in source_labels]
+    assert not any(first.overlaps(second) for first, second in combinations(source_boxes, 2))
     plt.close(figure)

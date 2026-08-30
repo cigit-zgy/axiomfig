@@ -330,16 +330,21 @@ def validate_gallery(
 ) -> list[GalleryEntry]:
     gallery = Path(gallery)
     pdfs = sorted(gallery.rglob("*.pdf"))
+    selected_pdfs = pdfs
     if expected_stems is not None:
         expected = {f"{stem}.pdf" for stem in expected_stems}
-        actual = {path.relative_to(gallery).as_posix() for path in pdfs}
+        official_pdfs = [
+            path for path in pdfs if not path.relative_to(gallery).as_posix().startswith("parity/")
+        ]
+        actual = {path.relative_to(gallery).as_posix() for path in official_pdfs}
         if actual != expected:
             raise ValidationError(
                 f"gallery PDF set mismatch; missing={sorted(expected - actual)}, "
                 f"unexpected={sorted(actual - expected)}"
             )
+        selected_pdfs = official_pdfs
     entries = []
-    for pdf in pdfs:
+    for pdf in selected_pdfs:
         png = pdf.with_suffix(".png")
         if not png.exists():
             raise ValidationError(f"missing PNG preview for {pdf.name}: {png}")

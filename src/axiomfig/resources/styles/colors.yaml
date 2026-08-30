@@ -7,7 +7,16 @@ colormaps:
   diverging: RdBu_r
   cyclic: twilight
 
+constructed_colormaps:
+  axiom_diverging:
+    - [axiom_classic, AxiomRed]
+    - [axiom_neutral, AxiomWhite]
+    - [axiom_classic, AxiomBlue]
+
 palettes:
+  axiom_neutral:
+    AxiomWhite: "#FFFFFF"
+    AxiomBlack: "#000000"
   tol_bright:
     TolBlue: "#4477AA"
     TolRed: "#EE6677"

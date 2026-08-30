@@ -77,6 +77,30 @@ semantics:
 Physical sizes, line widths, colors, label coordinates, curve control points, legend coordinates,
 and colorbar geometry are deterministic runtime decisions and are not Figure Intent fields.
 
+## Composition anatomy
+
+Mantel uses one normalized, immutable composition rather than a collection of finished-picture
+branches:
+
+```text
+MantelComposition
+  -> MatrixSpec                 structural mask, ordering, diagonal, target rail
+  -> GlyphSpec[]               one reusable cell primitive per structural region
+  -> StatisticalOverlay[]      coefficient, significance, CI, cluster outline
+  -> CouplingSpec              source groups and Mantel relationships
+  -> OrnamentLayer             Pearson colorbar and Mantel legends
+```
+
+The matrix layer selects cells before a glyph is known. Each glyph receives the same cell geometry,
+correlation value, Axiom color token, and visibility flag. Mixed mode is therefore two ordinary
+glyph layers with lower and upper masks; the 49 method pairs are coverage of the same composition
+path, not 49 implementations. Statistical overlays are independent artists and can coexist when
+the supplied scientific inputs make the combination valid.
+
+Ordering is a single data transformation before rendering. It applies the same permutation to the
+matrix, labels, p values, CI bounds, cluster membership, and Mantel target mapping. No artist layer
+may reorder its own data.
+
 ## Visual grammar
 
 - `square` and `circle` use area, not side or radius, to encode `abs(r)`.
@@ -88,8 +112,15 @@ and colorbar geometry are deterministic runtime decisions and are not Figure Int
 - `mark` and `p_value` identify non-significant cells, `blank` suppresses them, and `label_sig`
   labels significant cells using the explicit thresholds.
 - CI modes visualize supplied bounds with vector artists; they never estimate intervals.
-- Coupling routes source nodes directly to matrix-owned target anchors. Target names are not repeated
-  in a separate link column.
+- Coupling routes source nodes directly to matrix-owned target anchors. A lower triangle uses a
+  lower-left source region and a lower-left-to-upper-right diagonal rail; an upper triangle mirrors
+  this as upper-left-to-lower-right. Target names are not repeated in a separate link column.
+- Each link is one deterministic rail-normal cubic. Its clearance derives from source order, target
+  order, link density, orientation, and lane index; there is no gate column or stochastic graph
+  layout.
+- Pearson color is constructed from `AxiomRed -> AxiomWhite -> AxiomBlue`. Mantel p-value bins use
+  `AxiomOrange`, `AxiomGreen`, `AxiomPurple`, and `AxiomGrey`; all tokens originate in
+  `resources/styles/colors.yaml`.
 - Mantel p bins (`<0.001`, `0.001-0.01`, `0.01-0.05`, `>=0.05`) and strength bins remain in the
   legends even when a dataset does not use every bin.
 
@@ -99,6 +130,10 @@ The engine is an independent Matplotlib/NumPy implementation informed by the vis
 surface of [corrplot](https://github.com/taiyun/corrplot),
 [linkET](https://github.com/Hy4m/linkET), and [ggcor](https://github.com/hannet91/ggcor).
 No R source is copied and no R runtime is required.
+
+The audited mapping is stored in `references/mantel-r-parity.yaml`. Its generated PDF/PNG evidence
+lives under `gallery/parity/mantel/` and is intentionally outside the public Template Registry.
+Normal Agents do not read the manifest or atlas.
 
 | R capability | AxiomFig implementation | Status | Notes |
 |---|---|---|---|
