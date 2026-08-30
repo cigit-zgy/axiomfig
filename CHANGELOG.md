@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- strengthened the five progressively disclosed template-knowledge topics with scientific routing,
+  clarification, upstream-analysis, units, uncertainty, scale, and causality boundaries across all
+  55 public templates;
+- expanded the Agent protocol specification from 72 to 120 decision-boundary cases, including 12
+  Chinese research requests, and added model/provider-independent JSONL decision scoring with a
+  separate scientific-safety metric;
+- removed hidden scientific defaults from external estimation, Bland–Altman, and precision–recall
+  rendering, and made diverging heatmap/contour centers explicitly executable scientific semantics.
+
 ## 1.1.0 — 2026-08-31
 
 - converged publication contracts across the full 55-template Gallery, including distribution raw-point density, bounded ECDF markers, hexbin continuous count colorbars, and quiver boundary protection;
