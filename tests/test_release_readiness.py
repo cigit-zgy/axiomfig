@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_project_metadata_declares_v1_and_public_repository() -> None:
     document = __import__("tomllib").loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
 
-    assert document["project"]["version"] == "1.0.0"
+    assert document["project"]["version"] == "1.1.0"
     assert document["project"]["license"] == "MIT"
     assert document["project"]["urls"]["Repository"].endswith("/axiomfig-skill")
     assert "dev" in document["project"]["optional-dependencies"]
