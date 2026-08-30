@@ -9,9 +9,11 @@ import sys
 from dataclasses import asdict
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT))
 
-from axiomfig.evaluation import run_evaluation
+from tests.evaluation.run import run_evaluation  # noqa: E402
 
 
 def main() -> int:

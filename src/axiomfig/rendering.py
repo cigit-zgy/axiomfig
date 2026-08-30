@@ -9,11 +9,10 @@ from pathlib import Path
 import matplotlib as mpl
 from matplotlib.figure import Figure
 
-from axiomfig.anatomy import validate_figure_anatomy
 from axiomfig.config import build_rcparams, load_contracts
-from axiomfig.layout import invalidate_panel_layout
-from axiomfig.template_helpers import apply_output_margin
+from axiomfig.layout import apply_output_margin, invalidate_panel_layout
 from axiomfig.typography import apply_figure_typography, discover_fonts
+from axiomfig.validation import validate_figure_anatomy
 
 
 class RenderError(RuntimeError):

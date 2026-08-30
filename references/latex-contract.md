@@ -59,7 +59,9 @@ Use `\setmathfont{...}` to select the OpenType math font, `\symup{...}` for upri
 {\color{AxiomBlue} scoped text}
 ```
 
-Use `\definecolor{name}{HTML}{RRGGBB}` for a named canonical color, `\textcolor{name}{...}` for an inline span, and scoped `\color{name}` for a group. AxiomFig's generated definitions come from `styles/colors.yaml`.
+Use `\definecolor{name}{HTML}{RRGGBB}` for a named canonical color, `\textcolor{name}{...}` for an
+inline span, and scoped `\color{name}` for a group. AxiomFig's generated definitions come from
+`src/axiomfig/resources/styles/colors.yaml`.
 
 ## Current boundary
 

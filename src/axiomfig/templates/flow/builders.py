@@ -7,7 +7,7 @@ from matplotlib.figure import Figure
 from matplotlib.patches import PathPatch, Rectangle
 from matplotlib.path import Path
 
-from axiomfig.contracts import FILL_EDGE_PT
+from axiomfig.style import FILL_EDGE_PT
 
 
 def _ribbon(

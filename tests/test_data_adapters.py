@@ -4,16 +4,17 @@ import pytest
 
 
 def test_all_public_templates_have_an_external_operability_class() -> None:
-    from axiomfig.data_adapters import DATA_ADAPTERS, OPERABILITY
-    from axiomfig.templates.registry import public_template_specs
+    from axiomfig.templates import TEMPLATE_ADAPTERS
+    from axiomfig.templates.registry import public_template_operability, public_template_specs
 
     public_ids = {spec.template_id for spec in public_template_specs()}
+    operability = public_template_operability()
 
-    assert public_ids == DATA_ADAPTERS
-    assert set(OPERABILITY) == public_ids
-    assert sum(value == "direct" for value in OPERABILITY.values()) == 28
-    assert sum(value == "precomputed" for value in OPERABILITY.values()) == 27
-    assert set(OPERABILITY.values()) == {"direct", "precomputed"}
+    assert public_ids == set(TEMPLATE_ADAPTERS)
+    assert set(operability) == public_ids
+    assert sum(value == "direct" for value in operability.values()) == 28
+    assert sum(value == "precomputed" for value in operability.values()) == 27
+    assert set(operability.values()) == {"direct", "precomputed"}
 
 
 @pytest.mark.parametrize(
@@ -62,7 +63,7 @@ def test_external_contracts_use_scientifically_explicit_roles(
 def test_adapter_normalizes_equal_length_line_data_without_dropping_roles() -> None:
     import numpy as np
 
-    from axiomfig.data_adapters import adapt_template_data
+    from axiomfig.templates import adapt_template_data
 
     adapted = adapt_template_data(
         "line/single",
@@ -76,21 +77,21 @@ def test_adapter_normalizes_equal_length_line_data_without_dropping_roles() -> N
 
 
 def test_adapter_rejects_mismatched_vectors_before_builder_execution() -> None:
-    from axiomfig.data_adapters import adapt_template_data
+    from axiomfig.templates import adapt_template_data
 
     with pytest.raises(ValueError, match="equal-length"):
         adapt_template_data("scatter/simple", {"x": [1, 2, 3], "y": [1, 2]})
 
 
 def test_adapter_rejects_unknown_roles_instead_of_silently_dropping_them() -> None:
-    from axiomfig.data_adapters import adapt_template_data
+    from axiomfig.templates import adapt_template_data
 
     with pytest.raises(ValueError, match="does not accept"):
         adapt_template_data("bar/vertical", {"category": ["A"], "value": [1], "mystery": [2]})
 
 
 def test_adapter_validates_rectangular_heatmap_and_label_shapes() -> None:
-    from axiomfig.data_adapters import adapt_template_data
+    from axiomfig.templates import adapt_template_data
 
     with pytest.raises(ValueError, match="row_labels"):
         adapt_template_data(
@@ -105,7 +106,7 @@ def test_adapter_validates_rectangular_heatmap_and_label_shapes() -> None:
 
 
 def test_adapter_validates_structured_mantel_links() -> None:
-    from axiomfig.data_adapters import adapt_template_data
+    from axiomfig.templates import adapt_template_data
 
     with pytest.raises(ValueError, match="links"):
         adapt_template_data(

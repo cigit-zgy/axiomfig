@@ -4,11 +4,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.figure import Figure
 
-from axiomfig.contracts import FILL_EDGE_PT
-from axiomfig.template_helpers import (
+from axiomfig.ornaments import request_legend
+from axiomfig.style import (
+    FILL_EDGE_PT,
     apply_axis_contract,
     apply_nice_linear_axis,
-    place_legend_above,
     series_style,
 )
 
@@ -150,7 +150,7 @@ def build_kaplan_meier(
     apply_nice_linear_axis(axis, *x_limits, coordinate="x")
     apply_nice_linear_axis(axis, 0.0, 1.0, coordinate="y")
     if len(curves) > 1:
-        place_legend_above(axis)
+        request_legend(axis)
     return figure
 
 

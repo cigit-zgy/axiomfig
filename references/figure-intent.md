@@ -28,7 +28,7 @@ bar width, colorbar width, subplot spacing, and arbitrary fields. It also reject
 uncertainty types, centers, significance thresholds, or other required contract fields.
 
 CSV supplies named columns. JSON supplies a mapping of keys to arrays/matrices or a non-empty array
-of row objects. All 55 public templates have deliberately explicit external-data adapters. Read only
+of row objects. All 55 public templates have deliberately explicit family-owned adapters. Read only
 the selected family's `contract.yaml` to discover its required and optional roles. Twenty-eight
 templates consume direct observations, categorical records, matrices, grids, or flow records;
 twenty-seven consume precomputed scientific results such as intervals, ordination coordinates,

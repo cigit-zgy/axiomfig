@@ -1,5 +1,6 @@
 family: flow
 variants:
   sankey:
+    input_mode: direct
     required: [source, target, value]
     optional: [node_labels, flow_labels]

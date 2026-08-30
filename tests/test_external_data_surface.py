@@ -8,17 +8,19 @@ import yaml
 
 def _corpus() -> tuple[list[dict[str, object]], dict[str, dict[str, object]]]:
     root = Path(__file__).resolve().parents[1]
-    cases_document = yaml.safe_load((root / "evaluation/cases.yaml").read_text(encoding="utf-8"))
+    cases_document = yaml.safe_load(
+        (root / "tests/evaluation/cases.yaml").read_text(encoding="utf-8")
+    )
     fixture_document = yaml.safe_load(
-        (root / "evaluation/fixtures.yaml").read_text(encoding="utf-8")
+        (root / "tests/evaluation/fixtures.yaml").read_text(encoding="utf-8")
     )
     return cases_document["cases"], fixture_document["fixtures"]
 
 
 def test_every_public_template_executes_true_external_data_intent() -> None:
-    from axiomfig.anatomy import validate_figure_anatomy
     from axiomfig.intent import build_intent_figure, parse_figure_intent
     from axiomfig.templates.registry import public_template_specs
+    from axiomfig.validation import validate_figure_anatomy
 
     cases, fixtures = _corpus()
     public_ids = {spec.template_id for spec in public_template_specs()}

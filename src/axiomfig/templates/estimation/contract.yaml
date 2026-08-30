@@ -1,11 +1,14 @@
 family: estimation
 variants:
   forest:
+    input_mode: precomputed
     required: [label, estimate, interval, uncertainty_type]
     optional: [reference, xlabel]
   point_interval:
+    input_mode: precomputed
     required: [label, estimate, interval, uncertainty_type]
     optional: [group, xlabel]
   coefficient:
+    input_mode: precomputed
     required: [term, estimate, interval, uncertainty_type]
     optional: [model, reference, xlabel]

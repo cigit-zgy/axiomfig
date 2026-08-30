@@ -1,26 +1,34 @@
 family: distribution
 variants:
   histogram:
+    input_mode: direct
     required: [value]
     optional: [bins, xlabel, ylabel]
   density:
+    input_mode: precomputed
     required: [x, density]
     optional: [group, xlabel, ylabel]
   ecdf:
+    input_mode: direct
     required: [value]
     optional: [group, xlabel, ylabel]
   box:
+    input_mode: direct
     required: [value, category]
     optional: [ylabel]
   violin:
+    input_mode: direct
     required: [value, category]
     optional: [ylabel]
   box_violin:
+    input_mode: direct
     required: [value, category]
     optional: [ylabel]
   strip:
+    input_mode: direct
     required: [value, category]
     optional: [jitter, ylabel]
   raincloud:
+    input_mode: direct
     required: [value, category]
     optional: [jitter, summary, ylabel]

@@ -50,6 +50,7 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 axiomfig = [
+  "resources/styles/*.yaml",
   "resources/latex/*.sty",
   "resources/latex/*.tex",
   "resources/fonts/*.otf",
@@ -58,18 +59,6 @@ axiomfig = [
   "templates/index.yaml",
   "templates/*/contract.yaml",
 ]
-
-[tool.setuptools.data-files]
-"share/axiomfig/styles" = ["styles/style.yaml", "styles/fonts.yaml", "styles/colors.yaml"]
-"share/axiomfig/template-knowledge" = [
-  "references/template-knowledge/index.yaml",
-  "references/template-knowledge/trend-comparison.md",
-  "references/template-knowledge/distribution-relationship.md",
-  "references/template-knowledge/uncertainty-model.md",
-  "references/template-knowledge/matrix-multivariate.md",
-  "references/template-knowledge/domain-specialized.md",
-]
-"share/axiomfig/evaluation" = ["evaluation/cases.yaml", "evaluation/fixtures.yaml"]
 
 [tool.pytest.ini_options]
 addopts = "-ra"

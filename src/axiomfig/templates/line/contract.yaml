@@ -1,23 +1,30 @@
 family: line
 variants:
   single:
+    input_mode: direct
     required: [x, y]
     optional: [xlabel, ylabel]
   multi:
+    input_mode: direct
     required: [x, series_values, series_labels]
     optional: [xlabel, ylabel]
   marker:
+    input_mode: direct
     required: [x, y]
     optional: [xlabel, ylabel]
   confidence_band:
+    input_mode: precomputed
     required: [x, estimate, lower, upper, uncertainty_type]
     optional: [xlabel, ylabel]
   errorbar:
+    input_mode: precomputed
     required: [x, estimate, error, uncertainty_type]
     optional: [xlabel, ylabel]
   step:
+    input_mode: direct
     required: [x, y]
     optional: [where, xlabel, ylabel]
   area:
+    input_mode: direct
     required: [x, y]
     optional: [baseline, xlabel, ylabel]

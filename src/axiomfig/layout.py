@@ -60,6 +60,64 @@ class FigureLayout:
         return None
 
 
+def apply_single_panel_layout(figure: Figure) -> None:
+    """Apply the canonical margins for one ordinary panel."""
+    margins = load_contracts().style["layout"]["single_panel"]["margins"]
+    figure.subplots_adjust(**{key: float(value) for key, value in margins.items()})
+
+
+def apply_output_margin(figure: Figure) -> None:
+    """Fit visible artists to physical padding while preserving the page size."""
+    from axiomfig.ornaments import finalize_ornaments, refresh_panel_labels
+
+    if get_figure_layout(figure) is not None:
+        solve_panel_layout(figure)
+        finalize_ornaments(figure)
+        return
+    contract = load_contracts().style["output"]
+    mode = str(contract["margin_mode"])
+    if mode == "normal":
+        return
+    padding_px = float(contract["padding_pt"]) * figure.dpi / 72.0
+    tolerance_px = 0.25
+    for _ in range(8):
+        refresh_panel_labels(figure)
+        figure.canvas.draw()
+        renderer = figure.canvas.get_renderer()
+        legends = [
+            legend
+            for axis in figure.axes
+            if (legend := axis.get_legend()) is not None and legend.get_visible()
+        ]
+        tight = figure.get_tightbbox(renderer, bbox_extra_artists=legends).transformed(
+            figure.dpi_scale_trans
+        )
+        width, height = figure.bbox.width, figure.bbox.height
+        delta_left = (padding_px - tight.x0) / width
+        delta_right = (tight.x1 - (width - padding_px)) / width
+        delta_bottom = (padding_px - tight.y0) / height
+        delta_top = (tight.y1 - (height - padding_px)) / height
+        if (
+            max(
+                abs(delta_left * width),
+                abs(delta_right * width),
+                abs(delta_bottom * height),
+                abs(delta_top * height),
+            )
+            <= tolerance_px
+        ):
+            break
+        subplotpars = figure.subplotpars
+        left = max(0.01, subplotpars.left + delta_left)
+        right = min(0.99, subplotpars.right - delta_right)
+        bottom = max(0.01, subplotpars.bottom + delta_bottom)
+        top = min(0.99, subplotpars.top - delta_top)
+        if left >= right or bottom >= top:
+            raise ValueError("output padding cannot fit visible artists on the physical page")
+        figure.subplots_adjust(left=left, right=right, bottom=bottom, top=top)
+    refresh_panel_labels(figure)
+
+
 def _figure_size_pt(figure: Figure) -> tuple[float, float]:
     return figure.get_figwidth() * 72.0, figure.get_figheight() * 72.0
 

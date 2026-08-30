@@ -5,12 +5,12 @@ import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
 
-from axiomfig.contracts import MAIN_STROKE_PT
 from axiomfig.layout import add_panel_axes, create_panel_grid
-from axiomfig.template_helpers import (
+from axiomfig.ornaments import request_legend
+from axiomfig.style import (
+    MAIN_STROKE_PT,
     apply_filled_collection_contract,
     apply_scatter_contract,
-    place_legend_above,
 )
 from axiomfig.templates.heatmap.builders import CORRELATION, CORRELATION_LABELS, add_matrix
 
@@ -130,7 +130,7 @@ def build_mantel(
     )
     for proxy in proxies:
         link_axis.add_line(proxy)
-    place_legend_above(link_axis)
+    request_legend(link_axis)
     link_axis.set(xlim=(0.0, 1.0), ylim=(0.0, 1.0))
     link_axis.set_axis_off()
     return figure
@@ -216,7 +216,7 @@ def build_correlation_network(
     )
     for proxy in proxies:
         axis.add_line(proxy)
-    place_legend_above(axis)
+    request_legend(axis)
     axis.set(xlim=(0.0, 1.0), ylim=(0.0, 1.0))
     axis.set_axis_off()
     return figure

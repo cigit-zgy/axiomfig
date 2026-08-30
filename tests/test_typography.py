@@ -42,7 +42,7 @@ def test_font_discovery_uses_only_latin_math_and_mono_roles(
 def test_sans_mode_maps_all_mathtext_roles_to_latin_modern_sans() -> None:
     from axiomfig.config import build_rcparams
 
-    params = build_rcparams(load_contracts(ROOT / "styles"), typography="sans")
+    params = build_rcparams(load_contracts(), typography="sans")
 
     assert params["mathtext.fontset"] == "custom"
     assert params["mathtext.rm"] == "Latin Modern Sans"
@@ -51,7 +51,7 @@ def test_sans_mode_maps_all_mathtext_roles_to_latin_modern_sans() -> None:
 
 
 def test_font_metadata_declares_optional_commercial_system_fonts_unbundled() -> None:
-    contracts = load_contracts(ROOT / "styles")
+    contracts = load_contracts()
     optional = contracts.fonts["optional_system_fonts"]
 
     assert {entry["family"] for entry in optional.values()} == {
@@ -69,7 +69,7 @@ def test_font_metadata_declares_optional_commercial_system_fonts_unbundled() -> 
 
 
 def test_open_font_metadata_preserves_verified_license_attribution() -> None:
-    contracts = load_contracts(ROOT / "styles")
+    contracts = load_contracts()
 
     for entry in contracts.fonts["families"].values():
         assert entry["source"].startswith("https://")
@@ -79,7 +79,7 @@ def test_open_font_metadata_preserves_verified_license_attribution() -> None:
 
 
 def test_bundled_font_assets_and_attributions_exist() -> None:
-    contracts = load_contracts(ROOT / "styles")
+    contracts = load_contracts()
     font_root = ROOT / "src" / "axiomfig" / "resources" / "fonts"
 
     for entry in contracts.fonts["families"].values():

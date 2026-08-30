@@ -14,8 +14,7 @@ import yaml
 from matplotlib.figure import Figure
 
 from axiomfig.config import load_contracts
-from axiomfig.data_adapters import DATA_ADAPTERS, adapt_template_data
-from axiomfig.templates import build_template
+from axiomfig.templates import TEMPLATE_ADAPTERS, adapt_template_data, build_template
 from axiomfig.templates.registry import load_family_contract, load_template_registry
 
 FORBIDDEN_VISUAL_FIELDS = frozenset(
@@ -177,7 +176,7 @@ def build_intent_figure(
         return build_template(intent.template_id)
     if dataset is None:
         raise FigureIntentError("a dataset is required when Figure Intent declares data")
-    if intent.template_id not in DATA_ADAPTERS:
+    if intent.template_id not in TEMPLATE_ADAPTERS:
         raise FigureIntentError(f"no v1 data adapter for template {intent.template_id!r}")
     kwargs = {**_resolve_data(intent, dataset), **dict(intent.semantics)}
     try:

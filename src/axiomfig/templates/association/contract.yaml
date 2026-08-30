@@ -1,8 +1,10 @@
 family: association
 variants:
   mantel:
+    input_mode: precomputed
     required: [correlation_matrix, matrix_labels, links, link_strength, significance]
     optional: [node_labels, strength_label]
   correlation_network:
+    input_mode: precomputed
     required: [nodes, edges, edge_weight]
     optional: [groups, significance, strength_label]

@@ -1,20 +1,26 @@
 family: bar
 variants:
   vertical:
+    input_mode: direct
     required: [category, value]
     optional: [value_labels, ylabel]
   horizontal:
+    input_mode: direct
     required: [category, value]
     optional: [value_labels, xlabel]
   grouped:
+    input_mode: direct
     required: [category, value, group]
     optional: [error, uncertainty_type, value_labels]
   stacked:
+    input_mode: direct
     required: [category, value, component]
     optional: [value_labels, ylabel]
   normalized_stacked:
+    input_mode: direct
     required: [category, value, component, normalization]
     optional: [value_labels, ylabel]
   dot:
+    input_mode: direct
     required: [category, value]
     optional: [value_labels, ylabel]

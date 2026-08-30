@@ -1,14 +1,18 @@
 family: ordination
 variants:
   pca_scores:
+    input_mode: precomputed
     required: [coordinates, explained_variance]
     optional: [group, sample_labels]
   pca_biplot:
+    input_mode: precomputed
     required: [coordinates, loadings, explained_variance]
     optional: [group, feature_labels]
   pcoa:
+    input_mode: precomputed
     required: [coordinates, explained_variance, distance_metric]
     optional: [group, sample_labels]
   nmds:
+    input_mode: precomputed
     required: [coordinates, stress, distance_metric]
     optional: [group, sample_labels]

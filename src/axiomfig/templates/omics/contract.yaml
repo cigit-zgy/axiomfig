@@ -1,8 +1,10 @@
 family: omics
 variants:
   volcano:
+    input_mode: precomputed
     required: [effect_size, adjusted_p_value, significance_threshold, effect_threshold]
     optional: [feature_label]
   enrichment_dot:
+    input_mode: precomputed
     required: [term, enrichment, significance, size]
     optional: [colorbar_label, size_label]

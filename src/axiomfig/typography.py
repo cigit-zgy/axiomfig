@@ -9,6 +9,7 @@ from typing import Any
 
 from fontTools.ttLib import TTFont
 from matplotlib import font_manager
+from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.text import Text
 
@@ -173,6 +174,19 @@ def font_for_language(
     if role is None:
         raise ValueError(f"unsupported font role: {language}; CJK typography is deferred")
     return font_properties(role, mode=mode, role=True, weight=weight, style=style)
+
+
+def add_language_text(
+    axis: Axes,
+    x: float,
+    y: float,
+    text: str,
+    language: str,
+    mode: str = "sans",
+    **kwargs: object,
+) -> None:
+    """Add text with the font contract for an explicit language role."""
+    axis.text(x, y, text, fontproperties=font_for_language(language, mode=mode), **kwargs)
 
 
 _CJK = re.compile(r"[\u3040-\u30ff\u3400-\u9fff\uf900-\ufaff]")

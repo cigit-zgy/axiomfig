@@ -6,14 +6,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.figure import Figure
 
-from axiomfig.contracts import FILL_EDGE_PT, bar_width
-from axiomfig.template_helpers import (
+from axiomfig.ornaments import request_legend
+from axiomfig.style import (
+    FILL_EDGE_PT,
     add_bar_value_labels,
     apply_axis_contract,
     apply_categorical_axis,
     apply_nice_linear_axis,
     apply_scatter_contract,
-    place_legend_above,
+    bar_width,
     reference_line_kwargs,
     series_style,
 )
@@ -132,7 +133,7 @@ def build_bland_altman(
     axis.axhline(selected_limits[0], color="black", linestyle=":")
     axis.set(xlabel="Mean of methods", ylabel="Difference")
     _open(axis, *axis_limits)
-    place_legend_above(axis)
+    request_legend(axis)
     return figure
 
 
@@ -165,7 +166,7 @@ def build_calibration(
     axis.set(xlabel="Predicted probability", ylabel="Observed frequency")
     _open(axis, (0.0, 1.0), (0.0, 1.0))
     if any(label is not None for _, _, label in selected_series):
-        place_legend_above(axis)
+        request_legend(axis)
     return figure
 
 
@@ -206,7 +207,7 @@ def build_roc(
     axis.set(xlabel="False-positive rate", ylabel="True-positive rate")
     _open(axis, (0.0, 1.0), (0.0, 1.0))
     if any(label is not None for _, _, label in selected_series) or auc_values is not None:
-        place_legend_above(axis)
+        request_legend(axis)
     return figure
 
 
@@ -248,7 +249,7 @@ def build_precision_recall(
     axis.set(xlabel="Recall", ylabel="Precision")
     _open(axis, (0.0, 1.0), (0.45, 1.0))
     if any(label is not None for _, _, label in selected_series):
-        place_legend_above(axis)
+        request_legend(axis)
     return figure
 
 
@@ -289,7 +290,7 @@ def build_learning_curve(
         axis.axhline(selected_target, label="Target", **reference_line_kwargs())
     axis.set(xlabel="Training epoch", ylabel=selected_name)
     _open(axis, *_limits(epochs, metrics))
-    place_legend_above(axis)
+    request_legend(axis)
     return figure
 
 

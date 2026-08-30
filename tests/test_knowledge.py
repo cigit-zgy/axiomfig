@@ -38,5 +38,5 @@ def test_skill_routes_progressively_without_requiring_all_sources() -> None:
 
     assert "references/template-knowledge/index.yaml" in skill
     assert "src/axiomfig/templates/index.yaml" in skill
-    assert "family's `contract.yaml`" in skill
-    assert "Do not read all builder source" in skill
+    assert "src/axiomfig/templates/<family>/contract.yaml" in skill
+    assert "Do not read all builders" in skill

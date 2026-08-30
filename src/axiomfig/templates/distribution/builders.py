@@ -6,7 +6,8 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
 from axiomfig.config import load_contracts
-from axiomfig.template_helpers import (
+from axiomfig.ornaments import request_legend
+from axiomfig.style import (
     apply_axis_contract,
     apply_boxplot_contract,
     apply_categorical_axis,
@@ -15,7 +16,6 @@ from axiomfig.template_helpers import (
     apply_violin_contract,
     confidence_interval_kwargs,
     histogram_kwargs,
-    place_legend_above,
     series_style,
 )
 
@@ -130,7 +130,7 @@ def build_density(
     apply_nice_linear_axis(axis, *limits[0], coordinate="x")
     apply_nice_linear_axis(axis, *limits[1], coordinate="y")
     if any(label is not None for _, _, label in series):
-        place_legend_above(axis)
+        request_legend(axis)
     return figure
 
 
@@ -169,7 +169,7 @@ def build_ecdf(
     apply_nice_linear_axis(axis, *x_limits, coordinate="x")
     apply_nice_linear_axis(axis, 0.0, 1.0, coordinate="y")
     if any(label is not None for _, label in series):
-        place_legend_above(axis)
+        request_legend(axis)
     return figure
 
 

@@ -6,12 +6,12 @@ from matplotlib.axes import Axes
 from matplotlib.colors import TwoSlopeNorm
 from matplotlib.figure import Figure
 
-from axiomfig.colors import semantic_colormap
 from axiomfig.layout import add_panel_axes, create_panel_grid
-from axiomfig.template_helpers import (
+from axiomfig.ornaments import apply_colorbar_contract
+from axiomfig.style import (
     apply_axis_contract,
     apply_categorical_axis,
-    apply_colorbar_contract,
+    semantic_colormap,
 )
 
 CORRELATION = np.array(

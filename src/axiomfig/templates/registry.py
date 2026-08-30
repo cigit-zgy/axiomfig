@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from importlib.resources import files
+from types import MappingProxyType
 from typing import Any
 
 import yaml
@@ -74,7 +75,21 @@ def load_family_contract(family: str) -> dict[str, Any]:
     variants = contract.get("variants")
     if not isinstance(variants, dict) or not variants:
         raise ValueError(f"contract for template family {family!r} has no variants")
+    for variant, spec in variants.items():
+        if not isinstance(spec, dict):
+            raise ValueError(f"contract for {family}/{variant} must be a mapping")
+        if family != "layouts" and spec.get("input_mode") not in {"direct", "precomputed"}:
+            raise ValueError(f"contract for {family}/{variant} has invalid input_mode")
     return contract
+
+
+def public_template_operability() -> Mapping[str, str]:
+    """Return public input modes derived only from family contracts."""
+    result: dict[str, str] = {}
+    for spec in public_template_specs():
+        contract = load_family_contract(spec.family)["variants"][spec.variant]
+        result[spec.template_id] = str(contract["input_mode"])
+    return MappingProxyType(result)
 
 
 def validate_registry(

@@ -5,17 +5,16 @@ import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
-from axiomfig.contracts import bar_width
 from axiomfig.layout import add_panel_axes, create_panel_grid
-from axiomfig.template_helpers import (
+from axiomfig.ornaments import apply_colorbar_contract, request_legend
+from axiomfig.style import (
     add_bar_value_labels,
     apply_axis_contract,
     apply_categorical_axis,
-    apply_colorbar_contract,
     apply_nice_linear_axis,
     apply_scatter_contract,
+    bar_width,
     confidence_interval_kwargs,
-    place_legend_above,
     reference_line_kwargs,
     series_style,
 )
@@ -39,7 +38,7 @@ def _line_panel(axis: Axes) -> None:
     apply_axis_contract(axis, surface="open")
     apply_nice_linear_axis(axis, 0.0, 12.0, coordinate="x")
     apply_nice_linear_axis(axis, 0.0, 1.0, coordinate="y")
-    place_legend_above(axis)
+    request_legend(axis)
 
 
 def _bar_panel(axis: Axes) -> None:
@@ -53,7 +52,7 @@ def _bar_panel(axis: Axes) -> None:
     apply_categorical_axis(axis, coordinate="x")
     apply_nice_linear_axis(axis, 0.0, 1.0, coordinate="y")
     add_bar_value_labels(axis, [first, second])
-    place_legend_above(axis)
+    request_legend(axis)
 
 
 def _scatter_panel(axis: Axes, seed: int) -> None:

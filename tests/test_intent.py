@@ -153,11 +153,11 @@ def test_multi_line_intent_reaches_data_bearing_canonical_builder() -> None:
     plt.close(figure)
 
 
-def test_v1_data_adapters_cover_all_public_templates() -> None:
-    from axiomfig.intent import DATA_ADAPTERS
+def test_v1_family_adapters_cover_all_public_templates() -> None:
+    from axiomfig.templates import TEMPLATE_ADAPTERS
     from axiomfig.templates.registry import public_template_specs
 
-    assert {spec.template_id for spec in public_template_specs()} == DATA_ADAPTERS
+    assert {spec.template_id for spec in public_template_specs()} == set(TEMPLATE_ADAPTERS)
 
 
 def test_matrix_intent_passes_explicit_center_to_heatmap() -> None:
@@ -236,8 +236,8 @@ def test_intent_cli_executes_one_real_data_contract_per_family(
     from types import SimpleNamespace
 
     import axiomfig.cli as cli
-    from axiomfig.anatomy import validate_figure_anatomy
-    from axiomfig.evaluation import load_evaluation_cases, load_evaluation_fixtures
+    from axiomfig.validation import validate_figure_anatomy
+    from tests.evaluation.run import load_evaluation_cases, load_evaluation_fixtures
 
     selected = {
         "line/single",

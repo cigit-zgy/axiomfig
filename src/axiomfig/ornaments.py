@@ -12,8 +12,8 @@ from matplotlib.legend import Legend
 from matplotlib.transforms import ScaledTranslation
 
 from axiomfig.config import load_contracts
-from axiomfig.contracts import MAIN_STROKE_PT, tick_lengths
 from axiomfig.layout import get_figure_layout, register_figure_ornament
+from axiomfig.style import MAIN_STROKE_PT, tick_lengths
 
 PANEL_LABEL_GID = "axiomfig-panel-label"
 

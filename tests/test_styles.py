@@ -7,7 +7,7 @@ import pytest
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
-STYLE_ROOT = ROOT / "styles"
+STYLE_ROOT = ROOT / "src" / "axiomfig" / "resources" / "styles"
 
 
 def test_repository_has_exactly_three_canonical_style_sources() -> None:
@@ -18,6 +18,19 @@ def test_repository_has_exactly_three_canonical_style_sources() -> None:
     ]
     assert not list((ROOT / "src").rglob("*.mplstyle"))
     assert not list(STYLE_ROOT.rglob("*.mplstyle"))
+    assert not (ROOT / "styles").exists()
+
+
+def test_default_contract_loader_uses_packaged_style_resources() -> None:
+    from importlib.resources import files
+
+    from axiomfig.config import load_contracts
+
+    root = files("axiomfig").joinpath("resources", "styles")
+    assert root.joinpath("style.yaml").is_file()
+    assert root.joinpath("fonts.yaml").is_file()
+    assert root.joinpath("colors.yaml").is_file()
+    assert load_contracts().style["stroke"]["main_stroke_pt"] == 0.8
 
 
 @pytest.mark.parametrize(
@@ -128,7 +141,8 @@ def test_loader_rejects_invalid_physical_tokens(
     tmp_path: Path, path: tuple[str, ...], value: float
 ) -> None:
     for source in STYLE_ROOT.iterdir():
-        (tmp_path / source.name).write_bytes(source.read_bytes())
+        if source.is_file():
+            (tmp_path / source.name).write_bytes(source.read_bytes())
     style_path = tmp_path / "style.yaml"
     style = yaml.safe_load(style_path.read_text(encoding="utf-8"))
     target = style

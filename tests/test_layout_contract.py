@@ -4,8 +4,9 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import pytest
 
-from axiomfig import template_helpers
 from axiomfig.config import build_rcparams, load_contracts
+from axiomfig.layout import apply_output_margin, outer_panel_bbox
+from axiomfig.ornaments import add_panel_labels, request_legend
 from axiomfig.templates import build_template
 
 
@@ -13,7 +14,7 @@ def test_single_series_has_no_legend() -> None:
     figure, axis = plt.subplots()
     axis.plot([0, 1], [0, 1], label="Only series")
 
-    assert template_helpers.place_legend_above(axis) is None
+    assert request_legend(axis) is None
     assert axis.get_legend() is None
     plt.close(figure)
 
@@ -23,7 +24,7 @@ def test_normal_legend_is_one_row_frameless_and_right_aligned() -> None:
     for index in range(3):
         axis.plot([0, 1], [index, index + 1], label=f"S{index + 1}")
 
-    legend = template_helpers.place_legend_above(axis)
+    legend = request_legend(axis)
     figure.canvas.draw()
     assert legend is not None
     bbox = legend.get_window_extent(figure.canvas.get_renderer())
@@ -52,7 +53,7 @@ def test_exact_figure_boundary_legend_is_accepted_without_reducing_columns() -> 
     position = axis.get_position()
     axis.set_position((1.0 - width_fraction, position.y0, width_fraction, position.height))
 
-    legend = template_helpers.place_legend_above(axis)
+    legend = request_legend(axis)
 
     assert legend is not None
     assert legend._ncols == 2
@@ -63,7 +64,7 @@ def test_overflow_reduces_columns_and_irreducible_overflow_errors() -> None:
     figure, axis = plt.subplots(figsize=(3.0, 2.5))
     for index in range(4):
         axis.plot([0, 1], [index, index + 1], label=f"Long label {index + 1}")
-    legend = template_helpers.place_legend_above(axis)
+    legend = request_legend(axis)
     assert legend is not None
     assert legend._ncols < 4
     plt.close(figure)
@@ -72,14 +73,14 @@ def test_overflow_reduces_columns_and_irreducible_overflow_errors() -> None:
     axis.plot([0, 1], [0, 1], label="W" * 1000)
     axis.plot([0, 1], [1, 2], label="second")
     with pytest.raises(ValueError, match="cannot fit"):
-        template_helpers.place_legend_above(axis)
+        request_legend(axis)
     plt.close(figure)
 
 
 @pytest.mark.parametrize("dpi", [100, 200])
 def test_panel_labels_use_primary_frame_offsets_and_11_point_bold(dpi: int) -> None:
     figure, axes = plt.subplots(1, 2, figsize=(6.0, 2.5), dpi=dpi)
-    template_helpers.add_panel_labels(axes)
+    add_panel_labels(axes)
     figure.canvas.draw()
 
     for axis, label in zip(axes, figure.texts, strict=True):
@@ -97,7 +98,7 @@ def test_multi_panel_data_axes_are_equal_and_colorbar_is_independent() -> None:
     data_axes = figure.axes[:4]
     colorbar_axis = figure.axes[4]
 
-    outer = [template_helpers.outer_panel_bbox(axis) for axis in data_axes]
+    outer = [outer_panel_bbox(axis) for axis in data_axes]
     widths = [bbox.width for bbox in outer]
     heights = [bbox.height for bbox in outer]
     assert max(widths) - min(widths) < 0.02
@@ -151,7 +152,7 @@ def test_registered_outer_footprints_are_exact_and_owned(
 
 @pytest.mark.parametrize("template", ["layouts/grid_2x2", "layouts/grid_2x3", "layouts/grid_3x2"])
 def test_registered_panel_content_is_contained(template: str) -> None:
-    from axiomfig.anatomy import validate_figure_anatomy
+    from axiomfig.validation import validate_figure_anatomy
 
     figure = build_template(template)
     validate_figure_anatomy(figure)
@@ -170,7 +171,7 @@ def test_outer_panel_footprints_are_symmetric(template: str, rows: int, columns:
     figure = build_template(template)
     figure.canvas.draw()
     data_axes = figure.axes[: rows * columns]
-    boxes = [template_helpers.outer_panel_bbox(axis) for axis in data_axes]
+    boxes = [outer_panel_bbox(axis) for axis in data_axes]
 
     assert max(box.width for box in boxes) - min(box.width for box in boxes) < 0.02
     assert max(box.height for box in boxes) - min(box.height for box in boxes) < 0.02
@@ -212,7 +213,7 @@ def test_single_panel_layout_keeps_visible_text_inside_the_figure(template: str)
     with mpl.rc_context(rc=params):
         figure = build_template(template)
         figure.set_size_inches(params["figure.figsize"], forward=False)
-        template_helpers.apply_output_margin(figure)
+        apply_output_margin(figure)
         figure.canvas.draw()
         renderer = figure.canvas.get_renderer()
         artists = []
@@ -253,7 +254,7 @@ def test_tight_output_margin_handles_an_outside_multi_series_legend() -> None:
     with mpl.rc_context(rc=params):
         figure = build_template("line/multi")
         figure.set_size_inches(params["figure.figsize"], forward=False)
-        template_helpers.apply_output_margin(figure)
+        apply_output_margin(figure)
         figure.canvas.draw()
         legend = figure.axes[0].get_legend()
         assert legend is not None

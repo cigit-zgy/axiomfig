@@ -1,27 +1,41 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
+from types import MappingProxyType
+from typing import Any
 
 from matplotlib.figure import Figure
 
-from axiomfig.layout import get_figure_layout, solve_panel_layout
+from axiomfig.layout import apply_single_panel_layout, get_figure_layout, solve_panel_layout
 from axiomfig.ornaments import finalize_ornaments
-from axiomfig.template_helpers import apply_single_panel_layout
 from axiomfig.templates.association import BUILDERS as ASSOCIATION_BUILDERS
+from axiomfig.templates.association.adapter import adapt as adapt_association
 from axiomfig.templates.bar import BUILDERS as BAR_BUILDERS
+from axiomfig.templates.bar.adapter import adapt as adapt_bar
 from axiomfig.templates.diagnostics import BUILDERS as DIAGNOSTICS_BUILDERS
+from axiomfig.templates.diagnostics.adapter import adapt as adapt_diagnostics
 from axiomfig.templates.distribution import BUILDERS as DISTRIBUTION_BUILDERS
+from axiomfig.templates.distribution.adapter import adapt as adapt_distribution
 from axiomfig.templates.estimation import BUILDERS as ESTIMATION_BUILDERS
+from axiomfig.templates.estimation.adapter import adapt as adapt_estimation
 from axiomfig.templates.field import BUILDERS as FIELD_BUILDERS
+from axiomfig.templates.field.adapter import adapt as adapt_field
 from axiomfig.templates.flow import BUILDERS as FLOW_BUILDERS
+from axiomfig.templates.flow.adapter import adapt as adapt_flow
 from axiomfig.templates.heatmap import BUILDERS as HEATMAP_BUILDERS
+from axiomfig.templates.heatmap.adapter import adapt as adapt_heatmap
 from axiomfig.templates.layouts import BUILDERS as LAYOUT_BUILDERS
 from axiomfig.templates.line import BUILDERS as LINE_BUILDERS
+from axiomfig.templates.line.adapter import adapt as adapt_line
 from axiomfig.templates.omics import BUILDERS as OMICS_BUILDERS
+from axiomfig.templates.omics.adapter import adapt as adapt_omics
 from axiomfig.templates.ordination import BUILDERS as ORDINATION_BUILDERS
-from axiomfig.templates.registry import validate_registry
+from axiomfig.templates.ordination.adapter import adapt as adapt_ordination
+from axiomfig.templates.registry import public_template_specs, validate_registry
 from axiomfig.templates.scatter import BUILDERS as SCATTER_BUILDERS
+from axiomfig.templates.scatter.adapter import adapt as adapt_scatter
 from axiomfig.templates.survival import BUILDERS as SURVIVAL_BUILDERS
+from axiomfig.templates.survival.adapter import adapt as adapt_survival
 
 
 def _qualified(
@@ -49,6 +63,52 @@ TEMPLATE_BUILDERS: dict[str, Callable[..., Figure]] = {
 
 validate_registry(TEMPLATE_BUILDERS)
 
+_FAMILY_ADAPTERS = MappingProxyType(
+    {
+        "line": adapt_line,
+        "scatter": adapt_scatter,
+        "bar": adapt_bar,
+        "distribution": adapt_distribution,
+        "heatmap": adapt_heatmap,
+        "estimation": adapt_estimation,
+        "diagnostics": adapt_diagnostics,
+        "ordination": adapt_ordination,
+        "association": adapt_association,
+        "flow": adapt_flow,
+        "field": adapt_field,
+        "omics": adapt_omics,
+        "survival": adapt_survival,
+    }
+)
+TEMPLATE_ADAPTERS = MappingProxyType(
+    {spec.template_id: _FAMILY_ADAPTERS[spec.family] for spec in public_template_specs()}
+)
+
+
+def adapt_template_data(template_id: str, values: dict[str, Any]) -> dict[str, object]:
+    """Validate roles and normalize data for one public template."""
+    try:
+        adapter = TEMPLATE_ADAPTERS[template_id]
+    except KeyError as exc:
+        raise ValueError(f"no external-data adapter for template {template_id!r}") from exc
+    from axiomfig.templates.registry import load_family_contract
+
+    family, variant = template_id.split("/", maxsplit=1)
+    contract = load_family_contract(family)["variants"][variant]
+    required = set(contract["required"])
+    permitted = required | set(contract.get("optional", ()))
+    provided = set(values)
+    missing = required - provided
+    if missing:
+        raise ValueError(f"missing required fields for {template_id}: {sorted(missing)}")
+    unknown = provided - permitted
+    if unknown:
+        raise ValueError(f"{template_id} does not accept: {sorted(unknown)}")
+    adapted = adapter(variant, dict(values))
+    if set(adapted) != provided:
+        raise RuntimeError(f"adapter for {template_id} changed supplied field ownership")
+    return adapted
+
 
 def get_template_builder(name: str) -> Callable[..., Figure]:
     try:
@@ -72,4 +132,10 @@ def build_template(name: str, **kwargs: object) -> Figure:
     return figure
 
 
-__all__ = ["TEMPLATE_BUILDERS", "build_template", "get_template_builder"]
+__all__ = [
+    "TEMPLATE_ADAPTERS",
+    "TEMPLATE_BUILDERS",
+    "adapt_template_data",
+    "build_template",
+    "get_template_builder",
+]

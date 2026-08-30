@@ -8,7 +8,7 @@ from matplotlib.collections import PathCollection
 from matplotlib.figure import Figure
 from matplotlib.ticker import AutoMinorLocator, LogLocator
 
-from axiomfig import template_helpers
+from axiomfig import style
 from axiomfig.templates import build_template
 
 
@@ -35,7 +35,7 @@ def _rendered_inward_projection_pt(direction: str, length_pt: float) -> float:
 
 
 def test_rendered_inout_geometry_sets_the_golden_minor_inward_projection() -> None:
-    from axiomfig.contracts import tick_lengths
+    from axiomfig.style import tick_lengths
 
     major_length, minor_length = tick_lengths()
     major_inward = _rendered_inward_projection_pt("inout", major_length)
@@ -54,7 +54,7 @@ def test_axis_contract_sets_one_minor_and_deterministic_directions(
     surface: str, major: str, minor: str
 ) -> None:
     figure, axis = plt.subplots()
-    template_helpers.apply_axis_contract(axis, surface=surface)
+    style.apply_axis_contract(axis, surface=surface)
 
     for coordinate_axis in (axis.xaxis, axis.yaxis):
         assert isinstance(coordinate_axis.get_minor_locator(), AutoMinorLocator)
@@ -70,7 +70,7 @@ def test_axis_contract_preserves_logarithmic_locator() -> None:
     locator = axis.xaxis.get_minor_locator()
     assert isinstance(locator, LogLocator)
 
-    template_helpers.apply_axis_contract(axis, surface="open")
+    style.apply_axis_contract(axis, surface="open")
 
     assert axis.xaxis.get_minor_locator() is locator
     plt.close(figure)
@@ -80,7 +80,7 @@ def test_categorical_axis_removes_tick_lines_but_keeps_labels() -> None:
     figure, axis = plt.subplots()
     axis.set_xticks([0, 1], ["A", "B"])
 
-    template_helpers.apply_categorical_axis(axis, coordinate="x")
+    style.apply_categorical_axis(axis, coordinate="x")
     figure.canvas.draw()
 
     assert [label.get_text() for label in axis.get_xticklabels()] == ["A", "B"]
@@ -91,11 +91,11 @@ def test_categorical_axis_removes_tick_lines_but_keeps_labels() -> None:
 def test_bar_scatter_and_violin_use_face_only_alpha_and_opaque_edges() -> None:
     figure, axes = plt.subplots(1, 3)
     bars = axes[0].bar([0, 1], [1.2, 4.0])
-    template_helpers.add_bar_value_labels(axes[0], [bars])
+    style.add_bar_value_labels(axes[0], [bars])
     scatter = axes[1].scatter([0, 1], [0, 1], s=3, alpha=1.0)
-    template_helpers.apply_scatter_contract(scatter)
+    style.apply_scatter_contract(scatter)
     violin = axes[2].violinplot([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
-    template_helpers.apply_violin_contract(violin)
+    style.apply_violin_contract(violin)
 
     assert [text.get_text() for text in axes[0].texts] == ["1.20", "4.00"]
     assert all(patch.get_edgecolor() == (0.0, 0.0, 0.0, 1.0) for patch in bars)
@@ -135,14 +135,14 @@ def test_confidence_interval_and_boxplot_keep_opaque_edges() -> None:
 def test_bar_width_is_exact_and_independent_of_category_count(
     categories: int, series_count: int, expected: float
 ) -> None:
-    from axiomfig.contracts import bar_width
+    from axiomfig.style import bar_width
 
     assert categories > 0
     assert bar_width(series_count) == pytest.approx(expected)
 
 
 def test_redundant_series_cycle_and_reference_line_are_ordered() -> None:
-    from axiomfig.template_helpers import reference_line_kwargs, series_style
+    from axiomfig.style import reference_line_kwargs, series_style
 
     styles = [series_style(index) for index in range(4)]
 
@@ -228,7 +228,7 @@ def test_errorbar_left_ticks_use_one_locator_and_the_same_central_geometry(mode:
     import matplotlib as mpl
 
     from axiomfig.config import build_rcparams, load_contracts
-    from axiomfig.contracts import tick_lengths
+    from axiomfig.style import tick_lengths
 
     params = build_rcparams(load_contracts(), typography=mode)
     with mpl.rc_context(rc=params):

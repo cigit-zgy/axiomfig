@@ -4,17 +4,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.figure import Figure
 
-from axiomfig.colors import semantic_colormap
 from axiomfig.layout import add_panel_axes, create_panel_grid
-from axiomfig.template_helpers import (
+from axiomfig.ornaments import apply_colorbar_contract, request_legend
+from axiomfig.style import (
     apply_axis_contract,
     apply_categorical_axis,
-    apply_colorbar_contract,
     apply_filled_collection_contract,
     apply_nice_linear_axis,
     apply_scatter_contract,
-    place_legend_above,
     reference_line_kwargs,
+    semantic_colormap,
 )
 
 
@@ -92,7 +91,7 @@ def build_volcano(
     apply_axis_contract(axis, surface="open")
     apply_nice_linear_axis(axis, *limits[0], coordinate="x")
     apply_nice_linear_axis(axis, *limits[1], coordinate="y")
-    place_legend_above(axis)
+    request_legend(axis)
     return figure
 
 

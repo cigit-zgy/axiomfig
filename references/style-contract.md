@@ -2,7 +2,21 @@
 
 ## Canonical sources
 
-`styles/style.yaml`, `styles/fonts.yaml`, and `styles/colors.yaml` are the only root visual configuration sources. `axiomfig.config.load_contracts()` loads and freezes their mappings; `build_rcparams()` translates the selected geometry and typography into a small `rcParams` mapping. Templates consume tokens through helpers and must not duplicate token values.
+`src/axiomfig/resources/styles/style.yaml`, `fonts.yaml`, and `colors.yaml` are the only visual
+configuration sources. `axiomfig.config.load_contracts()` loads the same package resources from a
+source checkout or installed wheel. `build_rcparams()` translates the selected geometry and
+typography into a small `rcParams` mapping. Templates consume `axiomfig.style` and must not
+duplicate token values.
+
+`colors.yaml` owns qualitative, sequential, diverging, and cyclic colormaps plus the canonical
+palette set. Templates request a scientific color semantic through `semantic_colormap()` and do
+not hard-code map names. Diverging data requires an explicit meaningful center. `render_xcolor()`
+generates the matching LaTeX definitions; RGB lists are not maintained in Python or prose.
+
+The default `axiom_classic` tokens are `AxiomBlue`, `AxiomCyan`, `AxiomGreen`, `AxiomYellow`,
+`AxiomOrange`, `AxiomRed`, `AxiomPurple`, and `AxiomGrey`. Paul Tol's exact `tol_bright` and
+`tol_muted` schemes are attributed to <https://sronpersonalpages.nl/~pault/>; the `axiom_*`
+palettes are project-defined.
 
 ## Geometry and physical typography
 

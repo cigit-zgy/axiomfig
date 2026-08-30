@@ -1,26 +1,34 @@
 family: diagnostics
 variants:
   residual:
+    input_mode: precomputed
     required: [fitted, residual]
     optional: [trend]
   bland_altman:
+    input_mode: precomputed
     required: [mean, difference, agreement_type]
     optional: [center, limits]
   calibration:
+    input_mode: precomputed
     required: [predicted_probability, observed_frequency]
     optional: [group]
   roc:
+    input_mode: precomputed
     required: [false_positive_rate, true_positive_rate]
     optional: [group, auc]
   precision_recall:
+    input_mode: precomputed
     required: [recall, precision]
     optional: [group, baseline]
   learning_curve:
+    input_mode: precomputed
     required: [iteration, metric, series]
     optional: [target, metric_name]
   qq:
+    input_mode: precomputed
     required: [theoretical_quantile, sample_quantile, reference_distribution]
     optional: [envelope]
   feature_importance:
+    input_mode: precomputed
     required: [feature, importance, importance_type]
     optional: [uncertainty, xlabel]

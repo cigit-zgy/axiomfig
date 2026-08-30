@@ -4,12 +4,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.figure import Figure
 
-from axiomfig.template_helpers import (
+from axiomfig.ornaments import request_legend
+from axiomfig.style import (
     apply_axis_contract,
     apply_categorical_axis,
     apply_nice_linear_axis,
     errorbar_kwargs,
-    place_legend_above,
     reference_line_kwargs,
     series_style,
 )
@@ -118,7 +118,7 @@ def _grouped_interval(
     apply_categorical_axis(axis, coordinate="y")
     apply_nice_linear_axis(axis, limits[0] - padding, limits[1] + padding, coordinate="x")
     if len(group_labels) > 1:
-        place_legend_above(axis)
+        request_legend(axis)
     return figure
 
 

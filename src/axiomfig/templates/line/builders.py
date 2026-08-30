@@ -4,13 +4,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.figure import Figure
 
-from axiomfig.template_helpers import (
+from axiomfig.ornaments import request_legend
+from axiomfig.style import (
     apply_axis_contract,
     apply_nice_linear_axis,
     confidence_interval_kwargs,
     errorbar_kwargs,
     line_marker_kwargs,
-    place_legend_above,
     series_style,
 )
 
@@ -91,7 +91,7 @@ def build_multi(
         ylabel="Normalized response (-)" if ylabel is None else str(ylabel),
     )
     _open(axis, *limits)
-    place_legend_above(axis)
+    request_legend(axis)
     return figure
 
 

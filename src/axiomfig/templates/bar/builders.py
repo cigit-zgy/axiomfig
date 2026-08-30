@@ -5,14 +5,14 @@ import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
-from axiomfig.contracts import bar_width
-from axiomfig.template_helpers import (
+from axiomfig.ornaments import request_legend
+from axiomfig.style import (
     add_bar_value_labels,
     apply_axis_contract,
     apply_categorical_axis,
     apply_nice_linear_axis,
     apply_scatter_contract,
-    place_legend_above,
+    bar_width,
 )
 
 
@@ -149,7 +149,7 @@ def build_grouped(
     _vertical_axes(axis, labels, max(float(values.max()) * 1.2, 0.1))
     if value_labels is not False:
         add_bar_value_labels(axis, containers)
-    place_legend_above(axis)
+    request_legend(axis)
     return figure
 
 
@@ -194,7 +194,7 @@ def _stacked(
     _vertical_axes(axis, labels, 1.0 if normalized else max(float(bottom.max()) * 1.12, 0.1))
     if value_labels is not False:
         add_bar_value_labels(axis, containers)
-    place_legend_above(axis)
+    request_legend(axis)
     return figure
 
 

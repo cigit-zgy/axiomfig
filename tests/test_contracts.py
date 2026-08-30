@@ -18,7 +18,7 @@ import pytest
 def test_nice_linear_axis_uses_hand_derived_snapped_steps(
     data_min: float, data_max: float, expected: tuple[float, float, float, float]
 ) -> None:
-    from axiomfig.contracts import nice_linear_axis
+    from axiomfig.style import nice_linear_axis
 
     result = nice_linear_axis(data_min, data_max)
 
@@ -34,7 +34,7 @@ def test_nice_linear_axis_uses_hand_derived_snapped_steps(
 
 
 def test_nice_linear_axis_expands_a_constant_range_deterministically() -> None:
-    from axiomfig.contracts import nice_linear_axis
+    from axiomfig.style import nice_linear_axis
 
     first = nice_linear_axis(4.0, 4.0)
     second = nice_linear_axis(4.0, 4.0)
@@ -46,7 +46,7 @@ def test_nice_linear_axis_expands_a_constant_range_deterministically() -> None:
 
 @pytest.mark.parametrize("bounds", [(float("nan"), 1.0), (0.0, float("inf")), (2.0, 1.0)])
 def test_nice_linear_axis_rejects_invalid_bounds(bounds: tuple[float, float]) -> None:
-    from axiomfig.contracts import nice_linear_axis
+    from axiomfig.style import nice_linear_axis
 
     with pytest.raises(ValueError, match="finite|ordered"):
         nice_linear_axis(*bounds)

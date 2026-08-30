@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 import math
-import sysconfig
 from collections.abc import Mapping
 from dataclasses import dataclass
+from importlib.resources import files
+from importlib.resources.abc import Traversable
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any
 
 import matplotlib as mpl
 import yaml
-from cycler import cycler
 
 CONFIG_FILENAMES = ("style.yaml", "fonts.yaml", "colors.yaml")
 
@@ -30,23 +30,18 @@ def _freeze(value: Any) -> Any:
     return value
 
 
-def _candidate_roots() -> tuple[Path, ...]:
-    return (
-        Path(__file__).resolve().parents[2] / "styles",
-        Path(sysconfig.get_path("data")) / "share" / "axiomfig" / "styles",
+def _resolve_root(config_root: Path | None) -> Traversable:
+    root: Traversable = (
+        Path(config_root).expanduser().resolve()
+        if config_root is not None
+        else files("axiomfig").joinpath("resources", "styles")
     )
+    if all(root.joinpath(name).is_file() for name in CONFIG_FILENAMES):
+        return root
+    raise FileNotFoundError(f"AxiomFig canonical YAML files were not found in: {root}")
 
 
-def _resolve_root(config_root: Path | None) -> Path:
-    candidates = (Path(config_root).expanduser().resolve(),) if config_root else _candidate_roots()
-    for candidate in candidates:
-        if all((candidate / name).is_file() for name in CONFIG_FILENAMES):
-            return candidate
-    rendered = ", ".join(str(path) for path in candidates)
-    raise FileNotFoundError(f"AxiomFig canonical YAML files were not found in: {rendered}")
-
-
-def _load_mapping(path: Path) -> Mapping[str, Any]:
+def _load_mapping(path: Traversable) -> Mapping[str, Any]:
     loaded = yaml.safe_load(path.read_text(encoding="utf-8"))
     if not isinstance(loaded, dict):
         raise ValueError(f"{path.name} must contain a YAML mapping")
@@ -192,9 +187,9 @@ def _validate_style(style: Mapping[str, Any]) -> None:
 
 def load_contracts(config_root: Path | None = None) -> Contracts:
     root = _resolve_root(config_root)
-    style = _load_mapping(root / "style.yaml")
-    fonts = _load_mapping(root / "fonts.yaml")
-    colors = _load_mapping(root / "colors.yaml")
+    style = _load_mapping(root.joinpath("style.yaml"))
+    fonts = _load_mapping(root.joinpath("fonts.yaml"))
+    colors = _load_mapping(root.joinpath("colors.yaml"))
     _validate_style(style)
     return Contracts(style=style, fonts=fonts, colors=colors)
 
@@ -267,7 +262,7 @@ def build_rcparams(
         "ytick.labelright": False,
         "legend.frameon": bool(contracts.style["legend"]["frame"]),
         "legend.handlelength": float(contracts.style["legend"]["handlelength"]),
-        "axes.prop_cycle": cycler(color=tuple(color_map.values())),
+        "axes.prop_cycle": mpl.cycler(color=tuple(color_map.values())),
         "image.cmap": str(contracts.colors["colormaps"]["sequential"]),
         "image.interpolation": str(contracts.style["plots"]["heatmap"]["interpolation"]),
         "mathtext.fontset": "custom",

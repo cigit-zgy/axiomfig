@@ -2,8 +2,8 @@ from __future__ import annotations
 
 
 def test_v1_evaluation_has_one_true_data_case_per_public_template() -> None:
-    from axiomfig.evaluation import load_evaluation_cases, load_evaluation_fixtures
     from axiomfig.templates.registry import public_template_specs
+    from tests.evaluation.run import load_evaluation_cases, load_evaluation_fixtures
 
     cases = load_evaluation_cases()
     fixtures = load_evaluation_fixtures()
@@ -18,7 +18,7 @@ def test_v1_evaluation_has_one_true_data_case_per_public_template() -> None:
 
 
 def test_routing_evaluation_is_reported_separately() -> None:
-    from axiomfig.evaluation import run_evaluation
+    from tests.evaluation.run import run_evaluation
 
     result = run_evaluation(render=False)
 
@@ -34,7 +34,7 @@ def test_routing_evaluation_is_reported_separately() -> None:
 
 
 def test_true_data_evaluation_separates_render_validation_and_repeatability() -> None:
-    from axiomfig.evaluation import run_evaluation
+    from tests.evaluation.run import run_evaluation
 
     result = run_evaluation(render=True)
 

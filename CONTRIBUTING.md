@@ -14,6 +14,8 @@ python scripts/validate_skill.py
 ```
 
 Before proposing a release-affecting change, run the full suite with Tectonic and Poppler installed,
-rebuild Gallery from the registry, validate every PDF/PNG pair, and visually inspect the output.
+rebuild Gallery with `axiomfig-gallery gallery`, validate it with `axiomfig-validate gallery`, run
+`python scripts/evaluate_release.py --output tmp/release-evaluation`, and visually inspect the
+output.
 Do not commit caches, build directories, temporary renders, commercial fonts, private data, or
 machine-specific paths.

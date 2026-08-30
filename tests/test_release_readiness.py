@@ -52,3 +52,21 @@ def test_release_support_files_exist_and_no_production_local_paths() -> None:
             if path.is_file() and local_prefix in path.read_text(encoding="utf-8", errors="ignore"):
                 matches.append(path)
     assert not matches
+
+
+def test_v1_architecture_has_no_development_or_parallel_runtime_layers() -> None:
+    assert not (ROOT / "docs").exists()
+    assert not (ROOT / "evaluation").exists()
+    assert not (ROOT / "styles").exists()
+    assert not (ROOT / "src/axiomfig/data_adapters").exists()
+    obsolete_modules = (
+        "anatomy.py",
+        "colors.py",
+        "contracts.py",
+        "evaluation.py",
+        "template_helpers.py",
+    )
+    for obsolete in obsolete_modules:
+        assert not (ROOT / "src/axiomfig" / obsolete).exists()
+    for wrapper in ("build_gallery.py", "render.py", "render_intent.py", "validate.py"):
+        assert not (ROOT / "scripts" / wrapper).exists()

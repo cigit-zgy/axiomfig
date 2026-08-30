@@ -5,14 +5,14 @@ import numpy as np
 from matplotlib.colors import TwoSlopeNorm
 from matplotlib.figure import Figure
 
-from axiomfig.colors import semantic_colormap
-from axiomfig.contracts import MAIN_STROKE_PT
 from axiomfig.layout import add_panel_axes, create_panel_grid
-from axiomfig.template_helpers import (
+from axiomfig.ornaments import apply_colorbar_contract
+from axiomfig.style import (
+    MAIN_STROKE_PT,
     apply_axis_contract,
-    apply_colorbar_contract,
     apply_filled_collection_contract,
     apply_nice_linear_axis,
+    semantic_colormap,
 )
 
 

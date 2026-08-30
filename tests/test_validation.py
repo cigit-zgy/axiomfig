@@ -22,8 +22,8 @@ def test_nested_gallery_validation_checks_relative_expected_stems(tmp_path: Path
 
 
 def test_figure_anatomy_rejects_auxiliary_axes_outside_its_footprint() -> None:
-    from axiomfig.anatomy import FigureAnatomyError, validate_figure_anatomy
     from axiomfig.layout import get_figure_layout
+    from axiomfig.validation import FigureAnatomyError, validate_figure_anatomy
 
     figure = build_template("layouts/grid_2x2")
     layout = get_figure_layout(figure)
@@ -40,8 +40,8 @@ def test_figure_anatomy_rejects_auxiliary_axes_outside_its_footprint() -> None:
 
 
 def test_figure_anatomy_rejects_figure_level_ornament_overflow() -> None:
-    from axiomfig.anatomy import FigureAnatomyError, validate_figure_anatomy
     from axiomfig.layout import register_figure_ornament
+    from axiomfig.validation import FigureAnatomyError, validate_figure_anatomy
 
     figure = build_template("layouts/horizontal_2")
     overflow = figure.text(1.25, 1.25, "overflow", transform=figure.transFigure)

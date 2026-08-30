@@ -6,12 +6,12 @@ from matplotlib import colors as mcolors
 from matplotlib.figure import Figure
 from matplotlib.patches import Ellipse
 
-from axiomfig.contracts import FILL_EDGE_PT
-from axiomfig.template_helpers import (
+from axiomfig.ornaments import request_legend
+from axiomfig.style import (
+    FILL_EDGE_PT,
     apply_axis_contract,
     apply_nice_linear_axis,
     apply_scatter_contract,
-    place_legend_above,
     series_style,
 )
 
@@ -128,7 +128,7 @@ def build_pca_scores(
         raise ValueError("PCA scores require coordinates and explained_variance together")
     _ordination_axes(axis, f"PC1 ({variance[0]:.1f}%)", f"PC2 ({variance[1]:.1f}%)", limits)
     if legend:
-        place_legend_above(axis)
+        request_legend(axis)
     return figure
 
 
@@ -187,7 +187,7 @@ def build_pca_biplot(
         limits,
     )
     if legend:
-        place_legend_above(axis)
+        request_legend(axis)
     return figure
 
 
@@ -241,7 +241,7 @@ def build_pcoa(
     if metric_label is not None:
         axis.text(0.04, 0.92, f"distance: {metric_label}", transform=axis.transAxes)
     if legend:
-        place_legend_above(axis)
+        request_legend(axis)
     return figure
 
 
@@ -274,7 +274,7 @@ def build_nmds(
     axis.text(0.04, 0.92, detail, transform=axis.transAxes)
     _ordination_axes(axis, "NMDS1", "NMDS2", limits)
     if legend:
-        place_legend_above(axis)
+        request_legend(axis)
     return figure
 
 

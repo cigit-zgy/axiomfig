@@ -10,7 +10,11 @@
 | Matplotlib mathematics | Latin Modern Sans | XCharter Math |
 | monospace auxiliary | Maple Mono | Maple Mono |
 
-Font provenance, filenames, licenses, license URLs, copyright attribution, redistribution status, attribution files, and full license files live only in `styles/fonts.yaml`. The selected open Latin/math/mono binaries and their notices are runtime package resources under `src/axiomfig/resources/fonts/`; installed callers locate them with `importlib.resources`.
+Font provenance, filenames, licenses, license URLs, copyright attribution, redistribution status,
+attribution files, and full license files live only in
+`src/axiomfig/resources/styles/fonts.yaml`. The selected open Latin/math/mono binaries and their
+notices are runtime package resources under `src/axiomfig/resources/fonts/`; installed callers
+locate them with `importlib.resources`.
 
 Arial, Times New Roman, SimSun, and Yu Gothic are optional system-font records with `bundled: false`. They are not copied, redistributed, or selected by a canonical mode.
 

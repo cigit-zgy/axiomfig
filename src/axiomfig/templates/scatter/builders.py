@@ -4,14 +4,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.figure import Figure
 
-from axiomfig.colors import semantic_colormap
-from axiomfig.template_helpers import (
+from axiomfig.ornaments import request_legend
+from axiomfig.style import (
     apply_axis_contract,
     apply_filled_collection_contract,
     apply_nice_linear_axis,
     apply_scatter_contract,
-    place_legend_above,
     reference_line_kwargs,
+    semantic_colormap,
     series_style,
 )
 
@@ -112,7 +112,7 @@ def build_grouped(
         ylabel="Predicted concentration (mg/L)" if ylabel is None else str(ylabel),
     )
     _open(axis, *limits)
-    place_legend_above(axis)
+    request_legend(axis)
     return figure
 
 
@@ -242,7 +242,7 @@ def build_bubble(
             )
             apply_scatter_contract(collection)
             collection.set_sizes(base_size * magnitude[mask])
-        place_legend_above(axis)
+        request_legend(axis)
     if size_label is not None:
         axis.text(0.04, 0.92, str(size_label), transform=axis.transAxes)
     axis.set(

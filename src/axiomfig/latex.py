@@ -101,7 +101,7 @@ Cool\qquad
 \swatch{AxiomCoolBlue}\swatch{AxiomCoolCyan}\swatch{AxiomCoolGreen}
 \swatch{AxiomCoolYellow}\swatch{AxiomCoolOrange}\swatch{AxiomCoolRed}
 \swatch{AxiomCoolPurple}\swatch{AxiomCoolGrey}\\[5pt]
-Canonical colors are generated from \texttt{styles/colors.yaml}; math check: $\alpha+\beta$.
+Canonical colors are generated from packaged \texttt{colors.yaml}; math check: $\alpha+\beta$.
 \end{minipage}
 \end{document}
 """

@@ -1,20 +1,26 @@
 family: scatter
 variants:
   simple:
+    input_mode: direct
     required: [x, y]
     optional: [xlabel, ylabel]
   grouped:
+    input_mode: direct
     required: [x, y, group]
     optional: [xlabel, ylabel]
   regression:
+    input_mode: precomputed
     required: [x, y, fitted]
     optional: [fit_label, xlabel, ylabel]
   parity:
+    input_mode: direct
     required: [observed, predicted]
     optional: [identity_limits, xlabel, ylabel]
   bubble:
+    input_mode: direct
     required: [x, y, size]
     optional: [size_label, group, xlabel, ylabel]
   hexbin:
+    input_mode: direct
     required: [x, y]
     optional: [gridsize, count_label, xlabel, ylabel]

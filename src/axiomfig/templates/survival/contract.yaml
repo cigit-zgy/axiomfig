@@ -1,5 +1,6 @@
 family: survival
 variants:
   kaplan_meier:
+    input_mode: precomputed
     required: [time, survival_probability]
     optional: [group, censoring, lower_ci, upper_ci, censor_time]
