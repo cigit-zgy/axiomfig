@@ -1,4 +1,4 @@
-"""Independent Mantel coupling layer using target-rail-normal cubic routes."""
+"""Mantel coupling layer constrained to the unused triangular matrix half-plane."""
 
 from __future__ import annotations
 
@@ -31,15 +31,14 @@ def nice_curvature(
     orientation: str,
     lane_index: float,
 ) -> float:
-    """Return a normalized clearance from semantic order, density, and lane inputs."""
+    """Return semantic Bézier clearance in matrix-cell units."""
     contract = mantel_plot_contract()["matrix"]
     assert isinstance(contract, Mapping)
     base = float(contract["route_clearance"])
     lane_spacing = float(contract["route_lane_spacing"])
-    density = min(max(link_density - 1, 0), 12) * 0.012
-    order_span = min(abs(target_order - source_order), 12) * 0.008
-    mirror = 1.0 if orientation in {"lower", "upper"} else 0.72
-    return mirror * (base + density + order_span + abs(lane_index) * lane_spacing)
+    density = min(max(link_density - 1, 0), 12) * 0.018
+    order_span = min(abs(target_order - source_order), 16) * 0.010
+    return base + density + order_span + abs(lane_index) * lane_spacing
 
 
 def _link_width(value: float, mode: str) -> float:
@@ -64,25 +63,36 @@ def _link_style(link: MantelLink, nonsignificant_mode: str) -> tuple[str, float]
     return str(style["color"]), float(style["alpha"])
 
 
+def _empty_half_plane_normal(matrix_type: str) -> np.ndarray:
+    if matrix_type == "upper":
+        return np.asarray((-1.0, -1.0), dtype=float) / np.sqrt(2.0)
+    if matrix_type == "lower":
+        return np.asarray((-1.0, 1.0), dtype=float) / np.sqrt(2.0)
+    return np.asarray((-1.0, 0.0), dtype=float)
+
+
 def _route_vertices(
     start: tuple[float, float],
     end: tuple[float, float],
     *,
     clearance: float,
-    orientation: str,
+    matrix_type: str,
+    lane_index: float,
 ) -> tuple[tuple[float, float], ...]:
-    if orientation == "lower":
-        normal = np.asarray((1.0, -1.0)) / np.sqrt(2.0)
-    elif orientation == "upper":
-        normal = np.asarray((1.0, 1.0)) / np.sqrt(2.0)
-    else:
-        normal = np.asarray((-1.0, 0.0))
+    """Create one cubic whose control polygon stays in the empty coupling half-plane.
+
+    Bézier curves are contained by the convex hull of their control points. Keeping both control
+    points on the same empty side of the matrix diagonal therefore prevents routes from entering
+    correlation glyphs without stochastic collision search.
+    """
     start_array = np.asarray(start, dtype=float)
     end_array = np.asarray(end, dtype=float)
     span = end_array - start_array
-    offset = normal * clearance
-    control1 = start_array + span * 0.32 + offset
-    control2 = start_array + span * 0.72 + offset
+    normal = _empty_half_plane_normal(matrix_type)
+    lane_scale = 1.0 + abs(lane_index) * 0.08
+    outer = normal * clearance * lane_scale
+    control1 = start_array + span * 0.30 + outer * 0.82
+    control2 = start_array + span * 0.73 + outer
     return (
         start,
         (float(control1[0]), float(control1[1])),
@@ -97,7 +107,7 @@ def render_coupling_layer(
     spec: CouplingSpec,
     geometry: MantelGeometry,
 ) -> tuple[PathPatch, ...]:
-    """Render source artists and one deterministic cubic per visible Mantel relationship."""
+    """Render source nodes and deterministic matrix-attached Mantel arcs."""
     if not spec.enabled:
         return ()
     matrix_contract = mantel_plot_contract()["matrix"]
@@ -116,12 +126,12 @@ def render_coupling_layer(
         node._axiomfig_source = source
         axis.add_patch(node)
         label = axis.text(
-            x - 0.12,
+            x - 0.14,
             y,
             source,
             ha="right",
             va="center",
-            fontsize=mpl.rcParams["font.size"] * 0.80,
+            fontsize=mpl.rcParams["font.size"] * 0.82,
             clip_on=True,
             zorder=6,
         )
@@ -132,19 +142,10 @@ def render_coupling_layer(
         grouped[link.source].append(link)
     target_order = {label: index for index, label in enumerate(geometry.target_rail.anchors)}
     source_order = {source: index for index, source in enumerate(geometry.source_region.positions)}
-    orientation = (
-        "lower"
-        if geometry.target_rail.orientation.startswith("lower")
-        else "upper"
-        if geometry.target_rail.orientation.startswith("upper")
-        else "full"
-    )
+
     rendered: list[PathPatch] = []
     for source in geometry.source_region.positions:
-        source_links = sorted(
-            grouped[source],
-            key=lambda link: (target_order[link.target], link.target),
-        )
+        source_links = sorted(grouped[source], key=lambda link: (target_order[link.target], link.target))
         for rank, link in enumerate(source_links):
             style = _link_style(link, spec.nonsignificant)
             if style is None:
@@ -157,19 +158,17 @@ def render_coupling_layer(
                 source_order=source_order[source],
                 target_order=target_order[link.target],
                 link_density=len(source_links),
-                orientation=orientation,
+                orientation=geometry.target_rail.orientation,
                 lane_index=lane_index,
             )
             vertices = _route_vertices(
                 start,
                 end,
                 clearance=clearance,
-                orientation=orientation,
+                matrix_type=geometry.matrix_type,
+                lane_index=lane_index,
             )
-            path = Path(
-                vertices,
-                (Path.MOVETO, Path.CURVE4, Path.CURVE4, Path.CURVE4),
-            )
+            path = Path(vertices, (Path.MOVETO, Path.CURVE4, Path.CURVE4, Path.CURVE4))
             artist = PathPatch(
                 path,
                 facecolor="none",
@@ -189,7 +188,7 @@ def render_coupling_layer(
             artist._axiomfig_p_value = link.p_value
             artist._axiomfig_label = link.label
             artist._axiomfig_metadata = dict(link.metadata)
-            artist._axiomfig_route_model = "rail-normal-cubic"
+            artist._axiomfig_route_model = "empty-triangle-cubic"
             artist._axiomfig_route_signature = (
                 link.source,
                 link.target,

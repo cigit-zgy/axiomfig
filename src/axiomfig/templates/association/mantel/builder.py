@@ -203,13 +203,14 @@ def build_mantel(
 
     figure = plt.figure()
     layout = create_panel_grid(figure, 1, 1, panel_labels=False)
-    axis, _ = add_panel_axes(layout, 0)
+    axis, colorbar_axis = add_panel_axes(layout, 0, colorbar=True)
+    assert colorbar_axis is not None
     matrix_result = render_matrix_layer(
         axis,
         ordered,
         composition.matrix,
         geometry,
-        show_target_anchors=composition.coupling.enabled,
+        show_target_anchors=False,
     )
     matrix_contract = mantel_plot_contract()["matrix"]
     assert isinstance(matrix_contract, Mapping)
@@ -239,11 +240,16 @@ def build_mantel(
         cluster_positions=cluster_positions,
     )
     render_coupling_layer(axis, ordered.links, composition.coupling, geometry)
-    render_ornament_layer(axis, geometry, coupling_enabled=composition.coupling.enabled)
     axis.set_xlim(*geometry.x_limits)
     axis.set_ylim(*geometry.y_limits)
     axis.set_aspect("equal", adjustable="box")
     axis.set_axis_off()
+    render_ornament_layer(
+        axis,
+        colorbar_axis,
+        geometry,
+        coupling_enabled=composition.coupling.enabled,
+    )
     figure._axiomfig_mantel_composition = composition
     figure._axiomfig_mantel_geometry = geometry
     return figure

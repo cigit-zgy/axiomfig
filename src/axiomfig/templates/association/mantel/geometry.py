@@ -1,13 +1,17 @@
-"""Deterministic matrix anatomy, target rail, and source-corner allocation."""
+"""Mantel-specific matrix envelope, target rail, and coupling-zone geometry.
+
+The scientific matrix always uses one canonical logical row/column system.  ``upper`` and
+``lower`` only change the visible structural mask plus a presentation mirror that keeps the
+unused triangular half available for Mantel coupling.  This follows the Figure/Axes/Artist
+separation used elsewhere in AxiomFig: matrix anatomy owns coordinates; coupling only consumes
+resolved source and target positions.
+"""
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from dataclasses import dataclass
 
 import numpy as np
-
-from axiomfig.style import mantel_plot_contract
 
 
 @dataclass(frozen=True)
@@ -35,16 +39,14 @@ class TargetRail:
 class SourceRegion:
     corner: str
     positions: dict[str, tuple[float, float]]
-    x_limits: tuple[float, float]
-    y_limits: tuple[float, float]
 
 
 @dataclass(frozen=True)
 class MantelGeometry:
     bounds: MatrixBounds
+    matrix_type: str
     target_rail: TargetRail
     source_region: SourceRegion
-    colorbar_x: float
     x_limits: tuple[float, float]
     y_limits: tuple[float, float]
     strength_legend_anchor: tuple[float, float]
@@ -66,9 +68,17 @@ def cell_center(
     *,
     matrix_type: str,
 ) -> tuple[float, float]:
-    """Map ordered matrix indices into one orientation-owned cell coordinate system."""
-    x = bounds.x0 + column + 0.5
-    y = bounds.y0 + row + 0.5 if matrix_type == "lower" else bounds.y1 - row - 0.5
+    """Map a logical matrix cell to one deterministic display coordinate system.
+
+    ``upper`` is rendered in the conventional upper-right triangle. ``lower`` mirrors x so the
+    complementary coupling triangle remains on the left rather than creating a detached network
+    panel. ``full`` and ``mixed`` keep conventional coordinates.
+    """
+    y = bounds.y1 - row - 0.5
+    if matrix_type == "lower":
+        x = bounds.x1 - column - 0.5
+    else:
+        x = bounds.x0 + column + 0.5
     return x, y
 
 
@@ -80,50 +90,63 @@ def _target_anchor(
     rail_offset: float,
 ) -> tuple[float, float]:
     x, y = cell_center(bounds, index, index, matrix_type=matrix_type)
-    if matrix_type == "lower":
-        return x + rail_offset, y - rail_offset
     if matrix_type == "upper":
-        return x + rail_offset, y + rail_offset
-    _, standard_y = cell_center(bounds, index, 0, matrix_type="full")
-    return bounds.x0 - 0.04, standard_y
+        return x - rail_offset, y - rail_offset
+    if matrix_type == "lower":
+        return x - rail_offset, y + rail_offset
+    return bounds.x0 - 0.05, y
 
 
-def _source_region(
+def _source_positions(
     bounds: MatrixBounds,
     source_groups: tuple[str, ...],
     *,
     matrix_type: str,
 ) -> SourceRegion:
+    """Place source groups inside the unused matrix triangle, never on a rail extension."""
     count = len(source_groups)
-    if not count:
-        return SourceRegion("none", {}, (bounds.x0, bounds.x0), (bounds.y0, bounds.y0))
-    spacing = min(0.62, 1.55 / max(count - 1, 1))
+    if count == 0:
+        return SourceRegion("none", {})
+
+    span_x = min(2.35, max(0.0, bounds.size * 0.16))
+    span_y = min(1.85, max(0.0, bounds.size * 0.12))
+    if count == 1:
+        fractions = np.asarray((0.5,))
+    else:
+        fractions = np.linspace(0.0, 1.0, count)
+
     if matrix_type == "upper":
-        corner = "upper-left"
-        base_x = bounds.x0 - 1.40
-        base_y = bounds.y1 + 2.60
+        corner = "lower-left"
+        base_x = bounds.x0 + 0.68
+        base_y = bounds.y0 + 0.62
         positions = {
-            source: (base_x + index * spacing, base_y - index * spacing)
-            for index, source in enumerate(source_groups)
+            source: (float(base_x + fraction * span_x), float(base_y + fraction * span_y))
+            for source, fraction in zip(source_groups, fractions, strict=True)
         }
     elif matrix_type == "lower":
-        corner = "lower-left"
-        base_x = bounds.x0 - 1.40
-        base_y = bounds.y0 - 2.60
+        corner = "upper-left"
+        base_x = bounds.x0 + 0.68
+        base_y = bounds.y1 - 0.62
         positions = {
-            source: (base_x + index * spacing, base_y + index * spacing)
-            for index, source in enumerate(source_groups)
+            source: (float(base_x + fraction * span_x), float(base_y - fraction * span_y))
+            for source, fraction in zip(source_groups, fractions, strict=True)
         }
     else:
         corner = "left"
-        source_y = np.linspace(bounds.y1 - 0.65, bounds.y0 + 0.65, count)
+        source_y = np.linspace(bounds.y1 - 0.75, bounds.y0 + 0.75, count)
         positions = {
-            source: (bounds.x0 - 0.48, float(y))
+            source: (bounds.x0 - 0.65, float(y))
             for source, y in zip(source_groups, source_y, strict=True)
         }
-    xs = tuple(value[0] for value in positions.values())
-    ys = tuple(value[1] for value in positions.values())
-    return SourceRegion(corner, positions, (min(xs), max(xs)), (min(ys), max(ys)))
+    return SourceRegion(corner, positions)
+
+
+def _rail_orientation(matrix_type: str) -> str:
+    if matrix_type == "upper":
+        return "upper-falling-diagonal/lower-left-coupling"
+    if matrix_type == "lower":
+        return "lower-rising-diagonal/upper-left-coupling"
+    return "left-vertical"
 
 
 def solve_geometry(
@@ -132,18 +155,17 @@ def solve_geometry(
     *,
     matrix_type: str,
 ) -> MantelGeometry:
-    """Allocate matrix, mirrored target rail, compact source corner, and ornaments."""
+    """Allocate one compact square envelope whose unused triangle owns Mantel coupling."""
     size = len(labels)
     longest_source = max((len(label) for label in source_groups), default=0)
-    source_label_width = float(np.clip(0.78 + longest_source * 0.085, 1.35, 2.8))
     longest_variable = max((len(label) for label in labels), default=0)
-    matrix_label_gutter = float(np.clip(0.78 + longest_variable * 0.085, 1.15, 2.8))
-    lower_gutter = 2.25 if matrix_type == "lower" else 1.45
-    upper_gutter = 2.25 if matrix_type == "upper" else matrix_label_gutter
-    bounds = MatrixBounds(source_label_width + 1.45, lower_gutter, size)
-    matrix_contract = mantel_plot_contract()["matrix"]
-    assert isinstance(matrix_contract, Mapping)
-    rail_offset = float(matrix_contract["target_rail_offset"])
+
+    left_gutter = float(np.clip(0.75 + longest_source * 0.075, 1.35, 2.65))
+    bottom_gutter = 1.75
+    top_gutter = float(np.clip(0.65 + longest_variable * 0.075, 1.15, 2.35))
+    bounds = MatrixBounds(left_gutter, bottom_gutter, size)
+
+    rail_offset = 0.43
     anchors = {
         label: _target_anchor(
             bounds,
@@ -153,47 +175,22 @@ def solve_geometry(
         )
         for index, label in enumerate(labels)
     }
-    orientation = (
-        "lower-left-to-upper-right"
-        if matrix_type == "lower"
-        else "upper-left-to-lower-right"
-        if matrix_type == "upper"
-        else "left-vertical"
-    )
-    rail = TargetRail(orientation, anchors)
-    sources = _source_region(bounds, source_groups, matrix_type=matrix_type)
-    label_gutter = 0.0 if matrix_type in {"lower", "upper"} else matrix_label_gutter
-    colorbar_x = bounds.x1 + label_gutter + 0.28
-    source_min_x = sources.x_limits[0] if sources.positions else bounds.x0
-    source_min_y = sources.y_limits[0] if sources.positions else bounds.y0
-    source_max_y = sources.y_limits[1] if sources.positions else bounds.y1
-    left_padding = max(0.35, source_label_width + bounds.x0 - source_min_x - 0.45)
-    x_limits = (source_min_x - left_padding, bounds.x1 + label_gutter + 1.35)
-    y_limits = (
-        min(0.0, source_min_y - 0.42),
-        max(bounds.y1 + upper_gutter, source_max_y + 0.42),
-    )
-    ornament_contract = mantel_plot_contract()["ornaments"]
-    assert isinstance(ornament_contract, Mapping)
-    ornament_orientation = "upper" if matrix_type == "upper" else "lower"
-    ornament_geometry = ornament_contract[ornament_orientation]
-    assert isinstance(ornament_geometry, Mapping)
-    legend_x = float(ornament_geometry["legend_anchor_x_fraction"])
+    rail = TargetRail(_rail_orientation(matrix_type), anchors)
+    sources = _source_positions(bounds, source_groups, matrix_type=matrix_type)
+
+    legend_x = 0.20
+    strength_anchor = (legend_x, 1.10)
+    p_anchor = (legend_x, 0.42)
+    right_gutter = 0.55
     return MantelGeometry(
         bounds=bounds,
+        matrix_type=matrix_type,
         target_rail=rail,
         source_region=sources,
-        colorbar_x=colorbar_x,
-        x_limits=x_limits,
-        y_limits=y_limits,
-        strength_legend_anchor=(
-            legend_x,
-            float(ornament_geometry["strength_legend_anchor_y_fraction"]),
-        ),
-        p_legend_anchor=(
-            legend_x,
-            float(ornament_geometry["p_legend_anchor_y_fraction"]),
-        ),
+        x_limits=(0.0, bounds.x1 + right_gutter),
+        y_limits=(0.0, bounds.y1 + top_gutter),
+        strength_legend_anchor=strength_anchor,
+        p_legend_anchor=p_anchor,
     )
 
 

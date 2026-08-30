@@ -1,4 +1,4 @@
-"""Structural matrix anatomy: masks, cells, labels, and target rail artists."""
+"""Structural Mantel matrix anatomy: masks, subtle scaffold, labels, and target rail."""
 
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ class MatrixRenderResult:
 
 
 def select_matrix_cells(size: int, spec: MatrixSpec) -> tuple[MatrixCell, ...]:
-    """Return the structural mask without consulting any glyph primitive."""
+    """Return a logical structural mask independent from presentation and glyph primitives."""
     cells: list[MatrixCell] = []
     for row in range(size):
         for column in range(size):
@@ -48,11 +48,19 @@ def select_matrix_cells(size: int, spec: MatrixSpec) -> tuple[MatrixCell, ...]:
                     continue
                 region = "lower"
             else:
-                if row < column:
+                if row > column:
                     continue
                 region = "upper"
             cells.append(MatrixCell(row, column, region))
     return tuple(cells)
+
+
+def _label_size(count: int) -> float:
+    if count >= 18:
+        return mpl.rcParams["font.size"] * 0.66
+    if count >= 14:
+        return mpl.rcParams["font.size"] * 0.72
+    return mpl.rcParams["font.size"] * 0.80
 
 
 def _draw_labels(
@@ -61,9 +69,11 @@ def _draw_labels(
     geometry: MantelGeometry,
     matrix_type: str,
 ) -> tuple[object, ...]:
+    """Use the matrix edges and target rail as the only variable-label anatomy."""
     bounds = geometry.bounds
-    label_size = mpl.rcParams["font.size"] * (0.72 if len(labels) >= 15 else 0.80)
+    size = _label_size(len(labels))
     rendered: list[object] = []
+
     if matrix_type in {"full", "mixed"}:
         for index, label in enumerate(labels):
             x, _ = cell_center(bounds, 0, index, matrix_type=matrix_type)
@@ -74,7 +84,7 @@ def _draw_labels(
                 ha="left",
                 va="bottom",
                 rotation=45,
-                fontsize=label_size,
+                fontsize=size,
                 clip_on=True,
                 zorder=5,
             )
@@ -82,43 +92,52 @@ def _draw_labels(
             rendered.append(artist)
             _, y = cell_center(bounds, index, 0, matrix_type=matrix_type)
             artist = axis.text(
-                bounds.x1 + 0.12,
+                bounds.x0 - 0.10,
                 y,
                 label,
-                ha="left",
+                ha="right",
                 va="center",
-                fontsize=label_size,
+                fontsize=size,
                 clip_on=True,
                 zorder=5,
             )
             artist.set_gid("axiomfig-mantel-variable-label")
             rendered.append(artist)
         return tuple(rendered)
-    for label in labels:
-        anchor_x, anchor_y = geometry.target_rail.anchors[label]
-        if matrix_type == "lower":
-            x, y, horizontal, vertical = anchor_x - 0.10, anchor_y + 0.10, "right", "bottom"
-        else:
-            x, y, horizontal, vertical = anchor_x + 0.10, anchor_y + 0.08, "left", "bottom"
-        artist = axis.text(
+
+    for index, label in enumerate(labels):
+        x, _ = cell_center(bounds, 0, index, matrix_type=matrix_type)
+        top = axis.text(
             x,
-            y,
+            bounds.y1 + 0.10,
             label,
-            ha=horizontal,
-            va=vertical,
-            rotation=45 if matrix_type == "lower" else -45,
-            fontsize=label_size,
+            ha="center",
+            va="bottom",
+            rotation=90,
+            fontsize=size,
             clip_on=True,
             zorder=5,
-            bbox={
-                "facecolor": mantel_visual_color("background"),
-                "edgecolor": "none",
-                "pad": 0.35,
-                "alpha": 0.92,
-            },
         )
-        artist.set_gid("axiomfig-mantel-variable-label")
-        rendered.append(artist)
+        top.set_gid("axiomfig-mantel-column-label")
+        rendered.append(top)
+
+        anchor_x, anchor_y = geometry.target_rail.anchors[label]
+        if matrix_type == "upper":
+            x_text, y_text, va = anchor_x - 0.06, anchor_y + 0.10, "bottom"
+        else:
+            x_text, y_text, va = anchor_x - 0.06, anchor_y - 0.10, "top"
+        rail_label = axis.text(
+            x_text,
+            y_text,
+            label,
+            ha="right",
+            va=va,
+            fontsize=size,
+            clip_on=True,
+            zorder=5,
+        )
+        rail_label.set_gid("axiomfig-mantel-variable-label")
+        rendered.append(rail_label)
     return tuple(rendered)
 
 
@@ -130,7 +149,7 @@ def render_matrix_layer(
     *,
     show_target_anchors: bool,
 ) -> MatrixRenderResult:
-    """Render only matrix structure; glyphs, statistics, and coupling are separate layers."""
+    """Render matrix scaffold and labels; glyph/statistical/coupling layers remain independent."""
     cells = select_matrix_cells(len(data.labels), spec)
     grid_color = mantel_visual_color("grid_edge")
     for cell in cells:
@@ -138,21 +157,23 @@ def render_matrix_layer(
             geometry.bounds,
             cell.row,
             cell.column,
-            matrix_type=spec.matrix_type,
+            matrix_type=geometry.matrix_type,
         )
         grid = Rectangle(
-            (x - 0.46, y - 0.46),
-            0.92,
-            0.92,
+            (x - 0.48, y - 0.48),
+            0.96,
+            0.96,
             facecolor="none",
             edgecolor=grid_color,
-            linewidth=FILL_EDGE_PT,
+            linewidth=FILL_EDGE_PT * 0.60,
+            alpha=0.56,
             zorder=1,
         )
         grid.set_gid("axiomfig-mantel-grid-cell")
         grid._axiomfig_row = cell.row
         grid._axiomfig_column = cell.column
         axis.add_patch(grid)
+
     _draw_labels(axis, data.labels, geometry, spec.matrix_type)
     anchors: list[object] = []
     if show_target_anchors:
