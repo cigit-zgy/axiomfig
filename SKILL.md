@@ -1,6 +1,6 @@
 ---
 name: axiomfig
-description: Create deterministic publication-oriented scientific PDF and PNG figures from compact Figure Intent, canonical templates, and explicit scientific data or precomputed results. Use for scientific plotting, multi-panel composition, Mantel and ordination graphics, Gallery generation, or AxiomFig validation.
+description: Create deterministic publication-oriented scientific PDF and PNG figures from compact Figure Intent, canonical templates, and explicit scientific data or precomputed results. Use for scientific plotting, Mantel and ordination graphics, canonical layout fixtures, Gallery generation, or AxiomFig validation.
 ---
 
 # AxiomFig
