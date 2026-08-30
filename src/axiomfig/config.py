@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 from collections.abc import Mapping
 from dataclasses import dataclass
+from functools import lru_cache
 from importlib.resources import files
 from importlib.resources.abc import Traversable
 from pathlib import Path
@@ -229,7 +230,9 @@ def _validate_style(style: Mapping[str, Any]) -> None:
         raise ValueError("plots.mantel.links.nonsignificant_mode must be hide, fade, or show")
 
 
+@lru_cache(maxsize=16)
 def load_contracts(config_root: Path | None = None) -> Contracts:
+    """Load immutable contracts once per resource root for repeated deterministic rendering."""
     root = _resolve_root(config_root)
     style = _load_mapping(root.joinpath("style.yaml"))
     fonts = _load_mapping(root.joinpath("fonts.yaml"))

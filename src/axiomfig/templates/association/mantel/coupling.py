@@ -169,7 +169,7 @@ def _lane_fractions(
     return tuple(dict.fromkeys(round(float(value), 6) for value in semantic))
 
 
-def _route_samples(vertices: tuple[tuple[float, float], ...], *, count: int = 13) -> np.ndarray:
+def _route_samples(vertices: tuple[tuple[float, float], ...], *, count: int = 7) -> np.ndarray:
     array = np.asarray(vertices, dtype=float)
     values = np.linspace(0.04, 0.96, count)
     return np.asarray(
@@ -180,23 +180,8 @@ def _route_samples(vertices: tuple[tuple[float, float], ...], *, count: int = 13
     )
 
 
-def _segment_crosses(
-    first_start: np.ndarray,
-    first_end: np.ndarray,
-    second_start: np.ndarray,
-    second_end: np.ndarray,
-) -> bool:
-    def side(origin: np.ndarray, end: np.ndarray, point: np.ndarray) -> float:
-        vector = end - origin
-        relative = point - origin
-        return float(vector[0] * relative[1] - vector[1] * relative[0])
-
-    first_a = side(first_start, first_end, second_start)
-    first_b = side(first_start, first_end, second_end)
-    second_a = side(second_start, second_end, first_start)
-    second_b = side(second_start, second_end, first_end)
-    tolerance = 1e-9
-    return first_a * first_b < -tolerance and second_a * second_b < -tolerance
+def _cross(first: np.ndarray, second: np.ndarray) -> np.ndarray:
+    return first[..., 0] * second[..., 1] - first[..., 1] * second[..., 0]
 
 
 def _route_interference(
@@ -205,12 +190,28 @@ def _route_interference(
 ) -> tuple[int, int]:
     crossings = 0
     proximity = 0
+    candidate_start = samples[:-1, None, :]
+    candidate_end = samples[1:, None, :]
+    candidate_vector = candidate_end - candidate_start
     for selected in selected_routes:
-        crossings += sum(
-            _segment_crosses(first_start, first_end, second_start, second_end)
-            for first_start, first_end in zip(samples[:-1], samples[1:], strict=True)
-            for second_start, second_end in zip(selected[:-1], selected[1:], strict=True)
+        selected_start = selected[None, :-1, :]
+        selected_end = selected[None, 1:, :]
+        selected_vector = selected_end - selected_start
+        candidate_sides = _cross(
+            candidate_vector,
+            selected_start - candidate_start,
+        ) * _cross(
+            candidate_vector,
+            selected_end - candidate_start,
         )
+        selected_sides = _cross(
+            selected_vector,
+            candidate_start - selected_start,
+        ) * _cross(
+            selected_vector,
+            candidate_end - selected_start,
+        )
+        crossings += int(np.count_nonzero((candidate_sides < -1e-9) & (selected_sides < -1e-9)))
         distances = np.linalg.norm(samples[:, None, :] - selected[None, :, :], axis=2)
         proximity += int(np.count_nonzero(distances[2:-2, 2:-2] < 0.055))
     return crossings, proximity

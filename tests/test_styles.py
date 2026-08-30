@@ -31,6 +31,7 @@ def test_default_contract_loader_uses_packaged_style_resources() -> None:
     assert root.joinpath("fonts.yaml").is_file()
     assert root.joinpath("colors.yaml").is_file()
     assert load_contracts().style["stroke"]["main_stroke_pt"] == 0.8
+    assert load_contracts() is load_contracts()
 
 
 @pytest.mark.parametrize(
