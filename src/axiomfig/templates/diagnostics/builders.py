@@ -106,25 +106,26 @@ def build_bland_altman(
     center: object | None = None,
     limits: object | None = None,
 ) -> Figure:
-    if mean is None and difference is None and agreement_type is None:
+    if all(item is None for item in (mean, difference, agreement_type, center, limits)):
         rng = np.random.default_rng(127)
         mean_values = np.linspace(2.0, 20.0, 48)
         difference_values = 0.28 + rng.normal(0.0, 0.72, mean_values.size)
         agreement = "95% limits"
         axis_limits = ((0.0, 22.0), (-2.5, 3.0))
-    elif mean is not None and difference is not None and agreement_type is not None:
+        selected_center = float(difference_values.mean())
+        spread = 1.96 * float(difference_values.std(ddof=1))
+        selected_limits = (selected_center - spread, selected_center + spread)
+    elif all(item is not None for item in (mean, difference, agreement_type, center, limits)):
         mean_values = np.asarray(mean, dtype=float)
         difference_values = np.asarray(difference, dtype=float)
         agreement = str(agreement_type)
         axis_limits = _limits(mean_values, difference_values)
-    else:
-        raise ValueError("bland_altman requires mean, difference, and agreement_type")
-    selected_center = float(difference_values.mean()) if center is None else float(center)
-    if limits is None:
-        spread = 1.96 * float(difference_values.std(ddof=1))
-        selected_limits = (selected_center - spread, selected_center + spread)
-    else:
+        selected_center = float(center)
         selected_limits = tuple(float(item) for item in limits)  # type: ignore[arg-type]
+    else:
+        raise ValueError(
+            "bland_altman requires mean, difference, agreement_type, center, and limits"
+        )
     figure, axis = plt.subplots()
     collection = axis.scatter(mean_values, difference_values)
     apply_scatter_contract(collection)
@@ -235,7 +236,7 @@ def build_precision_recall(
         recall_values = np.asarray(recall, dtype=float)
         precision_values = np.asarray(precision, dtype=float)
         groups = group
-        selected_baseline = 0.50 if baseline is None else float(baseline)
+        selected_baseline = None if baseline is None else float(baseline)
     else:
         raise ValueError("precision_recall requires recall and precision")
     figure, axis = plt.subplots()
@@ -245,9 +246,10 @@ def build_precision_recall(
         axis.plot(
             selected_x[order], selected_y[order], label=label, markevery=10, **series_style(index)
         )
-    axis.axhline(selected_baseline, **reference_line_kwargs())
+    if selected_baseline is not None:
+        axis.axhline(selected_baseline, **reference_line_kwargs())
     axis.set(xlabel="Recall", ylabel="Precision")
-    _open(axis, (0.0, 1.0), (0.45, 1.0))
+    _open(axis, (0.0, 1.0), (0.0, 1.0))
     if any(label is not None for _, _, label in selected_series):
         request_legend(axis)
     return figure

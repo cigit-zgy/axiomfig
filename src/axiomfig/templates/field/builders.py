@@ -38,6 +38,7 @@ def build_contour(
     y_grid: object | None = None,
     z: object | None = None,
     color_semantics: str = "sequential",
+    center: object | None = None,
     levels: object | None = None,
     colorbar_label: str = "Field intensity (-)",
     xlabel: str = "State variable x",
@@ -63,11 +64,21 @@ def build_contour(
         if levels is not None
         else np.linspace(float(field.min()), float(field.max()), 13)
     )
-    norm = (
-        TwoSlopeNorm(vmin=float(field.min()), vcenter=0.0, vmax=float(field.max()))
-        if color_semantics == "diverging" and field.min() < 0 < field.max()
-        else None
-    )
+    if color_semantics == "diverging":
+        if center is None:
+            raise ValueError("diverging contour requires an explicit center")
+        selected_center = float(center)
+        if not float(field.min()) < selected_center < float(field.max()):
+            raise ValueError("contour center must lie inside the data range")
+        norm = TwoSlopeNorm(
+            vmin=float(field.min()),
+            vcenter=selected_center,
+            vmax=float(field.max()),
+        )
+    else:
+        if center is not None:
+            raise ValueError("center is only valid for diverging contour semantics")
+        norm = None
     filled = axis.contourf(xx, yy, field, levels=selected_levels, cmap=cmap, norm=norm)
     axis.contour(
         xx,

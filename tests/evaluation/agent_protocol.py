@@ -27,6 +27,7 @@ class AgentProtocolBenchmarkResult:
     render_count: int
     public_families: int
     actions: dict[str, int]
+    languages: dict[str, int]
     intent_classes: frozenset[str]
     actual_llm_runs: int = 0
 
@@ -77,14 +78,15 @@ def validate_agent_protocol_cases(path: Path) -> AgentProtocolBenchmarkResult:
     raw_cases = document.get("cases")
     if not isinstance(raw_cases, list):
         raise ValueError("benchmark.cases must be a list")
-    if not 60 <= len(raw_cases) <= 80:
-        raise ValueError("Agent protocol benchmark must contain 60-80 cases")
+    if not 110 <= len(raw_cases) <= 130:
+        raise ValueError("Agent protocol benchmark must contain 110-130 cases")
 
     specs = {spec.template_id: spec for spec in load_template_registry()}
     public_ids = {spec.template_id for spec in public_template_specs()}
     public_families = {spec.family for spec in public_template_specs()}
     ids: set[str] = set()
     actions: Counter[str] = Counter()
+    languages: Counter[str] = Counter()
     classes: set[str] = set()
     rendered_templates: set[str] = set()
 
@@ -99,12 +101,19 @@ def validate_agent_protocol_cases(path: Path) -> AgentProtocolBenchmarkResult:
         ids.add(case_id)
         if not isinstance(request, str) or not request.strip():
             raise ValueError(f"{case_id}: request must be non-empty")
+        language = case.get("language", "en")
+        if language not in {"en", "zh"}:
+            raise ValueError(f"{case_id}: unsupported benchmark language {language!r}")
+        languages[str(language)] += 1
         case_classes = set(_strings(case.get("classes"), f"{case_id}.classes"))
         if not case_classes:
             raise ValueError(f"{case_id}: classes must not be empty")
         classes.update(case_classes)
 
         expected = _mapping(case.get("expected"), f"{case_id}.expected")
+        for field in ("required_semantics", "forbidden_inferences"):
+            if field in expected:
+                _strings(expected[field], f"{case_id}.expected.{field}")
         action = expected.get("action")
         if action not in VALID_ACTIONS:
             raise ValueError(f"{case_id}: invalid action {action!r}")
@@ -170,6 +179,7 @@ def validate_agent_protocol_cases(path: Path) -> AgentProtocolBenchmarkResult:
         render_count=actions["render"],
         public_families=len(rendered_families),
         actions=dict(sorted(actions.items())),
+        languages=dict(sorted(languages.items())),
         intent_classes=frozenset(classes),
     )
 

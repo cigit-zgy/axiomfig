@@ -3,7 +3,7 @@ variants:
   basic:
     input_mode: direct
     required: [matrix, row_labels, column_labels, color_semantics]
-    optional: [annotations, colorbar_label]
+    optional: [center, annotations, colorbar_label]
   correlation:
     input_mode: precomputed
     required: [matrix, labels, center]
@@ -11,7 +11,7 @@ variants:
   clustered:
     input_mode: precomputed
     required: [matrix, row_labels, column_labels, row_order, column_order, color_semantics]
-    optional: [annotations, colorbar_label]
+    optional: [center, annotations, colorbar_label]
   confusion_matrix:
     input_mode: precomputed
     required: [matrix, class_labels]
@@ -19,4 +19,4 @@ variants:
   annotated:
     input_mode: direct
     required: [matrix, row_labels, column_labels, color_semantics, annotations]
-    optional: [colorbar_label, annotation_format]
+    optional: [center, colorbar_label, annotation_format]

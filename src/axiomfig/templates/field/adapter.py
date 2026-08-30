@@ -2,19 +2,20 @@ from __future__ import annotations
 
 import numpy as np
 
-from axiomfig.templates._adapter import numeric_1d, numeric_matrix, optional_text, text
+from axiomfig.templates._adapter import numeric_1d, numeric_matrix, optional_text, scalar, text
 
 
-def _color(values: dict[str, object]) -> None:
+def _color(values: dict[str, object]) -> str:
     semantics = text(values["color_semantics"], "color_semantics")
     if semantics not in {"sequential", "diverging", "cyclic"}:
         raise ValueError("field color_semantics must be sequential, diverging, or cyclic")
     values["color_semantics"] = semantics
+    return semantics
 
 
 def adapt(variant: str, supplied: dict[str, object]) -> dict[str, object]:
     values = dict(supplied)
-    _color(values)
+    semantics = _color(values)
     if variant == "contour":
         x = np.asarray(values["x_grid"], dtype=float)
         y = np.asarray(values["y_grid"], dtype=float)
@@ -27,6 +28,12 @@ def adapt(variant: str, supplied: dict[str, object]) -> dict[str, object]:
         if not np.all(np.isfinite(x)) or not np.all(np.isfinite(y)):
             raise ValueError("x_grid and y_grid must be finite")
         values.update(x_grid=x, y_grid=y, z=z)
+        if semantics == "diverging":
+            if "center" not in values:
+                raise ValueError("diverging contour requires an explicit center")
+            values["center"] = scalar(values["center"], "center")
+        elif "center" in values:
+            raise ValueError("center is only valid for diverging contour semantics")
         if "levels" in values:
             levels = numeric_1d(values["levels"], "levels", minimum=2)
             if np.any(np.diff(levels) <= 0):

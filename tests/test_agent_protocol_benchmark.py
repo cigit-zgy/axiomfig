@@ -10,9 +10,10 @@ def test_agent_protocol_benchmark_is_structurally_valid() -> None:
 
     result = validate_agent_protocol_cases(ROOT / "tests/evaluation/agent_protocol_cases.yaml")
 
-    assert result.case_count == 72
-    assert result.render_count == 55
+    assert result.case_count == 120
+    assert result.render_count == 70
     assert result.public_families == 13
+    assert result.languages == {"en": 108, "zh": 12}
     assert result.actual_llm_runs == 0
 
 
@@ -22,10 +23,10 @@ def test_agent_protocol_benchmark_covers_decision_boundaries() -> None:
     result = validate_agent_protocol_cases(ROOT / "tests/evaluation/agent_protocol_cases.yaml")
 
     assert result.actions == {
-        "clarify": 6,
-        "render": 55,
-        "require_precomputed": 5,
-        "unsupported": 6,
+        "clarify": 20,
+        "render": 70,
+        "require_precomputed": 20,
+        "unsupported": 10,
     }
     assert {
         "ambiguous",
@@ -41,4 +42,8 @@ def test_agent_protocol_benchmark_covers_decision_boundaries() -> None:
         "precomputed_result",
         "typography",
         "unsupported_domain",
+        "causality",
+        "scientific_boundary",
+        "scale_semantics",
+        "unit_compatibility",
     } <= result.intent_classes

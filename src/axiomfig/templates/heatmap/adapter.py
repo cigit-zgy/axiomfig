@@ -58,5 +58,11 @@ def adapt(variant: str, supplied: dict[str, object]) -> dict[str, object]:
         semantics = text(values["color_semantics"], "color_semantics")
         if semantics not in {"sequential", "diverging", "qualitative", "cyclic"}:
             raise ValueError("unknown color_semantics")
+        if semantics == "diverging":
+            if "center" not in values:
+                raise ValueError("diverging heatmap requires an explicit center")
+            values["center"] = scalar(values["center"], "center")
+        elif "center" in values:
+            raise ValueError("center is only valid for diverging heatmap semantics")
     optional_text(values, "colorbar_label", "annotation_format")
     return values

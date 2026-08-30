@@ -3,7 +3,7 @@ variants:
   contour:
     input_mode: direct
     required: [x_grid, y_grid, z, color_semantics]
-    optional: [levels, colorbar_label, xlabel, ylabel]
+    optional: [center, levels, colorbar_label, xlabel, ylabel]
   quiver:
     input_mode: direct
     required: [x, y, u, v, color_semantics]

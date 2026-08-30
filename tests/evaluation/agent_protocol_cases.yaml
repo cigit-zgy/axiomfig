@@ -172,7 +172,7 @@ cases:
     request: Show these odds ratios and supplied 95 percent confidence intervals as a forest plot.
     classes: [implicit_template, precomputed_result]
     available_data: {format: csv, columns: [label, estimate, interval, uncertainty_type]}
-    expected: {action: render, template: estimation.forest, input_mode: precomputed, required_roles: [label, estimate, interval, uncertainty_type]}
+    expected: {action: render, template: estimation.forest, input_mode: precomputed, required_roles: [label, estimate, interval, uncertainty_type], required_semantics: [ratio_null_one]}
   - id: R34-estimation-point-interval
     request: Plot each estimate with its explicitly labeled credible interval.
     classes: [implicit_template, precomputed_result]
@@ -192,8 +192,8 @@ cases:
   - id: R37-diagnostics-bland-altman
     request: Make a Bland-Altman plot from the supplied means, differences, and agreement definition.
     classes: [explicit_template, precomputed_result]
-    available_data: {format: csv, columns: [mean, difference, agreement_type]}
-    expected: {action: render, template: diagnostics.bland_altman, input_mode: precomputed, required_roles: [mean, difference, agreement_type]}
+    available_data: {format: csv, columns: [mean, difference, agreement_type, center, limits]}
+    expected: {action: render, template: diagnostics.bland_altman, input_mode: precomputed, required_roles: [mean, difference, agreement_type, center, limits]}
   - id: R38-diagnostics-calibration
     request: Show predicted probability against observed frequency for the calibration bins.
     classes: [implicit_template, precomputed_result]
@@ -374,3 +374,259 @@ cases:
     classes: [invalid, ambiguous]
     available_data: {format: none, keys: []}
     expected: {action: unsupported, reason: No scientific relationship, data, or result is available to specify a figure.}
+
+  - id: S01-raw-replicates-visible
+    request: I have all eight biological replicates for each reactor and want every ammonia observation visible rather than only group means.
+    classes: [scientific_boundary, distribution_vs_summary, direct_data]
+    available_data: {format: csv, columns: [value, category]}
+    expected: {action: render, template: distribution.strip, input_mode: direct, required_roles: [value, category], forbidden_inferences: [aggregation, uncertainty_type]}
+  - id: S02-explicit-standard-error
+    request: Plot the supplied mean concentration plus or minus its standard error at each sampling time.
+    classes: [scientific_boundary, uncertainty_semantics, precomputed_result]
+    available_data: {format: csv, columns: [x, estimate, error, uncertainty_type]}
+    expected: {action: render, template: line.errorbar, input_mode: precomputed, required_roles: [x, estimate, error, uncertainty_type], required_semantics: [SE]}
+  - id: S03-zh-parity-compatible
+    language: zh
+    request: 这里是同一批样品的氨氮实测值和模型预测值，单位都是 mg/L，请画一致性图。
+    classes: [scientific_boundary, unit_compatibility, direct_data]
+    available_data: {format: csv, columns: [observed, predicted]}
+    expected: {action: render, template: scatter.parity, input_mode: direct, required_roles: [observed, predicted]}
+  - id: S04-unrelated-quantities-scatter
+    request: Show the relationship between water temperature and ammonia concentration; these are different quantities.
+    classes: [scientific_boundary, relationship, causality, direct_data]
+    available_data: {format: csv, columns: [x, y]}
+    expected: {action: render, template: scatter.simple, input_mode: direct, required_roles: [x, y], forbidden_inferences: [parity, causality]}
+  - id: S05-precomputed-agreement
+    request: Assess method agreement using the supplied pair means, differences, and limits-of-agreement definition.
+    classes: [scientific_boundary, agreement_vs_correlation, precomputed_result]
+    available_data: {format: csv, columns: [mean, difference, agreement_type, center, limits]}
+    expected: {action: render, template: diagnostics.bland_altman, input_mode: precomputed, required_roles: [mean, difference, agreement_type, center, limits], forbidden_inferences: [correlation_as_agreement]}
+  - id: S06-zh-pca-biplot-results
+    language: zh
+    request: 这里有已经计算好的 PCA scores、loadings 和每个轴的解释方差，请画 PCA biplot。
+    classes: [scientific_boundary, precomputed_result, ordination]
+    available_data: {format: json, keys: [coordinates, loadings, explained_variance]}
+    expected: {action: render, template: ordination.pca_biplot, input_mode: precomputed, required_roles: [coordinates, loadings, explained_variance]}
+  - id: S07-signed-correlation-center
+    request: Plot this signed correlation matrix with zero as the neutral correlation value.
+    classes: [scientific_boundary, scale_semantics, precomputed_result]
+    available_data: {format: json, keys: [matrix, labels, center]}
+    expected: {action: render, template: heatmap.correlation, input_mode: precomputed, required_roles: [matrix, labels, center], required_semantics: [diverging_center_zero]}
+  - id: S08-positive-abundance-heatmap
+    request: Display this non-negative abundance matrix with sequential color meaning; zero is a minimum, not a neutral midpoint.
+    classes: [scientific_boundary, scale_semantics, direct_data]
+    available_data: {format: json, keys: [matrix, row_labels, column_labels, color_semantics]}
+    expected: {action: render, template: heatmap.basic, input_mode: direct, required_roles: [matrix, row_labels, column_labels, color_semantics], forbidden_inferences: [diverging_center]}
+  - id: S09-zh-volcano-results
+    language: zh
+    request: 这是差异表达分析已经算好的 log2FC、校正后 p 值以及两个阈值，请画 volcano 图。
+    classes: [scientific_boundary, scale_semantics, precomputed_result]
+    available_data: {format: csv, columns: [effect_size, adjusted_p_value, significance_threshold, effect_threshold]}
+    expected: {action: render, template: omics.volcano, input_mode: precomputed, required_roles: [effect_size, adjusted_p_value, significance_threshold, effect_threshold], required_semantics: [log2_fold_change, adjusted_p_value]}
+  - id: S10-imbalanced-pr-results
+    request: Evaluate my highly imbalanced classifier using the supplied recall and precision curve points.
+    classes: [scientific_boundary, classifier_evaluation, precomputed_result]
+    available_data: {format: csv, columns: [recall, precision]}
+    expected: {action: render, template: diagnostics.precision_recall, input_mode: precomputed, required_roles: [recall, precision], forbidden_inferences: [universal_pr_superiority]}
+  - id: S11-directed-flow-values
+    request: Show the supplied material transfers from each process source to target; the values share kg/day units.
+    classes: [scientific_boundary, unit_compatibility, direct_data]
+    available_data: {format: csv, columns: [source, target, value]}
+    expected: {action: render, template: flow.sankey, input_mode: direct, required_roles: [source, target, value], forbidden_inferences: [causality, conservation]}
+  - id: S12-zh-vector-field
+    language: zh
+    request: 这里有流场坐标和速度分量 x、y、u、v，并已注明颜色表示速度大小，请画矢量场。
+    classes: [scientific_boundary, field_semantics, direct_data]
+    available_data: {format: json, keys: [x, y, u, v, color_semantics]}
+    expected: {action: render, template: field.quiver, input_mode: direct, required_roles: [x, y, u, v, color_semantics]}
+  - id: S13-ratio-estimate-null
+    request: Show these supplied odds ratios and 95 percent confidence intervals with the scientifically specified null reference at one.
+    classes: [scientific_boundary, reference_semantics, precomputed_result]
+    available_data: {format: csv, columns: [label, estimate, interval, uncertainty_type, reference]}
+    expected: {action: render, template: estimation.forest, input_mode: precomputed, required_roles: [label, estimate, interval, uncertainty_type], required_semantics: [ratio_null_one]}
+  - id: S14-explicit-prediction-band
+    request: Plot the supplied model prediction and its explicitly identified 95 percent prediction interval over time.
+    classes: [scientific_boundary, uncertainty_semantics, precomputed_result]
+    available_data: {format: csv, columns: [x, estimate, lower, upper, uncertainty_type]}
+    expected: {action: render, template: line.confidence_band, input_mode: precomputed, required_roles: [x, estimate, lower, upper, uncertainty_type], required_semantics: [prediction_interval]}
+  - id: S15-zh-mantel-results
+    language: zh
+    request: 这里有环境变量 Pearson 矩阵，以及已经算好的 Mantel r 和 p 值链接，请直接画 Mantel 图。
+    classes: [scientific_boundary, association, precomputed_result, causality]
+    available_data: {format: json, keys: [correlation_matrix, labels, links]}
+    expected: {action: render, template: association.mantel, input_mode: precomputed, required_roles: [correlation_matrix, labels, links], forbidden_inferences: [causality]}
+
+  - id: C07-area-baseline-unknown
+    request: Fill the response curve as an area, but I have not specified what scientific baseline the fill should reference.
+    classes: [ambiguous, scientific_boundary, reference_semantics]
+    available_data: {format: csv, columns: [x, y]}
+    expected: {action: clarify, template: line.area, input_mode: direct, required_roles: [x, y], clarification_reason: A filled magnitude needs a scientifically meaningful baseline., forbidden_inferences: [baseline]}
+  - id: C08-ordered-or-unordered-x
+    request: Connect response against dose, but the records do not say whether dose order represents a trajectory or merely an unordered relationship.
+    classes: [ambiguous, scientific_boundary, trajectory_vs_relationship]
+    available_data: {format: csv, columns: [x, y]}
+    expected: {action: clarify, template: line.single, input_mode: direct, required_roles: [x, y], clarification_reason: Connecting observations could imply unsupported continuity.}
+  - id: C09-stacked-or-normalized
+    request: Compare composition across reactors, but I have not said whether total mass or only within-reactor proportion matters.
+    classes: [ambiguous, scientific_boundary, normalization]
+    available_data: {format: csv, columns: [category, value, component]}
+    expected: {action: clarify, template: bar.stacked, input_mode: direct, required_roles: [category, value, component], clarification_reason: Ordinary and normalized stacking answer different total-versus-composition questions., forbidden_inferences: [normalization]}
+  - id: C10-zh-distribution-not-bars
+    language: zh
+    request: 我有三个反应器的全部重复实验数据，想比较氨氮，但还没决定要看完整分布还是汇总值。
+    classes: [ambiguous, scientific_boundary, distribution_vs_summary]
+    available_data: {format: csv, columns: [value, category]}
+    expected: {action: clarify, template: distribution.violin, input_mode: direct, required_roles: [value, category], clarification_reason: Complete distributions and summary estimates answer different questions., forbidden_inferences: [aggregation]}
+  - id: C11-parity-unit-conversion
+    request: Make a parity plot of measured concentration in mg/L against predictions reported in mmol/L; the conversion basis is not supplied.
+    classes: [ambiguous, scientific_boundary, unit_compatibility]
+    available_data: {format: csv, columns: [observed, predicted]}
+    expected: {action: clarify, template: scatter.parity, input_mode: direct, required_roles: [observed, predicted], clarification_reason: Parity requires the same quantity in compatible units and an explicit conversion., forbidden_inferences: [unit_conversion]}
+  - id: C12-estimation-reference-scale
+    request: Plot these effect estimates and intervals, but I have not said whether they are differences or ratios or what null applies.
+    classes: [ambiguous, scientific_boundary, reference_semantics, scale_semantics]
+    available_data: {format: csv, columns: [label, estimate, interval, uncertainty_type]}
+    expected: {action: clarify, template: estimation.forest, input_mode: precomputed, required_roles: [label, estimate, interval, uncertainty_type], clarification_reason: Effect type determines the scientifically meaningful null and may affect scale interpretation., forbidden_inferences: [null_reference, axis_transform]}
+  - id: C13-zh-uncertainty-unknown
+    language: zh
+    request: 误差这一列我忘了是标准差、标准误还是置信区间了，先帮我画误差棒。
+    classes: [ambiguous, scientific_boundary, uncertainty_semantics, forbidden_inference]
+    available_data: {format: csv, columns: [x, estimate, error]}
+    expected: {action: clarify, template: line.errorbar, input_mode: precomputed, required_roles: [x, estimate, error, uncertainty_type], clarification_reason: SD, SE, and confidence intervals are not interchangeable., forbidden_inferences: [uncertainty_type]}
+  - id: C14-heatmap-center-unknown
+    request: Make a diverging heatmap, but the matrix documentation does not define the neutral center.
+    classes: [ambiguous, scientific_boundary, scale_semantics]
+    available_data: {format: json, keys: [matrix, row_labels, column_labels, color_semantics]}
+    expected: {action: clarify, template: heatmap.basic, input_mode: direct, required_roles: [matrix, row_labels, column_labels, color_semantics], clarification_reason: A diverging scale requires a scientifically meaningful center., forbidden_inferences: [diverging_center]}
+  - id: C15-qq-reference-unknown
+    request: Make a Q-Q plot from these quantiles, but the theoretical reference distribution is not documented.
+    classes: [ambiguous, scientific_boundary, reference_semantics]
+    available_data: {format: csv, columns: [theoretical_quantile, sample_quantile]}
+    expected: {action: clarify, template: diagnostics.qq, input_mode: precomputed, required_roles: [theoretical_quantile, sample_quantile, reference_distribution], clarification_reason: The reference distribution cannot be inferred from quantile values., forbidden_inferences: [reference_distribution]}
+  - id: C16-learning-axis-meaning
+    request: Plot the learning curve, but the x values might be epochs or training-set sizes.
+    classes: [ambiguous, scientific_boundary, scale_semantics]
+    available_data: {format: csv, columns: [iteration, metric, series]}
+    expected: {action: clarify, template: diagnostics.learning_curve, input_mode: precomputed, required_roles: [iteration, metric, series], clarification_reason: Epoch and training-size curves describe different learning processes., forbidden_inferences: [iteration_meaning]}
+  - id: C17-zh-feature-importance-type
+    language: zh
+    request: 这里有 feature 和 importance 两列，但我不知道它是 permutation、gain 还是系数绝对值。
+    classes: [ambiguous, scientific_boundary, feature_importance]
+    available_data: {format: csv, columns: [feature, importance]}
+    expected: {action: clarify, template: diagnostics.feature_importance, input_mode: precomputed, required_roles: [feature, importance, importance_type], clarification_reason: Feature-importance definitions are not interchangeable., forbidden_inferences: [importance_type]}
+  - id: C18-enrichment-role-meaning
+    request: Plot enrichment terms, but the significance column may be raw or adjusted p and the size column is undocumented.
+    classes: [ambiguous, scientific_boundary, significance_semantics]
+    available_data: {format: csv, columns: [term, enrichment, significance, size]}
+    expected: {action: clarify, template: omics.enrichment_dot, input_mode: precomputed, required_roles: [term, enrichment, significance, size], clarification_reason: Significance adjustment and size meaning materially affect interpretation., forbidden_inferences: [p_value_adjustment, size_meaning]}
+  - id: C19-zh-incompatible-shared-units
+    language: zh
+    request: 把 mg/L 的氨氮和摄氏度温度作为两条同轴时间序列比较，但没有给换算或标准化依据。
+    classes: [ambiguous, scientific_boundary, unit_compatibility]
+    available_data: {format: json, keys: [x, series_values, series_labels]}
+    expected: {action: clarify, template: line.multi, input_mode: direct, required_roles: [x, series_values, series_labels], clarification_reason: Shared numerical axes require compatible quantities and units., forbidden_inferences: [unit_conversion, normalization]}
+  - id: C20-causal-language-trap
+    request: Plot temperature against ammonia and prove that temperature causes the ammonia change.
+    classes: [ambiguous, scientific_boundary, causality]
+    available_data: {format: csv, columns: [x, y]}
+    expected: {action: clarify, template: scatter.simple, input_mode: direct, required_roles: [x, y], clarification_reason: A bivariate visualization can show association but cannot establish the requested causal claim., forbidden_inferences: [causality]}
+
+  - id: P06-density-needs-estimate
+    request: Estimate a kernel density from these raw observations and plot it using the density template.
+    classes: [missing_precomputed, scientific_boundary, forbidden_inference]
+    available_data: {format: csv, columns: [value]}
+    expected: {action: require_precomputed, template: distribution.density, input_mode: precomputed, required_roles: [x, density], reason: Kernel and bandwidth choices belong to upstream density estimation., upstream_requirement: Supply the evaluated x grid and density values., forbidden_inferences: [kernel, bandwidth]}
+  - id: P07-regression-needs-fit
+    request: Fit the best regression model to x and y and add its line.
+    classes: [missing_precomputed, scientific_boundary, forbidden_inference]
+    available_data: {format: csv, columns: [x, y]}
+    expected: {action: require_precomputed, template: scatter.regression, input_mode: precomputed, required_roles: [x, y, fitted], reason: Model selection and fitting are upstream analysis., upstream_requirement: Supply x, y, and fitted values., forbidden_inferences: [regression_model, fitted_values]}
+  - id: P08-zh-mantel-raw
+    language: zh
+    request: 我只有原始微生物丰度矩阵和环境因子，帮我计算 Mantel 检验并画图。
+    classes: [missing_precomputed, scientific_boundary, forbidden_inference]
+    available_data: {format: json, keys: [abundance_matrix, environmental_variables]}
+    expected: {action: require_precomputed, template: association.mantel, input_mode: precomputed, required_roles: [correlation_matrix, labels, links], reason: Mantel statistics and the environmental correlation matrix require upstream analysis., upstream_requirement: Supply the correlation matrix and links containing Mantel r and p values., forbidden_inferences: [mantel_statistics, correlation_matrix]}
+  - id: P09-pcoa-needs-results
+    request: Compute PCoA from my sample table and choose a distance metric for me.
+    classes: [missing_precomputed, scientific_boundary, forbidden_inference]
+    available_data: {format: csv, columns: [sample, feature_1, feature_2]}
+    expected: {action: require_precomputed, template: ordination.pcoa, input_mode: precomputed, required_roles: [coordinates, explained_variance, distance_metric], reason: Distance choice and PCoA are upstream analysis., upstream_requirement: Supply coordinates, explained variance, and the named distance metric., forbidden_inferences: [distance_metric, ordination_coordinates]}
+  - id: P10-nmds-needs-results
+    request: Run NMDS on this community matrix and display it.
+    classes: [missing_precomputed, scientific_boundary, forbidden_inference]
+    available_data: {format: csv, columns: [sample, taxon_1, taxon_2]}
+    expected: {action: require_precomputed, template: ordination.nmds, input_mode: precomputed, required_roles: [coordinates, stress, distance_metric], reason: NMDS fitting and distance selection are upstream analysis., upstream_requirement: Supply coordinates, stress, and distance metric., forbidden_inferences: [distance_metric, ordination_coordinates, stress]}
+  - id: P11-roc-from-labels-scores
+    request: Here are true labels and model scores; calculate an ROC curve.
+    classes: [missing_precomputed, scientific_boundary, classifier_evaluation]
+    available_data: {format: csv, columns: [true_label, score]}
+    expected: {action: require_precomputed, template: diagnostics.roc, input_mode: precomputed, required_roles: [false_positive_rate, true_positive_rate], reason: ROC coordinates and threshold handling are upstream analysis., upstream_requirement: Supply false-positive and true-positive rates., forbidden_inferences: [roc_coordinates]}
+  - id: P12-zh-volcano-raw-counts
+    language: zh
+    request: 这里是原始 RNA count 矩阵，帮我做差异分析并画 volcano 图。
+    classes: [missing_precomputed, scientific_boundary, significance_semantics]
+    available_data: {format: csv, columns: [feature, sample_1, sample_2, sample_3]}
+    expected: {action: require_precomputed, template: omics.volcano, input_mode: precomputed, required_roles: [effect_size, adjusted_p_value, significance_threshold, effect_threshold], reason: Differential analysis and multiple-testing adjustment are upstream analysis., upstream_requirement: Supply log2 fold changes, adjusted p-values, and explicit thresholds., forbidden_inferences: [effect_size, adjusted_p_value, significance_threshold]}
+  - id: P13-pr-from-labels-scores
+    request: Derive a precision-recall curve from outcomes and scores for this imbalanced classifier.
+    classes: [missing_precomputed, scientific_boundary, classifier_evaluation]
+    available_data: {format: csv, columns: [true_label, score]}
+    expected: {action: require_precomputed, template: diagnostics.precision_recall, input_mode: precomputed, required_roles: [recall, precision], reason: Precision-recall points and threshold handling are upstream analysis., upstream_requirement: Supply recall and precision arrays., forbidden_inferences: [precision_recall_coordinates]}
+  - id: P14-calibration-needs-bins
+    request: Use raw outcomes and predicted probabilities to calculate and plot a calibration curve.
+    classes: [missing_precomputed, scientific_boundary, classifier_evaluation]
+    available_data: {format: csv, columns: [outcome, predicted_probability]}
+    expected: {action: require_precomputed, template: diagnostics.calibration, input_mode: precomputed, required_roles: [predicted_probability, observed_frequency], reason: Calibration binning and observed-frequency estimation are upstream analysis., upstream_requirement: Supply predicted probabilities and observed frequencies for the evaluated bins., forbidden_inferences: [calibration_bins, observed_frequency]}
+  - id: P15-feature-importance-needs-analysis
+    request: Calculate feature importance from this fitted model and predictors, then plot it.
+    classes: [missing_precomputed, scientific_boundary, feature_importance]
+    available_data: {format: json, keys: [model, predictors]}
+    expected: {action: require_precomputed, template: diagnostics.feature_importance, input_mode: precomputed, required_roles: [feature, importance, importance_type], reason: Importance calculation and method selection are upstream analysis., upstream_requirement: Supply feature, importance, and importance type., forbidden_inferences: [importance_type, importance_values]}
+  - id: P16-zh-survival-raw
+    language: zh
+    request: 我只有每个受试者的 time、event 和 group，请直接计算 Kaplan-Meier 曲线并画图。
+    classes: [missing_precomputed, scientific_boundary, survival]
+    available_data: {format: csv, columns: [time, event, group]}
+    expected: {action: require_precomputed, template: survival.kaplan_meier, input_mode: precomputed, required_roles: [time, survival_probability], reason: Survival estimation is upstream analysis., upstream_requirement: Supply visualization-ready time and survival-probability series., forbidden_inferences: [survival_probability, confidence_interval]}
+  - id: P17-agreement-needs-analysis
+    request: I have paired readings from two methods; calculate Bland-Altman bias and limits and plot them.
+    classes: [missing_precomputed, scientific_boundary, agreement_vs_correlation]
+    available_data: {format: csv, columns: [method_a, method_b]}
+    expected: {action: require_precomputed, template: diagnostics.bland_altman, input_mode: precomputed, required_roles: [mean, difference, agreement_type, center, limits], reason: Agreement calculations and their definition are upstream analysis., upstream_requirement: Supply pair means, differences, agreement type, center, and limits., forbidden_inferences: [agreement_type, limits_of_agreement]}
+  - id: P18-confusion-matrix-needs-results
+    request: Calculate a confusion matrix from these true and predicted class labels and plot it.
+    classes: [missing_precomputed, scientific_boundary, classifier_evaluation]
+    available_data: {format: csv, columns: [true_class, predicted_class]}
+    expected: {action: require_precomputed, template: heatmap.confusion_matrix, input_mode: precomputed, required_roles: [matrix, class_labels], reason: Class ordering and confusion counts are upstream results., upstream_requirement: Supply the square matrix and class labels., forbidden_inferences: [class_order, confusion_counts]}
+  - id: P19-enrichment-needs-analysis
+    request: Run pathway enrichment on this gene list and make an enrichment dot plot.
+    classes: [missing_precomputed, scientific_boundary, significance_semantics]
+    available_data: {format: csv, columns: [gene]}
+    expected: {action: require_precomputed, template: omics.enrichment_dot, input_mode: precomputed, required_roles: [term, enrichment, significance, size], reason: Enrichment and multiple-testing analysis are upstream., upstream_requirement: Supply term, enrichment, significance, and size with explicit meanings., forbidden_inferences: [enrichment_method, adjusted_p_value, size_meaning]}
+  - id: P20-cluster-order-needs-analysis
+    request: Infer hierarchical clusters and draw a clustered heatmap from this matrix.
+    classes: [missing_precomputed, scientific_boundary, forbidden_inference]
+    available_data: {format: json, keys: [matrix, row_labels, column_labels, color_semantics]}
+    expected: {action: require_precomputed, template: heatmap.clustered, input_mode: precomputed, required_roles: [matrix, row_labels, column_labels, row_order, column_order, color_semantics], reason: Distance linkage and ordering choices are upstream analysis., upstream_requirement: Supply complete row and column orders., forbidden_inferences: [distance_metric, linkage, clustering_order]}
+
+  - id: U07-paired-slope-plot
+    request: Make a paired before-after slope graph that connects every subject across conditions.
+    classes: [unsupported_domain, scientific_boundary, paired_design]
+    available_data: {format: csv, columns: [subject, condition, value]}
+    expected: {action: unsupported, reason: A paired subject-level slope template is not in the frozen public plotting surface.}
+  - id: U08-repeated-measures-specialty
+    request: Build a repeated-measures raincloud with subject connectors and within-subject uncertainty.
+    classes: [unsupported_domain, scientific_boundary, repeated_measures]
+    available_data: {format: csv, columns: [subject, condition, value]}
+    expected: {action: unsupported, reason: The requested repeated-measures composite grammar is outside the current public templates.}
+  - id: U09-causal-graph-inference
+    request: Infer a causal DAG from this observational table and draw the causal mechanisms.
+    classes: [unsupported_domain, scientific_boundary, causality]
+    available_data: {format: csv, columns: [x, y, z]}
+    expected: {action: unsupported, reason: Causal discovery and causal-graph inference are scientific analysis outside AxiomFig.}
+  - id: U10-geospatial-choropleth
+    request: Join these values to administrative polygons and make a projected choropleth map.
+    classes: [unsupported_domain, scientific_boundary, geospatial]
+    available_data: {format: geojson, keys: [geometry, region, value]}
+    expected: {action: unsupported, reason: Geospatial projection and choropleth mapping are outside the frozen public plotting surface.}

@@ -149,6 +149,7 @@ def build_basic(
     row_labels: object | None = None,
     column_labels: object | None = None,
     color_semantics: object | None = None,
+    center: object | None = None,
     annotations: object | None = None,
     colorbar_label: object | None = None,
 ) -> Figure:
@@ -176,6 +177,7 @@ def build_basic(
         vmin=limits[0],
         vmax=limits[1],
         color_semantics=semantics,
+        center=None if center is None else float(center),
         annotate=annotations is not None,
         annotation_values=None if annotations is None else np.asarray(annotations, dtype=object),
     )
@@ -229,6 +231,7 @@ def build_clustered(
     row_order: object | None = None,
     column_order: object | None = None,
     color_semantics: object | None = None,
+    center: object | None = None,
     annotations: object | None = None,
     colorbar_label: object | None = None,
 ) -> Figure:
@@ -272,6 +275,7 @@ def build_clustered(
         vmin=float(source.min()),
         vmax=float(source.max()),
         color_semantics=semantics,
+        center=None if center is None else float(center),
         annotation_values=selected_annotations,
     )
     figure.axes[0].set_title("Deterministic cluster order")
@@ -309,6 +313,7 @@ def build_annotated(
     row_labels: object | None = None,
     column_labels: object | None = None,
     color_semantics: object | None = None,
+    center: object | None = None,
     annotations: object | None = None,
     colorbar_label: object | None = None,
     annotation_format: object | None = None,
@@ -348,6 +353,7 @@ def build_annotated(
         vmin=float(selected.min()),
         vmax=float(selected.max()),
         color_semantics=semantics,
+        center=None if center is None else float(center),
         annotate=True,
         fmt=".2f" if annotation_format is None else str(annotation_format),
         annotation_values=annotation_values,

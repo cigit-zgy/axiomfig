@@ -4,7 +4,12 @@ variants:
     input_mode: precomputed
     required: [effect_size, adjusted_p_value, significance_threshold, effect_threshold]
     optional: [feature_label]
+    role_semantics:
+      effect_size: log2_fold_change
+      adjusted_p_value: adjusted_p_value
   enrichment_dot:
     input_mode: precomputed
     required: [term, enrichment, significance, size]
     optional: [colorbar_label, size_label]
+    role_semantics:
+      significance: adjusted_p_value

@@ -6,8 +6,8 @@ variants:
     optional: [trend]
   bland_altman:
     input_mode: precomputed
-    required: [mean, difference, agreement_type]
-    optional: [center, limits]
+    required: [mean, difference, agreement_type, center, limits]
+    optional: []
   calibration:
     input_mode: precomputed
     required: [predicted_probability, observed_frequency]
