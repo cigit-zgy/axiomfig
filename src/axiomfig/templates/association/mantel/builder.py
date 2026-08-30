@@ -210,7 +210,7 @@ def build_mantel(
         ordered,
         composition.matrix,
         geometry,
-        show_target_anchors=False,
+        show_target_anchors=composition.coupling.enabled,
     )
     matrix_contract = mantel_plot_contract()["matrix"]
     assert isinstance(matrix_contract, Mapping)

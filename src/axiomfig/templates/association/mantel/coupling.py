@@ -65,9 +65,9 @@ def _link_style(link: MantelLink, nonsignificant_mode: str) -> tuple[str, float]
 
 
 def _empty_half_plane_normal(matrix_type: str) -> np.ndarray:
-    if matrix_type == "upper":
-        return np.asarray((-1.0, -1.0), dtype=float) / np.sqrt(2.0)
     if matrix_type == "lower":
+        return np.asarray((1.0, -1.0), dtype=float) / np.sqrt(2.0)
+    if matrix_type == "upper":
         return np.asarray((-1.0, 1.0), dtype=float) / np.sqrt(2.0)
     return np.asarray((-1.0, 0.0), dtype=float)
 
@@ -82,9 +82,9 @@ def _route_vertices(
 ) -> tuple[tuple[float, float], ...]:
     """Create one cubic whose control polygon stays in the empty coupling half-plane.
 
-    Bézier curves are contained by the convex hull of their control points. Keeping both control
-    points on the same empty side of the matrix diagonal therefore prevents routes from entering
-    correlation glyphs without stochastic collision search.
+    Bézier curves are contained by the convex hull of their control points. Both control points
+    therefore remain on the same empty side of the target rail, preventing routes from entering
+    visible matrix glyphs without stochastic collision search.
     """
     start_array = np.asarray(start, dtype=float)
     end_array = np.asarray(end, dtype=float)
@@ -192,7 +192,7 @@ def render_coupling_layer(
             artist._axiomfig_p_value = link.p_value
             artist._axiomfig_label = link.label
             artist._axiomfig_metadata = dict(link.metadata)
-            artist._axiomfig_route_model = "empty-triangle-cubic"
+            artist._axiomfig_route_model = "rail-normal-cubic"
             artist._axiomfig_route_signature = (
                 link.source,
                 link.target,

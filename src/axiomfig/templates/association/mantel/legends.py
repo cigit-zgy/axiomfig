@@ -51,7 +51,7 @@ def render_link_legends(axis: Axes, geometry: MantelGeometry) -> tuple[object, o
             linewidth=mantel_link_width(value),
             label=label,
         )
-        for value, label in ((0.1, "< 0.25"), (0.35, "0.25–0.50"), (0.65, "≥ 0.50"))
+        for value, label in ((0.1, "< 0.25"), (0.35, "0.25-0.50"), (0.65, ">= 0.50"))
     ]
     p_handles = [
         Line2D(
@@ -64,9 +64,9 @@ def render_link_legends(axis: Axes, geometry: MantelGeometry) -> tuple[object, o
         )
         for value, label in (
             (0.0005, "< 0.001"),
-            (0.005, "0.001–0.01"),
-            (0.025, "0.01–0.05"),
-            (0.10, "≥ 0.05"),
+            (0.005, "0.001-0.01"),
+            (0.025, "0.01-0.05"),
+            (0.10, ">= 0.05"),
         )
     ]
     common = {
