@@ -5,6 +5,10 @@ import pytest
 
 from axiomfig.layout import get_figure_layout
 from axiomfig.templates import build_template
+from axiomfig.templates.association.mantel.geometry import (
+    MantelLayoutMeasurements,
+    solve_geometry,
+)
 from axiomfig.validation import validate_figure_anatomy
 
 
@@ -82,14 +86,43 @@ def test_bezier_control_polygon_stays_in_coupling_half_plane(matrix_type: str) -
 
 
 @pytest.mark.parametrize("matrix_type", ["upper", "lower"])
-def test_target_anchors_are_rail_artists_and_colorbar_is_auxiliary(matrix_type: str) -> None:
+def test_target_anchors_are_geometry_only_and_colorbar_is_auxiliary(matrix_type: str) -> None:
     figure = build_template("association/mantel", matrix_type=matrix_type)
     figure.canvas.draw()
     geometry = figure._axiomfig_mantel_geometry
     anchors = _artists(figure, "axiomfig-mantel-target-anchor")
-    assert len(anchors) == len(geometry.target_positions)
+    assert anchors == []
+    for link in _artists(figure, "axiomfig-mantel-link"):
+        target = np.asarray(geometry.target_positions[link._axiomfig_target], dtype=float)
+        np.testing.assert_allclose(link.get_path().vertices[-1], target, atol=1e-12)
     layout = get_figure_layout(figure)
     assert layout is not None
     assert len(layout.panels) == 1
     assert len(layout.panels[0].auxiliary_axes) == 1
     validate_figure_anatomy(figure)
+
+
+@pytest.mark.parametrize("source_count", [1, 2, 3, 5])
+@pytest.mark.parametrize("matrix_type", ["lower", "upper"])
+def test_source_rail_scales_without_collapsing(
+    matrix_type: str,
+    source_count: int,
+) -> None:
+    labels = tuple(f"Variable {index}" for index in range(10))
+    sources = tuple(f"Source {index}" for index in range(source_count))
+    geometry = solve_geometry(
+        labels,
+        sources,
+        matrix_type=matrix_type,
+        measurements=MantelLayoutMeasurements.for_test(source_width_pt=38.0),
+    )
+
+    positions = np.asarray(tuple(geometry.source_positions.values()), dtype=float)
+    assert len(positions) == source_count
+    assert np.all(np.diff(positions[:, 0]) > 0) if source_count > 1 else True
+    np.testing.assert_allclose(positions[:, 1], positions[0, 1])
+
+    rail = np.asarray(tuple(geometry.target_positions.values()), dtype=float)
+    a, b = rail[0], rail[-1]
+    perpendicular = np.asarray([abs(_cross(a, b, point)) for point in positions])
+    assert np.all(perpendicular > 0.25)

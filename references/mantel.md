@@ -97,6 +97,12 @@ glyph layers with lower and upper masks; the 49 method pairs are coverage of the
 path, not 49 implementations. Statistical overlays are independent artists and can coexist when
 the supplied scientific inputs make the combination valid.
 
+Layout uses a fixed two-pass renderer-aware solve. The first pass creates the Figure, Primary Axes,
+Auxiliary colorbar Axes, and the final legend grammar, then measures the selected-font label and
+legend extents in physical points. The second pass solves matrix cell size, label gutters, source
+strip, target rail, and ornament anchors. Character count is not a layout input and the solver does
+not perform iterative visual search.
+
 Ordering is a single data transformation before rendering. It applies the same permutation to the
 matrix, labels, p values, CI bounds, cluster membership, and Mantel target mapping. No artist layer
 may reorder its own data.
@@ -113,8 +119,10 @@ may reorder its own data.
   labels significant cells using the explicit thresholds.
 - CI modes visualize supplied bounds with vector artists; they never estimate intervals.
 - Coupling routes source nodes directly to matrix-owned target anchors. A lower triangle uses a
-  lower-left source region and a lower-left-to-upper-right diagonal rail; an upper triangle mirrors
-  this as upper-left-to-lower-right. Target names are not repeated in a separate link column.
+  measured horizontal source rail at the lower edge of the unused triangle and a
+  lower-left-to-upper-right target rail; an upper triangle is its physical mirror at the upper edge.
+  Source labels occupy a renderer-measured outward strip, while routes remain on the matrix side.
+  Target names are not repeated in a detached link column and target circles are hidden by default.
 - Each link is one deterministic rail-normal cubic. Its clearance derives from source order, target
   order, link density, orientation, and lane index; there is no gate column or stochastic graph
   layout.
@@ -123,6 +131,8 @@ may reorder its own data.
   `resources/styles/colors.yaml`.
 - Mantel p bins (`<0.001`, `0.001-0.01`, `0.01-0.05`, `>=0.05`) and strength bins remain in the
   legends even when a dataset does not use every bin.
+- The Pearson key is a true Matplotlib colorbar on a registered Auxiliary Axes. Mantel strength and
+  p-value legends are measured before their side-by-side or stacked placement is selected.
 
 ## R capability references and differences
 
@@ -131,9 +141,11 @@ surface of [corrplot](https://github.com/taiyun/corrplot),
 [linkET](https://github.com/Hy4m/linkET), and [ggcor](https://github.com/hannet91/ggcor).
 No R source is copied and no R runtime is required.
 
-The audited mapping is stored in `references/mantel-r-parity.yaml`. Its generated PDF/PNG evidence
-lives under `gallery/parity/mantel/` and is intentionally outside the public Template Registry.
-Normal Agents do not read the manifest or atlas.
+The audited mapping is stored in `references/mantel-r-parity.yaml`. It is an R grammar reference,
+not a claim of pixel identity. Its generated PDF/PNG evidence lives under
+`gallery/parity/mantel/`, with permanent contact sheets under `gallery/parity/mantel/review/`; both
+are intentionally outside the public Template Registry. Normal Agents do not read the manifest or
+atlas.
 
 | R capability | AxiomFig implementation | Status | Notes |
 |---|---|---|---|

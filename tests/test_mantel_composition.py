@@ -22,7 +22,11 @@ from axiomfig.templates.association.mantel.composition import (
     normalize_composition,
 )
 from axiomfig.templates.association.mantel.data import GLYPH_METHODS
-from axiomfig.templates.association.mantel.geometry import solve_geometry
+from axiomfig.templates.association.mantel.geometry import (
+    MantelLayoutMeasurements,
+    measure_text_extents,
+    solve_geometry,
+)
 from axiomfig.templates.association.mantel.matrix import select_matrix_cells
 from axiomfig.typography import discover_fonts
 from axiomfig.validation import validate_figure_anatomy
@@ -153,10 +157,7 @@ def test_coupling_uses_one_rail_normal_cubic_and_exact_target_endpoints(
     figure = build_template("association/mantel", **_case(6), matrix_type=matrix_type)
     figure.canvas.draw()
     links = _artists(figure, "axiomfig-mantel-link")
-    anchors = {
-        artist._axiomfig_target: tuple(artist.center)
-        for artist in _artists(figure, "axiomfig-mantel-target-anchor")
-    }
+    anchors = figure._axiomfig_mantel_geometry.target_positions
 
     assert links
     for link in links:
@@ -169,6 +170,41 @@ def test_coupling_uses_one_rail_normal_cubic_and_exact_target_endpoints(
         assert link._axiomfig_route_model == "rail-normal-cubic"
         np.testing.assert_allclose(link.get_path().vertices[-1], anchors[link._axiomfig_target])
     plt.close(figure)
+
+
+def test_renderer_text_measurement_distinguishes_equal_length_labels() -> None:
+    discover_fonts("sans")
+    figure = plt.figure()
+    figure.canvas.draw()
+    renderer = figure.canvas.get_renderer()
+
+    narrow = measure_text_extents(figure, renderer, ("iiiiiiii",), ("iiiiiiii",))
+    wide = measure_text_extents(figure, renderer, ("WWWWWWWW",), ("WWWWWWWW",))
+
+    assert wide.variable_width_pt > narrow.variable_width_pt * 2.0
+    assert wide.source_width_pt > narrow.source_width_pt * 2.0
+    plt.close(figure)
+
+
+def test_geometry_uses_renderer_width_not_character_count() -> None:
+    narrow = MantelLayoutMeasurements.for_test(variable_width_pt=24.0)
+    wide = MantelLayoutMeasurements.for_test(variable_width_pt=72.0)
+
+    narrow_geometry = solve_geometry(
+        ("iiiiiiii",) * 4,
+        (),
+        matrix_type="full",
+        measurements=narrow,
+    )
+    wide_geometry = solve_geometry(
+        ("WWWWWWWW",) * 4,
+        (),
+        matrix_type="full",
+        measurements=wide,
+    )
+
+    assert wide_geometry.bounds.x0 > narrow_geometry.bounds.x0
+    assert wide_geometry.measurements.variable_width_pt == 72.0
 
 
 @pytest.mark.parametrize("matrix_type", ["lower", "upper"])

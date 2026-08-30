@@ -46,6 +46,15 @@ def test_r_parity_manifest_covers_all_reference_projects_and_visual_grammar() ->
         "label_sig",
     }
     assert {item.get("ci_mode") for item in compositions} >= {"square", "circle", "rect"}
+    assert {str(entry["fixture"]) for entry in entries} >= {
+        "generic",
+        "mtcars",
+        "environmental",
+        "statistical",
+        "ci",
+        "sparse",
+        "dense",
+    }
 
 
 def test_every_manifest_example_has_a_committed_pdf_png_pair() -> None:
@@ -54,3 +63,13 @@ def test_every_manifest_example_has_a_committed_pdf_png_pair() -> None:
         stem = ROOT / str(entry["expected_output"])
         assert stem.with_suffix(".pdf").is_file(), entry["id"]
         assert stem.with_suffix(".png").is_file(), entry["id"]
+
+
+def test_permanent_mantel_review_contact_sheets_are_committed() -> None:
+    review = ROOT / "gallery" / "parity" / "mantel" / "review"
+    assert {path.name for path in review.glob("*.png")} == {
+        "01-canonical-coupling.png",
+        "02-correlation-glyphs.png",
+        "03-mixed-ordering.png",
+        "04-significance-ci.png",
+    }

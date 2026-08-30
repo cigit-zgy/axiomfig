@@ -1,4 +1,4 @@
-"""Mantel ornaments using AxiomFig colorbar/tick contracts and geometry-owned legend space."""
+"""Measured Mantel legends and the AxiomFig-owned Pearson colorbar."""
 
 from __future__ import annotations
 
@@ -23,13 +23,21 @@ from axiomfig.templates.association.mantel.geometry import MantelGeometry
 
 
 @dataclass(frozen=True)
+class LegendExtents:
+    strength_width_pt: float
+    strength_height_pt: float
+    p_width_pt: float
+    p_height_pt: float
+
+
+@dataclass(frozen=True)
 class OrnamentRenderResult:
     colorbar: Colorbar
     legends: tuple[object, ...]
 
 
 def render_colorbar(axis: Axes, colorbar_axis: Axes) -> Colorbar:
-    """Render the Pearson key through Matplotlib Colorbar and the shared Axiom tick contract."""
+    """Render the Pearson key through Matplotlib Colorbar and the shared tick contract."""
     matrix_contract = mantel_plot_contract()["matrix"]
     cmap = axiom_colormap(str(matrix_contract["colormap"]))
     scalar = mpl.cm.ScalarMappable(norm=Normalize(vmin=-1.0, vmax=1.0), cmap=cmap)
@@ -39,11 +47,13 @@ def render_colorbar(axis: Axes, colorbar_axis: Axes) -> Colorbar:
     colorbar.set_label("Pearson r")
     apply_colorbar_contract(colorbar)
     colorbar.ax.tick_params(labelsize=mpl.rcParams["xtick.labelsize"])
+    colorbar_axis.set_box_aspect(7.0)
+    colorbar_axis.set_anchor("C")
     return colorbar
 
 
-def render_link_legends(axis: Axes, geometry: MantelGeometry) -> tuple[object, object]:
-    strength_handles = [
+def _legend_handles() -> tuple[list[Line2D], list[Line2D]]:
+    strength = [
         Line2D(
             [],
             [],
@@ -53,7 +63,7 @@ def render_link_legends(axis: Axes, geometry: MantelGeometry) -> tuple[object, o
         )
         for value, label in ((0.1, "< 0.25"), (0.35, "0.25-0.50"), (0.65, ">= 0.50"))
     ]
-    p_handles = [
+    p_values = [
         Line2D(
             [],
             [],
@@ -69,6 +79,17 @@ def render_link_legends(axis: Axes, geometry: MantelGeometry) -> tuple[object, o
             (0.10, ">= 0.05"),
         )
     ]
+    return strength, p_values
+
+
+def _create_link_legends(
+    axis: Axes,
+    *,
+    strength_anchor: tuple[float, float],
+    p_anchor: tuple[float, float],
+    transform: object,
+) -> tuple[object, object]:
+    strength_handles, p_handles = _legend_handles()
     common = {
         "frameon": False,
         "handlelength": 1.0,
@@ -83,9 +104,9 @@ def render_link_legends(axis: Axes, geometry: MantelGeometry) -> tuple[object, o
         handles=strength_handles,
         title="Mantel |r|",
         loc="lower left",
-        bbox_to_anchor=geometry.strength_legend_anchor,
-        bbox_transform=axis.transData,
-        ncol=len(strength_handles),
+        bbox_to_anchor=strength_anchor,
+        bbox_transform=transform,
+        ncol=3,
         **common,
     )
     strength.set_gid("axiomfig-mantel-legend")
@@ -94,13 +115,46 @@ def render_link_legends(axis: Axes, geometry: MantelGeometry) -> tuple[object, o
         handles=p_handles,
         title="P value",
         loc="lower left",
-        bbox_to_anchor=geometry.p_legend_anchor,
-        bbox_transform=axis.transData,
-        ncol=len(p_handles),
+        bbox_to_anchor=p_anchor,
+        bbox_transform=transform,
+        ncol=2,
         **common,
     )
     p_legend.set_gid("axiomfig-mantel-legend")
     return strength, p_legend
+
+
+def measure_link_legends(axis: Axes) -> LegendExtents:
+    """Create the final legend grammar once, measure it, then remove probe artists."""
+    strength, p_legend = _create_link_legends(
+        axis,
+        strength_anchor=(0.0, 0.0),
+        p_anchor=(0.0, 0.0),
+        transform=axis.transAxes,
+    )
+    axis.figure.canvas.draw()
+    renderer = axis.figure.canvas.get_renderer()
+    strength_bbox = strength.get_window_extent(renderer)
+    p_bbox = p_legend.get_window_extent(renderer)
+    scale = 72.0 / axis.figure.dpi
+    extents = LegendExtents(
+        strength_width_pt=strength_bbox.width * scale,
+        strength_height_pt=strength_bbox.height * scale,
+        p_width_pt=p_bbox.width * scale,
+        p_height_pt=p_bbox.height * scale,
+    )
+    strength.remove()
+    p_legend.remove()
+    return extents
+
+
+def render_link_legends(axis: Axes, geometry: MantelGeometry) -> tuple[object, object]:
+    return _create_link_legends(
+        axis,
+        strength_anchor=geometry.strength_legend_anchor,
+        p_anchor=geometry.p_legend_anchor,
+        transform=axis.transData,
+    )
 
 
 def render_ornament_layer(
@@ -109,10 +163,17 @@ def render_ornament_layer(
     geometry: MantelGeometry,
     *,
     coupling_enabled: bool,
+    colorbar: Colorbar | None = None,
 ) -> OrnamentRenderResult:
-    colorbar = render_colorbar(axis, colorbar_axis)
+    colorbar = colorbar or render_colorbar(axis, colorbar_axis)
     legends = render_link_legends(axis, geometry) if coupling_enabled else ()
     return OrnamentRenderResult(colorbar, legends)
 
 
-__all__ = ["OrnamentRenderResult", "render_ornament_layer"]
+__all__ = [
+    "LegendExtents",
+    "OrnamentRenderResult",
+    "measure_link_legends",
+    "render_colorbar",
+    "render_ornament_layer",
+]

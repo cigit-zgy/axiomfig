@@ -216,3 +216,47 @@ def test_mantel_legends_labels_and_matrix_have_disjoint_footprints(matrix_type: 
     source_boxes = [label.get_window_extent(renderer) for label in source_labels]
     assert not any(first.overlaps(second) for first, second in combinations(source_boxes, 2))
     plt.close(figure)
+
+
+@pytest.mark.parametrize("matrix_type", ["lower", "upper"])
+def test_mantel_renderer_layout_contains_long_scientific_labels(matrix_type: str) -> None:
+    labels = [
+        "Dissolved oxygen",
+        "Ammonium nitrogen",
+        "Nitrate nitrogen",
+        "Total phosphorus",
+        "Chemical oxygen demand",
+        "Redox potential",
+    ]
+    values = {
+        **DENSE,
+        "labels": labels,
+        "links": [
+            {
+                **link,
+                "target_label": labels[index],
+                "source_group": ("Surface biofilm", "Suspended biomass", "Sediment community")[
+                    index % 3
+                ],
+            }
+            for index, link in enumerate(DENSE["links"][:6])
+        ],
+    }
+    figure = _build({**values, "matrix_type": matrix_type})
+    renderer = figure.canvas.get_renderer()
+    layout = figure._axiomfig_figure_layout
+    footprint = layout.panels[0].bbox().transformed(figure.transFigure)
+    labels_and_sources = [
+        *_gid_children(figure, "axiomfig-mantel-variable-label"),
+        *_gid_children(figure, "axiomfig-mantel-column-label"),
+        *_gid_children(figure, "axiomfig-mantel-source-label"),
+    ]
+
+    for artist in labels_and_sources:
+        bbox = artist.get_window_extent(renderer)
+        assert footprint.contains(bbox.x0, bbox.y0)
+        assert footprint.contains(bbox.x1, bbox.y1)
+        assert figure.axes[0].bbox.contains(bbox.x0, bbox.y0)
+        assert figure.axes[0].bbox.contains(bbox.x1, bbox.y1)
+    validate_figure_anatomy(figure)
+    plt.close(figure)

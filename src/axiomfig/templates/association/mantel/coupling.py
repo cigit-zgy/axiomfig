@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Mapping
 
-import matplotlib as mpl
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.patches import Circle, PathPatch
@@ -20,7 +19,7 @@ from axiomfig.style import (
 )
 from axiomfig.templates.association.mantel.composition import CouplingSpec
 from axiomfig.templates.association.mantel.data import MantelLink
-from axiomfig.templates.association.mantel.geometry import MantelGeometry
+from axiomfig.templates.association.mantel.geometry import MantelGeometry, source_label_size
 
 
 def nice_curvature(
@@ -68,7 +67,7 @@ def _empty_half_plane_normal(matrix_type: str) -> np.ndarray:
     if matrix_type == "lower":
         return np.asarray((1.0, -1.0), dtype=float) / np.sqrt(2.0)
     if matrix_type == "upper":
-        return np.asarray((-1.0, 1.0), dtype=float) / np.sqrt(2.0)
+        return np.asarray((1.0, 1.0), dtype=float) / np.sqrt(2.0)
     return np.asarray((-1.0, 0.0), dtype=float)
 
 
@@ -79,6 +78,7 @@ def _route_vertices(
     clearance: float,
     matrix_type: str,
     lane_index: float,
+    y_boundary: float,
 ) -> tuple[tuple[float, float], ...]:
     """Create one cubic whose control polygon stays in the empty coupling half-plane.
 
@@ -94,6 +94,12 @@ def _route_vertices(
     outer = normal * clearance * lane_scale
     control1 = start_array + span * 0.30 + outer * 0.82
     control2 = start_array + span * 0.73 + outer
+    if matrix_type == "lower":
+        control1[1] = max(control1[1], y_boundary)
+        control2[1] = max(control2[1], y_boundary)
+    elif matrix_type == "upper":
+        control1[1] = min(control1[1], y_boundary)
+        control2[1] = min(control2[1], y_boundary)
     return (
         start,
         (float(control1[0]), float(control1[1])),
@@ -126,13 +132,14 @@ def render_coupling_layer(
         node.set_gid("axiomfig-mantel-source-node")
         node._axiomfig_source = source
         axis.add_patch(node)
+        is_upper = geometry.matrix_type == "upper"
         label = axis.text(
-            x - 0.14,
-            y,
+            x,
+            y + (0.30 if is_upper else -0.30),
             source,
-            ha="right",
-            va="center",
-            fontsize=mpl.rcParams["font.size"] * 0.82,
+            ha="center",
+            va="bottom" if is_upper else "top",
+            fontsize=source_label_size(),
             clip_on=True,
             zorder=6,
         )
@@ -157,7 +164,7 @@ def render_coupling_layer(
             color, alpha = style
             start = geometry.source_region.positions[source]
             end = geometry.target_rail.anchors[link.target]
-            lane_index = rank - (len(source_links) - 1) / 2.0
+            lane_index = float(rank)
             clearance = nice_curvature(
                 source_order=source_order[source],
                 target_order=target_order[link.target],
@@ -171,6 +178,11 @@ def render_coupling_layer(
                 clearance=clearance,
                 matrix_type=geometry.matrix_type,
                 lane_index=lane_index,
+                y_boundary=(
+                    geometry.bounds.y1 - 0.08
+                    if geometry.matrix_type == "upper"
+                    else geometry.bounds.y0 + 0.08
+                ),
             )
             path = Path(vertices, (Path.MOVETO, Path.CURVE4, Path.CURVE4, Path.CURVE4))
             artist = PathPatch(

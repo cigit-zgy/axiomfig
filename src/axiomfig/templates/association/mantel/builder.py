@@ -10,13 +10,21 @@ import numpy as np
 from matplotlib.colors import Normalize
 from matplotlib.figure import Figure
 
-from axiomfig.layout import add_panel_axes, create_panel_grid
+from axiomfig.layout import add_panel_axes, create_panel_grid, solve_panel_layout
 from axiomfig.style import axiom_colormap, mantel_plot_contract
 from axiomfig.templates.association.mantel.coupling import render_coupling_layer
 from axiomfig.templates.association.mantel.data import MantelData, normalize_inputs
-from axiomfig.templates.association.mantel.geometry import solve_geometry
+from axiomfig.templates.association.mantel.geometry import (
+    MantelLayoutMeasurements,
+    measure_text_extents,
+    solve_geometry,
+)
 from axiomfig.templates.association.mantel.glyphs import render_glyph_layer
-from axiomfig.templates.association.mantel.legends import render_ornament_layer
+from axiomfig.templates.association.mantel.legends import (
+    measure_link_legends,
+    render_colorbar,
+    render_ornament_layer,
+)
 from axiomfig.templates.association.mantel.matrix import render_matrix_layer
 from axiomfig.templates.association.mantel.ordering import order_variables
 from axiomfig.templates.association.mantel.overlays import (
@@ -195,22 +203,39 @@ def build_mantel(
         tuple(original_to_position[index] for index in cluster) for cluster in ordering.clusters
     )
     source_groups = _source_groups(ordered) if composition.coupling.enabled else ()
-    geometry = solve_geometry(
-        ordered.labels,
-        source_groups,
-        matrix_type=composition.matrix.matrix_type,
-    )
-
     figure = plt.figure()
     layout = create_panel_grid(figure, 1, 1, panel_labels=False)
     axis, colorbar_axis = add_panel_axes(layout, 0, colorbar=True)
     assert colorbar_axis is not None
+    colorbar = render_colorbar(axis, colorbar_axis)
+    solve_panel_layout(figure)
+    figure.canvas.draw()
+    renderer = figure.canvas.get_renderer()
+    text = measure_text_extents(figure, renderer, ordered.labels, source_groups)
+    legends = measure_link_legends(axis)
+    scale = 72.0 / figure.dpi
+    geometry = solve_geometry(
+        ordered.labels,
+        source_groups,
+        matrix_type=composition.matrix.matrix_type,
+        measurements=MantelLayoutMeasurements(
+            available_width_pt=axis.bbox.width * scale,
+            available_height_pt=axis.bbox.height * scale,
+            variable_width_pt=text.variable_width_pt,
+            variable_height_pt=text.variable_height_pt,
+            source_width_pt=text.source_width_pt,
+            source_height_pt=text.source_height_pt,
+            strength_legend_width_pt=legends.strength_width_pt,
+            strength_legend_height_pt=legends.strength_height_pt,
+            p_legend_width_pt=legends.p_width_pt,
+            p_legend_height_pt=legends.p_height_pt,
+        ),
+    )
     matrix_result = render_matrix_layer(
         axis,
         ordered,
         composition.matrix,
         geometry,
-        show_target_anchors=composition.coupling.enabled,
     )
     matrix_contract = mantel_plot_contract()["matrix"]
     assert isinstance(matrix_contract, Mapping)
@@ -249,6 +274,7 @@ def build_mantel(
         colorbar_axis,
         geometry,
         coupling_enabled=composition.coupling.enabled,
+        colorbar=colorbar,
     )
     figure._axiomfig_mantel_composition = composition
     figure._axiomfig_mantel_geometry = geometry

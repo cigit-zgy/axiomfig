@@ -133,7 +133,7 @@ plots:
       colormap: axiom_diverging
       source_node_radius: 0.075
       target_anchor_radius: 0.035
-      target_rail_offset: 0.46
+      target_rail_offset: 0.0
       route_clearance: 0.34
       route_lane_spacing: 0.055
     ornaments:
