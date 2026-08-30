@@ -71,8 +71,8 @@ cases:
     expected_validation: pass
     scientific_intent: association
     expected_template: association.mantel
-    fixture: association
-    figure_intent: {template: association.mantel, data: {correlation_matrix: correlation_matrix, matrix_labels: matrix_labels, links: mantel_links, link_strength: link_strength, significance: significance, node_labels: node_labels}}
+    fixture: association_mantel_sparse
+    figure_intent: {template: association.mantel, data: {correlation_matrix: correlation_matrix, labels: labels, links: mantel_links}}
   - id: association_network
     expected_validation: pass
     scientific_intent: association

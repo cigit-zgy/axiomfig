@@ -35,7 +35,7 @@ def test_all_public_templates_have_an_external_operability_class() -> None:
         ),
         (
             "association/mantel",
-            {"correlation_matrix", "matrix_labels", "links", "link_strength", "significance"},
+            {"correlation_matrix", "labels", "links"},
         ),
         ("association/correlation_network", {"nodes", "edges", "edge_weight"}),
         ("flow/sankey", {"source", "target", "value"}),
@@ -106,16 +106,117 @@ def test_adapter_validates_rectangular_heatmap_and_label_shapes() -> None:
 
 
 def test_adapter_validates_structured_mantel_links() -> None:
+    import numpy as np
+
     from axiomfig.templates import adapt_template_data
 
-    with pytest.raises(ValueError, match="links"):
-        adapt_template_data(
-            "association/mantel",
+    adapted = adapt_template_data(
+        "association/mantel",
+        {
+            "correlation_matrix": [[1.0, 0.2], [0.2, 1.0]],
+            "labels": ["A", "B"],
+            "links": [
+                {
+                    "source_group": "Surface",
+                    "target_label": "A",
+                    "mantel_r": 0.61,
+                    "p_value": 0.004,
+                },
+                {
+                    "source_group": "Deep",
+                    "target_label": "B",
+                    "mantel_r": 0.34,
+                    "p_value": 0.08,
+                },
+            ],
+        },
+    )
+
+    assert set(adapted) == {"correlation_matrix", "labels", "links"}
+    np.testing.assert_allclose(adapted["correlation_matrix"], [[1.0, 0.2], [0.2, 1.0]])
+    assert adapted["labels"].tolist() == ["A", "B"]
+    assert tuple(adapted["links"]) == (
+        {
+            "source_group": "Surface",
+            "target_label": "A",
+            "mantel_r": 0.61,
+            "p_value": 0.004,
+        },
+        {
+            "source_group": "Deep",
+            "target_label": "B",
+            "mantel_r": 0.34,
+            "p_value": 0.08,
+        },
+    )
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        ({"correlation_matrix": [[1.0, 0.2, 0.3], [0.2, 1.0, 0.4]]}, "square"),
+        ({"correlation_matrix": [[1.0, 1.2], [1.2, 1.0]]}, "between -1 and 1"),
+        ({"correlation_matrix": [[1.0, 0.3], [0.2, 1.0]]}, "symmetric"),
+        ({"labels": ["A", "A"]}, "unique"),
+        (
             {
-                "correlation_matrix": [[1.0, 0.2], [0.2, 1.0]],
-                "matrix_labels": ["A", "B"],
-                "links": [["A", "Community"], ["B"]],
-                "link_strength": [0.6, 0.4],
-                "significance": [True, False],
+                "links": [
+                    {
+                        "source_group": "Surface",
+                        "target_label": "unknown",
+                        "mantel_r": 0.5,
+                        "p_value": 0.01,
+                    }
+                ]
             },
-        )
+            "unknown target_label",
+        ),
+        (
+            {
+                "links": [
+                    {
+                        "source_group": "Surface",
+                        "target_label": "A",
+                        "mantel_r": 1.2,
+                        "p_value": 0.01,
+                    }
+                ]
+            },
+            "mantel_r",
+        ),
+        (
+            {
+                "links": [
+                    {
+                        "source_group": "Surface",
+                        "target_label": "A",
+                        "mantel_r": 0.5,
+                        "p_value": -0.01,
+                    }
+                ]
+            },
+            "p_value",
+        ),
+    ],
+)
+def test_mantel_adapter_rejects_malformed_precomputed_results(
+    change: dict[str, object], message: str
+) -> None:
+    from axiomfig.templates import adapt_template_data
+
+    values: dict[str, object] = {
+        "correlation_matrix": [[1.0, 0.2], [0.2, 1.0]],
+        "labels": ["A", "B"],
+        "links": [
+            {
+                "source_group": "Surface",
+                "target_label": "A",
+                "mantel_r": 0.5,
+                "p_value": 0.01,
+            }
+        ],
+    }
+    values.update(change)
+
+    with pytest.raises(ValueError, match=message):
+        adapt_template_data("association/mantel", values)

@@ -2,8 +2,9 @@ family: association
 variants:
   mantel:
     input_mode: precomputed
-    required: [correlation_matrix, matrix_labels, links, link_strength, significance]
-    optional: [node_labels, strength_label]
+    required: [correlation_matrix, labels, links]
+    optional: [show_nonsignificant]
+    link_fields: [source_group, target_label, mantel_r, p_value]
   correlation_network:
     input_mode: precomputed
     required: [nodes, edges, edge_weight]

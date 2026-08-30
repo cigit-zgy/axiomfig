@@ -87,10 +87,8 @@ def test_mandatory_mantel_field_and_explicit_scientific_semantics() -> None:
     assert {"association/mantel", "field/contour"} <= public_ids
     assert {
         "correlation_matrix",
-        "matrix_labels",
+        "labels",
         "links",
-        "link_strength",
-        "significance",
     } <= set(mantel["required"])
     assert "center" in correlation["required"]
     assert "uncertainty_type" in forest["required"]
@@ -172,16 +170,26 @@ def test_templates_do_not_mutate_contract_rcparams() -> None:
         plt.close(figure)
 
 
-def test_mantel_significance_legend_uses_bundled_ascii_glyphs() -> None:
+def test_mantel_legends_use_bundled_ascii_glyphs() -> None:
+    from matplotlib.legend import Legend
+
     figure = build_template("association/mantel")
     labels = [
         text.get_text()
         for axis in figure.axes
-        if axis.get_legend() is not None
-        for text in axis.get_legend().get_texts()
+        for legend in axis.findobj(Legend)
+        for text in legend.get_texts()
     ]
 
-    assert labels == ["p < 0.05", "not significant"]
+    assert labels == [
+        "< 0.25",
+        "0.25-0.50",
+        ">= 0.50",
+        "< 0.001",
+        "0.001-0.01",
+        "0.01-0.05",
+        ">= 0.05",
+    ]
     plt.close(figure)
 
 

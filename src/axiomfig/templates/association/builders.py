@@ -1,138 +1,386 @@
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
+
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.axes import Axes
+from matplotlib.colors import Normalize
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
+from matplotlib.patches import Circle, PathPatch, Rectangle
+from matplotlib.path import Path
 
 from axiomfig.layout import add_panel_axes, create_panel_grid
 from axiomfig.ornaments import request_legend
 from axiomfig.style import (
+    FILL_EDGE_PT,
     MAIN_STROKE_PT,
     apply_filled_collection_contract,
-    apply_scatter_contract,
+    mantel_link_width,
+    mantel_p_style,
+    mantel_plot_contract,
+    palette_color,
+    semantic_colormap,
 )
-from axiomfig.templates.heatmap.builders import CORRELATION, CORRELATION_LABELS, add_matrix
+
+_CANONICAL_MANTEL_MATRIX = np.asarray(
+    (
+        (1.00, 0.62, -0.31, 0.18, 0.44),
+        (0.62, 1.00, -0.48, 0.27, 0.29),
+        (-0.31, -0.48, 1.00, -0.54, -0.22),
+        (0.18, 0.27, -0.54, 1.00, 0.36),
+        (0.44, 0.29, -0.22, 0.36, 1.00),
+    )
+)
+_CANONICAL_MANTEL_LABELS = ("Oxygen", "Ammonium", "Nitrate", "Phosphate", "Temperature")
+_CANONICAL_MANTEL_LINKS = (
+    {"source_group": "Surface", "target_label": "Oxygen", "mantel_r": 0.62, "p_value": 0.0006},
+    {"source_group": "Surface", "target_label": "Nitrate", "mantel_r": 0.41, "p_value": 0.008},
+    {"source_group": "Surface", "target_label": "Temperature", "mantel_r": 0.22, "p_value": 0.12},
+    {"source_group": "Deep", "target_label": "Ammonium", "mantel_r": 0.33, "p_value": 0.032},
+    {"source_group": "Deep", "target_label": "Phosphate", "mantel_r": 0.18, "p_value": 0.21},
+)
 
 
-def _node_positions(
+def _mantel_inputs(
+    correlation_matrix: object | None,
+    labels: object | None,
+    links: object | None,
+) -> tuple[np.ndarray, list[str], tuple[Mapping[str, object], ...]]:
+    if correlation_matrix is None and labels is None and links is None:
+        return (
+            _CANONICAL_MANTEL_MATRIX,
+            list(_CANONICAL_MANTEL_LABELS),
+            _CANONICAL_MANTEL_LINKS,
+        )
+    if correlation_matrix is None or labels is None or links is None:
+        raise ValueError("Mantel requires correlation_matrix, labels, and links together")
+    matrix = np.asarray(correlation_matrix, dtype=float)
+    rendered_labels = [str(label) for label in np.asarray(labels, dtype=object)]
+    if isinstance(links, (str, bytes)) or not isinstance(links, Sequence):
+        raise ValueError("Mantel links must be a sequence of mappings")
+    rendered_links = tuple(links)
+    if any(not isinstance(link, Mapping) for link in rendered_links):
+        raise ValueError("Mantel links must be mappings")
+    return matrix, rendered_labels, rendered_links
+
+
+def _mantel_matrix(
+    axis: Axes,
+    matrix: np.ndarray,
     labels: list[str],
     *,
-    x_value: float,
+    matrix_x0: float,
+    matrix_y0: float,
+    target_anchor_x: float,
+    target_label_x: float,
 ) -> dict[str, tuple[float, float]]:
-    y_values = np.linspace(0.78, 0.22, len(labels))
-    return {
-        label: (x_value, float(y_value)) for label, y_value in zip(labels, y_values, strict=True)
+    contract = mantel_plot_contract()
+    matrix_contract = contract["matrix"]
+    assert isinstance(matrix_contract, Mapping)
+    grid_color = palette_color(str(matrix_contract["grid_edge_color"]))
+    cmap = mpl.colormaps[semantic_colormap(str(matrix_contract["color_semantics"]))]
+    norm = Normalize(vmin=-1.0, vmax=1.0)
+    minimum_side = float(matrix_contract["minimum_cell_side"])
+    maximum_side = float(matrix_contract["maximum_cell_side"])
+    count = len(labels)
+    target_positions: dict[str, tuple[float, float]] = {}
+
+    for row, row_label in enumerate(labels):
+        y = matrix_y0 + count - row - 0.5
+        target_positions[row_label] = (target_anchor_x, y)
+        anchor = Circle(
+            (target_anchor_x, y),
+            0.045,
+            facecolor="white",
+            edgecolor="black",
+            linewidth=FILL_EDGE_PT,
+            zorder=4,
+        )
+        anchor.set_gid("axiomfig-mantel-target-anchor")
+        axis.add_patch(anchor)
+        label = axis.text(target_label_x, y, row_label, ha="left", va="center", zorder=4)
+        label.set_gid("axiomfig-mantel-variable-label")
+        for column in range(row, count):
+            x = matrix_x0 + column + 0.5
+            value = float(matrix[row, column])
+            grid = Rectangle(
+                (x - 0.46, y - 0.46),
+                0.92,
+                0.92,
+                facecolor="none",
+                edgecolor=grid_color,
+                linewidth=FILL_EDGE_PT,
+                zorder=1,
+            )
+            grid.set_gid("axiomfig-mantel-grid-cell")
+            axis.add_patch(grid)
+            side = minimum_side + (maximum_side - minimum_side) * abs(value)
+            cell = Rectangle(
+                (x - side / 2.0, y - side / 2.0),
+                side,
+                side,
+                facecolor=cmap(norm(value)),
+                edgecolor=str(matrix_contract["cell_edge_color"]),
+                linewidth=FILL_EDGE_PT,
+                zorder=2,
+            )
+            cell.set_gid("axiomfig-mantel-cell")
+            cell._axiomfig_row = row
+            cell._axiomfig_column = column
+            cell._axiomfig_value = value
+            axis.add_patch(cell)
+
+    for column, label_text in enumerate(labels):
+        label = axis.text(
+            matrix_x0 + column + 0.5,
+            matrix_y0 - 0.18,
+            label_text,
+            ha="right",
+            va="top",
+            rotation=45,
+            fontsize=mpl.rcParams["font.size"] * 0.88,
+            zorder=4,
+        )
+        label.set_gid("axiomfig-mantel-variable-label")
+    axis.text(
+        matrix_x0 + count / 2.0,
+        matrix_y0 + count + 0.34,
+        "Pearson correlation",
+        ha="center",
+        va="bottom",
+        fontsize=mpl.rcParams["axes.titlesize"],
+        fontweight="bold",
+    )
+    return target_positions
+
+
+def _mantel_colorbar(axis: Axes, *, x: float, y: float, height: float, width: float) -> None:
+    contract = mantel_plot_contract()["matrix"]
+    assert isinstance(contract, Mapping)
+    cmap = mpl.colormaps[semantic_colormap(str(contract["color_semantics"]))]
+    image = axis.imshow(
+        np.linspace(-1.0, 1.0, 256).reshape(-1, 1),
+        extent=(x, x + width, y, y + height),
+        origin="lower",
+        cmap=cmap,
+        vmin=-1.0,
+        vmax=1.0,
+        interpolation="nearest",
+        zorder=2,
+    )
+    image.set_gid("axiomfig-mantel-colorbar")
+    axis.add_patch(
+        Rectangle(
+            (x, y),
+            width,
+            height,
+            facecolor="none",
+            edgecolor="black",
+            linewidth=FILL_EDGE_PT,
+            zorder=3,
+        )
+    )
+    for value in (-1.0, -0.5, 0.0, 0.5, 1.0):
+        tick_y = y + (value + 1.0) * height / 2.0
+        axis.plot(
+            [x + width, x + width + 0.08],
+            [tick_y, tick_y],
+            color="black",
+            linewidth=FILL_EDGE_PT,
+            clip_on=True,
+        )
+        axis.text(x + width + 0.12, tick_y, f"{value:g}", ha="left", va="center", fontsize=7)
+    axis.text(
+        x + width + 0.72,
+        y + height / 2.0,
+        "Pearson r",
+        rotation=90,
+        ha="center",
+        va="center",
+        fontsize=7,
+    )
+
+
+def _mantel_links(
+    axis: Axes,
+    links: tuple[Mapping[str, object], ...],
+    target_positions: Mapping[str, tuple[float, float]],
+    *,
+    matrix_y0: float,
+    matrix_size: int,
+    source_x: float,
+    show_nonsignificant: bool,
+) -> None:
+    source_groups = list(dict.fromkeys(str(link["source_group"]) for link in links))
+    source_y = np.linspace(matrix_y0 + matrix_size - 0.5, matrix_y0 + 0.5, len(source_groups))
+    source_positions = dict(zip(source_groups, source_y, strict=True))
+    for source, y in source_positions.items():
+        node = Circle(
+            (source_x, float(y)),
+            0.085,
+            facecolor="white",
+            edgecolor="black",
+            linewidth=FILL_EDGE_PT,
+            zorder=5,
+        )
+        node.set_gid("axiomfig-mantel-source-node")
+        axis.add_patch(node)
+        label = axis.text(source_x - 0.12, y, source, ha="right", va="center", zorder=5)
+        label.set_gid("axiomfig-mantel-source-label")
+
+    for link in links:
+        source = str(link["source_group"])
+        target = str(link["target_label"])
+        mantel_r = float(link["mantel_r"])
+        p_value = float(link["p_value"])
+        p_style = mantel_p_style(p_value)
+        if not p_style["significant"] and not show_nonsignificant:
+            continue
+        start = (source_x + 0.10, float(source_positions[source]))
+        end = target_positions[target]
+        x_span = end[0] - start[0]
+        path = Path(
+            (
+                start,
+                (start[0] + x_span * 0.34, start[1]),
+                (start[0] + x_span * 0.70, end[1]),
+                end,
+            ),
+            (Path.MOVETO, Path.CURVE4, Path.CURVE4, Path.CURVE4),
+        )
+        patch = PathPatch(
+            path,
+            facecolor="none",
+            edgecolor=p_style["color"],
+            alpha=float(p_style["alpha"]),
+            linewidth=mantel_link_width(mantel_r),
+            capstyle="round",
+            clip_on=True,
+            zorder=3,
+        )
+        patch.set_gid("axiomfig-mantel-link")
+        patch._axiomfig_source_group = source
+        patch._axiomfig_target_label = target
+        patch._axiomfig_mantel_r = mantel_r
+        patch._axiomfig_p_value = p_value
+        axis.add_patch(patch)
+
+
+def _mantel_legends(axis: Axes) -> None:
+    layout_contract = mantel_plot_contract()["layout"]
+    assert isinstance(layout_contract, Mapping)
+    legend_y = float(layout_contract["legend_y_fraction"])
+    strength_handles = [
+        Line2D([], [], color="black", linewidth=mantel_link_width(value), label=label)
+        for value, label in ((0.1, "< 0.25"), (0.35, "0.25-0.50"), (0.65, ">= 0.50"))
+    ]
+    p_handles = [
+        Line2D(
+            [],
+            [],
+            color=mantel_p_style(value)["color"],
+            alpha=float(mantel_p_style(value)["alpha"]),
+            linewidth=MAIN_STROKE_PT * 1.8,
+            label=label,
+        )
+        for value, label in (
+            (0.0005, "< 0.001"),
+            (0.005, "0.001-0.01"),
+            (0.025, "0.01-0.05"),
+            (0.10, ">= 0.05"),
+        )
+    ]
+    common = {
+        "frameon": False,
+        "handlelength": 1.0,
+        "borderaxespad": 0.0,
+        "labelspacing": 0.35,
+        "handletextpad": 0.6,
     }
+    strength_legend = axis.legend(
+        handles=strength_handles,
+        title="Mantel r",
+        loc="lower left",
+        bbox_to_anchor=(float(layout_contract["strength_legend_x_fraction"]), legend_y),
+        ncol=1,
+        **common,
+    )
+    strength_legend.set_gid("axiomfig-mantel-legend")
+    axis.add_artist(strength_legend)
+    p_legend = axis.legend(
+        handles=p_handles,
+        title="P value",
+        loc="lower left",
+        bbox_to_anchor=(float(layout_contract["p_legend_x_fraction"]), legend_y),
+        ncol=2,
+        columnspacing=0.9,
+        **common,
+    )
+    p_legend.set_gid("axiomfig-mantel-legend")
 
 
 def build_mantel(
     correlation_matrix: object | None = None,
-    matrix_labels: object | None = None,
+    labels: object | None = None,
     links: object | None = None,
-    link_strength: object | None = None,
-    significance: object | None = None,
-    node_labels: object | None = None,
-    strength_label: object | None = None,
+    show_nonsignificant: object | None = None,
 ) -> Figure:
-    if correlation_matrix is None:
-        canonical = True
-        matrix_values = CORRELATION
-        matrix_label_values = list(CORRELATION_LABELS)
-        link_values = np.asarray(
-            (
-                ("COD", "Community"),
-                ("TN", "Community"),
-                ("TN", "Function"),
-                ("TP", "Function"),
-            ),
-            dtype=object,
-        )
-        strength_values = np.asarray((0.61, 0.43, 0.68, 0.35))
-        significance_values = np.asarray((True, False, True, False))
-        ordered_nodes = ["COD", "TN", "TP", "Community", "Function"]
-    elif all(value is not None for value in (matrix_labels, links, link_strength, significance)):
-        canonical = False
-        matrix_values = np.asarray(correlation_matrix, dtype=float)
-        matrix_label_values = [str(label) for label in np.asarray(matrix_labels)]
-        link_values = np.asarray(links, dtype=object).astype(str)
-        strength_values = np.asarray(link_strength, dtype=float)
-        significance_values = np.asarray(significance, dtype=bool)
-        ordered_nodes = (
-            [str(label) for label in np.asarray(node_labels)]
-            if node_labels is not None
-            else list(dict.fromkeys(link_values.ravel()))
-        )
-    else:
-        raise ValueError("Mantel requires its matrix and link inputs together")
-    figure = plt.figure()
-    layout = create_panel_grid(figure, 1, 2, panel_labels=False)
-    matrix_axis, _ = add_panel_axes(layout, 0)
-    link_axis, _ = add_panel_axes(layout, 1)
-    add_matrix(
-        matrix_axis,
-        matrix_values,
-        matrix_label_values,
-        annotate=True,
-        vmin=float(min(0.0, matrix_values.min())),
-        vmax=float(max(1.0, matrix_values.max())),
-        color_semantics="diverging" if matrix_values.min() < 0 else "sequential",
-        center=0.0 if matrix_values.min() < 0 else None,
+    matrix_values, label_values, link_values = _mantel_inputs(correlation_matrix, labels, links)
+    contract = mantel_plot_contract()
+    layout_contract = contract["layout"]
+    link_contract = contract["links"]
+    assert isinstance(layout_contract, Mapping)
+    assert isinstance(link_contract, Mapping)
+    show_nonsignificant_value = (
+        bool(link_contract["show_nonsignificant"])
+        if show_nonsignificant is None
+        else bool(show_nonsignificant)
     )
-    matrix_axis.set_title("Environmental correlation")
+    count = len(label_values)
+    matrix_x0 = float(layout_contract["matrix_x0"])
+    matrix_y0 = float(layout_contract["matrix_y0"])
+    source_x = float(layout_contract["source_x"])
+    target_anchor_x = matrix_x0 - float(layout_contract["target_anchor_offset"])
+    target_label_x = matrix_x0 - float(layout_contract["target_label_offset"])
+    colorbar_x = matrix_x0 + count + float(layout_contract["colorbar_gap"])
+    colorbar_width = float(layout_contract["colorbar_width"])
 
-    left_labels = [label for label in ordered_nodes if label in matrix_label_values]
-    right_labels = [label for label in ordered_nodes if label not in matrix_label_values]
-    positions = {
-        **_node_positions(left_labels, x_value=0.12),
-        **_node_positions(right_labels, x_value=0.85),
-    }
-    referenced = set(link_values.ravel())
-    if referenced - set(positions):
-        raise ValueError("Mantel links reference nodes outside node_labels")
-    for label, (x_value, y_value) in positions.items():
-        node = link_axis.scatter([x_value], [y_value], facecolor="white")
-        apply_scatter_contract(node)
-        link_axis.text(x_value, y_value + 0.08, label, ha="center", va="bottom")
-    colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
-    for index, ((source_name, target_name), correlation, significant) in enumerate(
-        zip(link_values, strength_values, significance_values, strict=True)
-    ):
-        source = positions[str(source_name)]
-        target = positions[str(target_name)]
-        link_axis.plot(
-            [source[0], target[0]],
-            [source[1], target[1]],
-            color=colors[index % 2],
-            linewidth=MAIN_STROKE_PT * (1.0 + 2.0 * correlation),
-            linestyle="-" if significant else ":",
-        )
-        midpoint = ((source[0] + target[0]) / 2, (source[1] + target[1]) / 2)
-        link_axis.text(*midpoint, f"r={correlation:.2f}", ha="center", va="bottom")
-    prefix = f"{strength_label}; " if strength_label is not None else ""
-    significant_label = "p < 0.05" if canonical else f"{prefix}significant"
-    proxies = (
-        Line2D(
-            [],
-            [],
-            color=colors[0],
-            linewidth=MAIN_STROKE_PT * 2.2,
-            label=significant_label,
-        ),
-        Line2D(
-            [],
-            [],
-            color=colors[1],
-            linewidth=MAIN_STROKE_PT * 1.8,
-            linestyle=":",
-            label="not significant",
-        ),
+    figure = plt.figure()
+    layout = create_panel_grid(figure, 1, 1, panel_labels=False)
+    axis, _ = add_panel_axes(layout, 0)
+    target_positions = _mantel_matrix(
+        axis,
+        matrix_values,
+        label_values,
+        matrix_x0=matrix_x0,
+        matrix_y0=matrix_y0,
+        target_anchor_x=target_anchor_x,
+        target_label_x=target_label_x,
     )
-    for proxy in proxies:
-        link_axis.add_line(proxy)
-    request_legend(link_axis)
-    link_axis.set(xlim=(0.0, 1.0), ylim=(0.0, 1.0))
-    link_axis.set_axis_off()
+    _mantel_links(
+        axis,
+        link_values,
+        target_positions,
+        matrix_y0=matrix_y0,
+        matrix_size=count,
+        source_x=source_x,
+        show_nonsignificant=show_nonsignificant_value,
+    )
+    _mantel_colorbar(
+        axis,
+        x=colorbar_x,
+        y=matrix_y0,
+        height=float(count),
+        width=colorbar_width,
+    )
+    _mantel_legends(axis)
+    axis.set_xlim(0.0, colorbar_x + colorbar_width + 1.05)
+    axis.set_ylim(0.0, matrix_y0 + count + 0.82)
+    axis.set_aspect("equal", adjustable="box")
+    axis.set_axis_off()
     return figure
 
 

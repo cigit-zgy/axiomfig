@@ -1,0 +1,208 @@
+from __future__ import annotations
+
+from itertools import combinations
+
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import pytest
+from matplotlib.legend import Legend
+from matplotlib.patches import PathPatch, Rectangle
+
+from axiomfig.config import build_rcparams, load_contracts
+from axiomfig.style import mantel_link_width, mantel_p_style
+from axiomfig.templates import adapt_template_data, build_template
+from axiomfig.typography import discover_fonts
+from axiomfig.validation import validate_figure_anatomy
+
+SPARSE: dict[str, object] = {
+    "correlation_matrix": [
+        [1.0, 0.62, -0.31, 0.18],
+        [0.62, 1.0, -0.48, 0.27],
+        [-0.31, -0.48, 1.0, -0.54],
+        [0.18, 0.27, -0.54, 1.0],
+    ],
+    "labels": ["Oxygen", "Ammonium", "Nitrate", "Phosphate"],
+    "links": [
+        {
+            "source_group": "Surface",
+            "target_label": "Oxygen",
+            "mantel_r": 0.62,
+            "p_value": 0.0006,
+        },
+        {
+            "source_group": "Surface",
+            "target_label": "Nitrate",
+            "mantel_r": 0.41,
+            "p_value": 0.008,
+        },
+        {
+            "source_group": "Deep",
+            "target_label": "Ammonium",
+            "mantel_r": 0.33,
+            "p_value": 0.032,
+        },
+        {
+            "source_group": "Deep",
+            "target_label": "Phosphate",
+            "mantel_r": 0.18,
+            "p_value": 0.21,
+        },
+    ],
+}
+
+DENSE: dict[str, object] = {
+    "correlation_matrix": [
+        [1.0, 0.61, -0.33, 0.22, 0.47, -0.18],
+        [0.61, 1.0, -0.52, 0.35, 0.28, -0.31],
+        [-0.33, -0.52, 1.0, -0.58, -0.26, 0.44],
+        [0.22, 0.35, -0.58, 1.0, 0.19, -0.36],
+        [0.47, 0.28, -0.26, 0.19, 1.0, 0.39],
+        [-0.18, -0.31, 0.44, -0.36, 0.39, 1.0],
+    ],
+    "labels": ["Oxygen", "Ammonium", "Nitrate", "Phosphate", "Temperature", "pH"],
+    "links": [
+        {"source_group": "Surface", "target_label": "Oxygen", "mantel_r": 0.67, "p_value": 0.0004},
+        {"source_group": "Surface", "target_label": "Nitrate", "mantel_r": 0.48, "p_value": 0.004},
+        {
+            "source_group": "Surface",
+            "target_label": "Temperature",
+            "mantel_r": 0.23,
+            "p_value": 0.09,
+        },
+        {"source_group": "Deep", "target_label": "Ammonium", "mantel_r": 0.55, "p_value": 0.008},
+        {"source_group": "Deep", "target_label": "Phosphate", "mantel_r": 0.37, "p_value": 0.026},
+        {"source_group": "Deep", "target_label": "pH", "mantel_r": 0.19, "p_value": 0.18},
+        {
+            "source_group": "Sediment",
+            "target_label": "Nitrate",
+            "mantel_r": 0.51,
+            "p_value": 0.0008,
+        },
+        {
+            "source_group": "Sediment",
+            "target_label": "Phosphate",
+            "mantel_r": 0.42,
+            "p_value": 0.014,
+        },
+        {
+            "source_group": "Sediment",
+            "target_label": "Temperature",
+            "mantel_r": 0.31,
+            "p_value": 0.07,
+        },
+    ],
+    "show_nonsignificant": True,
+}
+
+
+def _build(values: dict[str, object]):
+    discover_fonts("sans")
+    params = build_rcparams(load_contracts(), geometry="onehalf-column", typography="sans")
+    adapted = adapt_template_data("association/mantel", values)
+    with mpl.rc_context(rc=params):
+        figure = build_template("association/mantel", **adapted)
+        figure.set_size_inches(params["figure.figsize"], forward=False)
+        figure.canvas.draw()
+    return figure
+
+
+def _gid_children(figure, gid: str):
+    return [
+        artist for axis in figure.axes for artist in axis.get_children() if artist.get_gid() == gid
+    ]
+
+
+def test_mantel_evaluation_includes_sparse_and_dense_fixtures() -> None:
+    from tests.evaluation.run import load_evaluation_fixtures
+
+    fixtures = load_evaluation_fixtures()
+    for fixture_id, expected_links in (
+        ("association_mantel_sparse", 4),
+        ("association_mantel_dense", 9),
+    ):
+        fixture = fixtures[fixture_id]
+        adapted = adapt_template_data(
+            "association/mantel",
+            {
+                "correlation_matrix": fixture["correlation_matrix"],
+                "labels": fixture["labels"],
+                "links": fixture["mantel_links"],
+                **(
+                    {"show_nonsignificant": fixture["show_nonsignificant"]}
+                    if "show_nonsignificant" in fixture
+                    else {}
+                ),
+            },
+        )
+        assert len(adapted["links"]) == expected_links
+
+
+def test_mantel_style_bins_are_deterministic_at_exact_boundaries() -> None:
+    assert [mantel_link_width(value) for value in (0.249, 0.25, 0.499, 0.5)] == [
+        0.8,
+        1.4,
+        1.4,
+        2.2,
+    ]
+    assert [mantel_p_style(value)["significant"] for value in (0.0009, 0.009, 0.049, 0.05)] == [
+        True,
+        True,
+        True,
+        False,
+    ]
+
+
+def test_mantel_uses_one_upper_triangular_square_matrix() -> None:
+    figure = _build(SPARSE)
+    cells = _gid_children(figure, "axiomfig-mantel-cell")
+
+    assert len(cells) == 4 * 5 // 2
+    assert all(isinstance(cell, Rectangle) for cell in cells)
+    assert all(cell.get_width() == pytest.approx(cell.get_height()) for cell in cells)
+    assert len({round(cell.get_width(), 3) for cell in cells}) > 2
+    assert all(cell._axiomfig_column >= cell._axiomfig_row for cell in cells)
+    plt.close(figure)
+
+
+def test_mantel_links_are_traceable_and_hide_nonsignificant_by_default() -> None:
+    figure = _build(SPARSE)
+    links = _gid_children(figure, "axiomfig-mantel-link")
+
+    assert len(links) == 3
+    assert all(isinstance(link, PathPatch) for link in links)
+    assert {(link._axiomfig_source_group, link._axiomfig_target_label) for link in links} == {
+        ("Surface", "Oxygen"),
+        ("Surface", "Nitrate"),
+        ("Deep", "Ammonium"),
+    }
+    plt.close(figure)
+
+
+def test_mantel_dense_case_keeps_nonsignificant_links_faint_and_contained() -> None:
+    figure = _build(DENSE)
+    links = _gid_children(figure, "axiomfig-mantel-link")
+
+    assert len(links) == 9
+    assert max(link.get_alpha() for link in links if link._axiomfig_p_value >= 0.05) < min(
+        link.get_alpha() for link in links if link._axiomfig_p_value < 0.05
+    )
+    validate_figure_anatomy(figure)
+    plt.close(figure)
+
+
+def test_mantel_legends_labels_and_matrix_have_disjoint_footprints() -> None:
+    figure = _build(DENSE)
+    renderer = figure.canvas.get_renderer()
+    legends = _gid_children(figure, "axiomfig-mantel-legend")
+    cells = _gid_children(figure, "axiomfig-mantel-cell")
+    labels = _gid_children(figure, "axiomfig-mantel-variable-label")
+
+    assert len(legends) == 2
+    assert all(isinstance(legend, Legend) for legend in legends)
+    legend_boxes = [legend.get_window_extent(renderer) for legend in legends]
+    cell_boxes = [cell.get_window_extent(renderer) for cell in cells]
+    label_boxes = [label.get_window_extent(renderer) for label in labels]
+    assert not legend_boxes[0].overlaps(legend_boxes[1])
+    assert not any(legend.overlaps(cell) for legend in legend_boxes for cell in cell_boxes)
+    assert not any(first.overlaps(second) for first, second in combinations(label_boxes, 2))
+    plt.close(figure)

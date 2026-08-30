@@ -122,7 +122,17 @@ def test_intent_without_data_uses_deterministic_canonical_example() -> None:
     figure = build_intent_figure(intent)
 
     assert intent.geometry == "onehalf-column"
-    assert len(figure.axes) == 2
+    assert len(figure.axes) == 1
+    assert (
+        len(
+            [
+                artist
+                for artist in figure.axes[0].get_children()
+                if artist.get_gid() == "axiomfig-mantel-cell"
+            ]
+        )
+        == 15
+    )
     plt.close(figure)
 
 

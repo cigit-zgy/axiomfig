@@ -74,8 +74,8 @@ public templates.
 | `field`, `flow` | Continuous fields and transport structure |
 
 `layouts` supplies composition capabilities and is not counted as a plot family. Mantel is a
-first-class `association/mantel` template and accepts precomputed matrix, link-strength, and
-significance results.
+first-class `association/mantel` template and accepts a precomputed Pearson matrix plus structured
+links containing `source_group`, `target_label`, `mantel_r`, and `p_value`.
 
 See the compact [registry](src/axiomfig/templates/index.yaml) and
 [template-system contract](references/template-system.md).

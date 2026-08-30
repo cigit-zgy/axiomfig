@@ -23,6 +23,17 @@ data: {matrix: correlation, labels: variables}
 semantics: {center: 0}
 ```
 
+Precomputed association results use structured JSON/YAML data rather than parallel ad hoc arrays:
+
+```yaml
+template: association.mantel
+data: {correlation_matrix: correlation_matrix, labels: labels, links: mantel_links}
+semantics: {show_nonsignificant: false}
+```
+
+Each Mantel link contains `source_group`, `target_label`, `mantel_r`, and `p_value`. The plotting
+layer validates and displays these results but never computes Mantel statistics.
+
 The validator rejects font sizes, line widths, tick lengths, legend coordinates, panel offsets,
 bar width, colorbar width, subplot spacing, and arbitrary fields. It also rejects missing explicit
 uncertainty types, centers, significance thresholds, or other required contract fields.

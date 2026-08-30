@@ -26,6 +26,18 @@ def palettes(contracts: Contracts | None = None) -> Mapping[str, Mapping[str, st
     return selected.colors["palettes"]
 
 
+def palette_color(
+    color_name: str, *, palette_name: str | None = None, contracts: Contracts | None = None
+) -> str:
+    """Resolve one canonical color without exposing palette storage to templates."""
+    selected = contracts or load_contracts()
+    selected_palette = palette_name or str(selected.colors["default"])
+    try:
+        return palettes(selected)[selected_palette][color_name]
+    except KeyError as error:
+        raise ValueError(f"unknown palette color: {selected_palette}.{color_name}") from error
+
+
 def semantic_colormap(semantics: str, contracts: Contracts | None = None) -> str:
     selected = contracts or load_contracts()
     colormaps = selected.colors.get("colormaps")
@@ -35,6 +47,40 @@ def semantic_colormap(semantics: str, contracts: Contracts | None = None) -> str
     if not isinstance(value, str) or not value:
         raise ValueError(f"invalid colormap for color semantics: {semantics!r}")
     return value
+
+
+def mantel_plot_contract() -> Mapping[str, object]:
+    """Return the central deterministic Mantel visual contract."""
+    return load_contracts().style["plots"]["mantel"]
+
+
+def mantel_link_width(mantel_r: float) -> float:
+    """Map precomputed Mantel r to the canonical discrete stroke width."""
+    if not math.isfinite(mantel_r) or not 0.0 <= mantel_r <= 1.0:
+        raise ValueError("mantel_r must be between 0 and 1")
+    links = mantel_plot_contract()["links"]
+    assert isinstance(links, Mapping)
+    breaks = tuple(float(value) for value in links["strength_breaks"])
+    widths = tuple(float(value) for value in links["widths_pt"])
+    index = 0 if mantel_r < breaks[0] else 1 if mantel_r < breaks[1] else 2
+    return widths[index]
+
+
+def mantel_p_style(p_value: float) -> dict[str, object]:
+    """Map precomputed P to the canonical color and opacity tokens."""
+    if not math.isfinite(p_value) or not 0.0 <= p_value <= 1.0:
+        raise ValueError("p_value must be between 0 and 1")
+    links = mantel_plot_contract()["links"]
+    assert isinstance(links, Mapping)
+    breaks = tuple(float(value) for value in links["p_value_breaks"])
+    references = tuple(links["p_value_colors"])
+    index = (
+        0 if p_value < breaks[0] else 1 if p_value < breaks[1] else 2 if p_value < breaks[2] else 3
+    )
+    palette_name, color_name = references[index]
+    color = palette_color(str(color_name), palette_name=str(palette_name))
+    alpha_key = "significant_alpha" if index < 3 else "nonsignificant_alpha"
+    return {"color": color, "alpha": float(links[alpha_key]), "significant": index < 3}
 
 
 def render_xcolor(contracts: Contracts | None = None) -> str:

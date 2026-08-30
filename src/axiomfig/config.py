@@ -123,6 +123,14 @@ def _validate_style(style: Mapping[str, Any]) -> None:
             (style["plots"]["bar"]["single_width"], "plots.bar.single_width"),
             (style["plots"]["bar"]["group_width"], "plots.bar.group_width"),
             (
+                style["plots"]["mantel"]["matrix"]["minimum_cell_side"],
+                "plots.mantel.matrix.minimum_cell_side",
+            ),
+            (
+                style["plots"]["mantel"]["matrix"]["maximum_cell_side"],
+                "plots.mantel.matrix.maximum_cell_side",
+            ),
+            (
                 style["layout"]["multi_panel"]["colorbar_width_pt"],
                 "layout.multi_panel.colorbar_width_pt",
             ),
@@ -176,6 +184,14 @@ def _validate_style(style: Mapping[str, Any]) -> None:
         ("plots.violin.combined_alpha", style["plots"]["violin"]["combined_alpha"]),
         ("plots.bar.alpha", style["plots"]["bar"]["alpha"]),
         ("plots.histogram.alpha", style["plots"]["histogram"]["alpha"]),
+        (
+            "plots.mantel.links.significant_alpha",
+            style["plots"]["mantel"]["links"]["significant_alpha"],
+        ),
+        (
+            "plots.mantel.links.nonsignificant_alpha",
+            style["plots"]["mantel"]["links"]["nonsignificant_alpha"],
+        ),
     ):
         value = _finite_number(alpha, dotted)
         if not 0.0 <= value <= 1.0:
@@ -183,6 +199,27 @@ def _validate_style(style: Mapping[str, Any]) -> None:
     decimals = style["plots"]["bar"]["decimals"]
     if isinstance(decimals, bool) or not isinstance(decimals, int) or decimals < 0:
         raise ValueError("plots.bar.decimals must be a nonnegative integer")
+    mantel = style["plots"]["mantel"]
+    matrix_contract = mantel["matrix"]
+    minimum_side = float(matrix_contract["minimum_cell_side"])
+    maximum_side = float(matrix_contract["maximum_cell_side"])
+    if minimum_side >= maximum_side or maximum_side > 1.0:
+        raise ValueError("Mantel cell sides must be ordered and no larger than one cell")
+    link_contract = mantel["links"]
+    strength_breaks = tuple(float(value) for value in link_contract["strength_breaks"])
+    p_value_breaks = tuple(float(value) for value in link_contract["p_value_breaks"])
+    widths = tuple(link_contract["widths_pt"])
+    color_references = tuple(link_contract["p_value_colors"])
+    if strength_breaks != tuple(sorted(strength_breaks)) or len(strength_breaks) != 2:
+        raise ValueError("Mantel strength breaks must contain two ordered values")
+    if p_value_breaks != tuple(sorted(p_value_breaks)) or len(p_value_breaks) != 3:
+        raise ValueError("Mantel P-value breaks must contain three ordered values")
+    if len(widths) != 3 or len(color_references) != 4:
+        raise ValueError("Mantel link widths and colors must match their bins")
+    for index, width in enumerate(widths):
+        _finite_number(width, f"plots.mantel.links.widths_pt[{index}]", positive=True)
+    if not isinstance(link_contract["show_nonsignificant"], bool):
+        raise ValueError("plots.mantel.links.show_nonsignificant must be boolean")
 
 
 def load_contracts(config_root: Path | None = None) -> Contracts:
