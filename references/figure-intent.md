@@ -28,11 +28,12 @@ Precomputed association results use structured JSON/YAML data rather than parall
 ```yaml
 template: association.mantel
 data: {correlation_matrix: correlation_matrix, labels: labels, links: mantel_links}
-semantics: {show_nonsignificant: false}
+semantics: {matrix_method: square, matrix_type: lower, nonsignificant_links: fade}
 ```
 
-Each Mantel link contains `source_group`, `target_label`, `mantel_r`, and `p_value`. The plotting
-layer validates and displays these results but never computes Mantel statistics.
+Each Mantel link contains `source`, `target`, `mantel_r`, and `p_value`. The plotting layer validates
+and displays these results but never computes Mantel statistics. See `references/mantel.md` only for
+advanced matrix, ordering, significance, confidence-interval, or coupling capabilities.
 
 The validator rejects font sizes, line widths, tick lengths, legend coordinates, panel offsets,
 bar width, colorbar width, subplot spacing, and arbitrary fields. It also rejects missing explicit

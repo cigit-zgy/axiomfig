@@ -56,13 +56,14 @@ def mantel_plot_contract() -> Mapping[str, object]:
 
 def mantel_link_width(mantel_r: float) -> float:
     """Map precomputed Mantel r to the canonical discrete stroke width."""
-    if not math.isfinite(mantel_r) or not 0.0 <= mantel_r <= 1.0:
-        raise ValueError("mantel_r must be between 0 and 1")
+    if not math.isfinite(mantel_r) or not -1.0 <= mantel_r <= 1.0:
+        raise ValueError("mantel_r must be between -1 and 1")
     links = mantel_plot_contract()["links"]
     assert isinstance(links, Mapping)
     breaks = tuple(float(value) for value in links["strength_breaks"])
     widths = tuple(float(value) for value in links["widths_pt"])
-    index = 0 if mantel_r < breaks[0] else 1 if mantel_r < breaks[1] else 2
+    magnitude = abs(mantel_r)
+    index = 0 if magnitude < breaks[0] else 1 if magnitude < breaks[1] else 2
     return widths[index]
 
 

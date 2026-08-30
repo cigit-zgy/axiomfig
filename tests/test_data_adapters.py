@@ -137,14 +137,14 @@ def test_adapter_validates_structured_mantel_links() -> None:
     assert adapted["labels"].tolist() == ["A", "B"]
     assert tuple(adapted["links"]) == (
         {
-            "source_group": "Surface",
-            "target_label": "A",
+            "source": "Surface",
+            "target": "A",
             "mantel_r": 0.61,
             "p_value": 0.004,
         },
         {
-            "source_group": "Deep",
-            "target_label": "B",
+            "source": "Deep",
+            "target": "B",
             "mantel_r": 0.34,
             "p_value": 0.08,
         },
@@ -169,7 +169,7 @@ def test_adapter_validates_structured_mantel_links() -> None:
                     }
                 ]
             },
-            "unknown target_label",
+            "unknown target",
         ),
         (
             {

@@ -1,0 +1,123 @@
+# Mantel visualization engine
+
+Read this reference only for advanced `association.mantel` customization. Normal requests need only
+the family contract and minimal Figure Intent.
+
+## Scientific input boundary
+
+AxiomFig visualizes precomputed results. It does not calculate correlations, correlation p values,
+confidence intervals, Mantel statistics, clustering, or permutations.
+
+Required roles are `correlation_matrix`, `labels`, and `links`. The matrix must be square, symmetric,
+bounded by `[-1, 1]`, and have a unit diagonal. Symmetric `NaN` pairs are rendered as missing rather
+than converted to zero. Each link contains:
+
+```yaml
+source: Water chemistry
+target: DO
+mantel_r: -0.42
+p_value: 0.018
+```
+
+Optional `label` and `metadata` fields are preserved. Legacy `source_group` and `target_label` keys
+remain accepted and normalize to `source` and `target`.
+
+Mantel r is accepted on `[-1, 1]`. Stroke width encodes `abs(r)` because strength is a magnitude;
+the signed value remains attached to the rendered link. The canonical width mode uses bins at 0.25
+and 0.50. Correlation p values, `lower_ci`, and `upper_ci` must be supplied as precomputed symmetric
+matrices matching the correlation matrix.
+
+## Advanced semantics
+
+Canonical defaults are square glyphs, a lower matrix, hidden diagonal, original order, curved links,
+and faded non-significant links.
+
+```yaml
+template: association.mantel
+data:
+  correlation_matrix: correlations
+  labels: variables
+  links: mantel_links
+semantics:
+  matrix_method: square
+  matrix_type: lower
+  diagonal: hide
+  order: original
+  nonsignificant_links: fade
+```
+
+Supported high-level semantics are:
+
+| Semantic | Values |
+|---|---|
+| `matrix_method` | `circle`, `square`, `ellipse`, `number`, `shade`, `color`, `pie` |
+| `matrix_type` | `full`, `upper`, `lower`, `mixed` |
+| `diagonal` | `show`, `hide` |
+| `lower_method`, `upper_method` | any matrix method; used by `mixed` |
+| `order` | `original`, `alphabet`, `AOE`, `FPC`, `hclust` |
+| `hclust_method` | `complete`, `ward`, `ward.D`, `ward.D2`, `single`, `average`, `mcquitty`, `median`, `centroid` |
+| `clusters` | integer cluster count; requires `order: hclust` |
+| `coefficients` | boolean coefficient overlay |
+| `coefficient_format` | `decimal`, `percent` |
+| `significance_mode` | `none`, `mark`, `p_value`, `blank`, `label_sig` |
+| `significance_thresholds` | explicit decreasing thresholds; default `[0.05, 0.01, 0.001]` |
+| `ci_mode` | `none`, `square`, `circle`, `rect` |
+| `link_width_mode` | `binned`, `continuous` |
+| `nonsignificant_links` | `hide`, `fade`, `show` |
+
+Mixed rendering remains one public template:
+
+```yaml
+semantics:
+  matrix_type: mixed
+  lower_method: square
+  upper_method: number
+```
+
+Physical sizes, line widths, colors, label coordinates, curve control points, legend coordinates,
+and colorbar geometry are deterministic runtime decisions and are not Figure Intent fields.
+
+## Visual grammar
+
+- `square` and `circle` use area, not side or radius, to encode `abs(r)`.
+- `ellipse` uses orientation for sign and eccentricity for magnitude.
+- `number` renders the coefficient with deterministic precision.
+- `color` uses a fixed cell area and signed diverging fill.
+- `shade` adds sign-directed vector hatching to the signed fill.
+- `pie` uses angular fraction for magnitude and sweep direction for sign.
+- `mark` and `p_value` identify non-significant cells, `blank` suppresses them, and `label_sig`
+  labels significant cells using the explicit thresholds.
+- CI modes visualize supplied bounds with vector artists; they never estimate intervals.
+- Coupling routes source nodes directly to matrix-owned target anchors. Target names are not repeated
+  in a separate link column.
+- Mantel p bins (`<0.001`, `0.001-0.01`, `0.01-0.05`, `>=0.05`) and strength bins remain in the
+  legends even when a dataset does not use every bin.
+
+## R capability references and differences
+
+The engine is an independent Matplotlib/NumPy implementation informed by the visual capability
+surface of [corrplot](https://github.com/taiyun/corrplot),
+[linkET](https://github.com/Hy4m/linkET), and [ggcor](https://github.com/hannet91/ggcor).
+No R source is copied and no R runtime is required.
+
+| R capability | AxiomFig implementation | Status | Notes |
+|---|---|---|---|
+| circle, square, ellipse, number, shade, color, pie | vector glyph layer | supported | AxiomFig styling, not an R-default clone |
+| full, upper, lower | geometry-derived masks | supported | diagonal independently controlled |
+| mixed | independent lower/upper glyph dispatch | supported | all 49 method pairs |
+| original, alphabet, AOE, FPC | synchronized NumPy ordering | supported | links remain label-addressed |
+| hclust | pure Python Lance-Williams engine | supported | `ward` aliases legacy `ward.D` |
+| cluster rectangles | ordered cluster-block outlines | supported | explicit cluster count |
+| coefficient annotation | deterministic text overlay | supported | decimal or percent |
+| significance modes | precomputed p-value layer | supported | explicit thresholds |
+| CI square, circle, rect | vector interval layer | supported | precomputed bounds only |
+| `geom_couple` | source-to-target Bézier subsystem | supported | deterministic, no force layout |
+| `nice_curvature` | source/order/density-aware lanes | supported | stable routing signature |
+| r and p encodings | deterministic width/color mappings | supported | unused bins retained |
+| multi-source coupling | physical-space-aware nodes | supported | arbitrary validated groups |
+
+R dendrogram leaf orientation can differ when several merges have identical dissimilarity. AxiomFig
+uses a stable original-index tie rule, while preserving the requested Lance-Williams recurrence and
+cluster membership. `ward.D2` squares dissimilarities before the update; `ward` is normalized to the
+legacy `ward.D` spelling documented by corrplot. Median and centroid linkage can exhibit inversions,
+as in the R methods.

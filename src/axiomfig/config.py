@@ -218,8 +218,8 @@ def _validate_style(style: Mapping[str, Any]) -> None:
         raise ValueError("Mantel link widths and colors must match their bins")
     for index, width in enumerate(widths):
         _finite_number(width, f"plots.mantel.links.widths_pt[{index}]", positive=True)
-    if not isinstance(link_contract["show_nonsignificant"], bool):
-        raise ValueError("plots.mantel.links.show_nonsignificant must be boolean")
+    if link_contract["nonsignificant_mode"] not in {"hide", "fade", "show"}:
+        raise ValueError("plots.mantel.links.nonsignificant_mode must be hide, fade, or show")
 
 
 def load_contracts(config_root: Path | None = None) -> Contracts:

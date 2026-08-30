@@ -26,6 +26,7 @@ scientifically meaningful semantics. Use precomputed results when the selected c
 - Selected input contract: one family `contract.yaml`
 - Recommendation help: one routed file under `references/template-knowledge/`
 - Figure Intent syntax: `references/figure-intent.md`
+- Advanced Mantel customization only: `references/mantel.md`
 - Runtime changes only: `references/style-contract.md`, `layout-contract.md`, `validation.md`,
   `typography.md`, or `latex-contract.md`
 

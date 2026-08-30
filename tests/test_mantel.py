@@ -128,8 +128,8 @@ def test_mantel_evaluation_includes_sparse_and_dense_fixtures() -> None:
                 "labels": fixture["labels"],
                 "links": fixture["mantel_links"],
                 **(
-                    {"show_nonsignificant": fixture["show_nonsignificant"]}
-                    if "show_nonsignificant" in fixture
+                    {"nonsignificant_links": fixture["nonsignificant_links"]}
+                    if "nonsignificant_links" in fixture
                     else {}
                 ),
             },
@@ -152,34 +152,35 @@ def test_mantel_style_bins_are_deterministic_at_exact_boundaries() -> None:
     ]
 
 
-def test_mantel_uses_one_upper_triangular_square_matrix() -> None:
+def test_mantel_uses_one_lower_triangular_square_matrix() -> None:
     figure = _build(SPARSE)
-    cells = _gid_children(figure, "axiomfig-mantel-cell")
+    cells = _gid_children(figure, "axiomfig-mantel-glyph")
 
-    assert len(cells) == 4 * 5 // 2
+    assert len(cells) == 4 * 3 // 2
     assert all(isinstance(cell, Rectangle) for cell in cells)
     assert all(cell.get_width() == pytest.approx(cell.get_height()) for cell in cells)
     assert len({round(cell.get_width(), 3) for cell in cells}) > 2
-    assert all(cell._axiomfig_column >= cell._axiomfig_row for cell in cells)
+    assert all(cell._axiomfig_row > cell._axiomfig_column for cell in cells)
     plt.close(figure)
 
 
-def test_mantel_links_are_traceable_and_hide_nonsignificant_by_default() -> None:
+def test_mantel_links_are_traceable_and_fade_nonsignificant_by_default() -> None:
     figure = _build(SPARSE)
     links = _gid_children(figure, "axiomfig-mantel-link")
 
-    assert len(links) == 3
+    assert len(links) == 4
     assert all(isinstance(link, PathPatch) for link in links)
     assert {(link._axiomfig_source_group, link._axiomfig_target_label) for link in links} == {
         ("Surface", "Oxygen"),
         ("Surface", "Nitrate"),
         ("Deep", "Ammonium"),
+        ("Deep", "Phosphate"),
     }
     plt.close(figure)
 
 
 def test_mantel_dense_case_keeps_nonsignificant_links_faint_and_contained() -> None:
-    figure = _build(DENSE)
+    figure = _build({**DENSE, "show_nonsignificant": False, "nonsignificant_links": "fade"})
     links = _gid_children(figure, "axiomfig-mantel-link")
 
     assert len(links) == 9
@@ -194,7 +195,7 @@ def test_mantel_legends_labels_and_matrix_have_disjoint_footprints() -> None:
     figure = _build(DENSE)
     renderer = figure.canvas.get_renderer()
     legends = _gid_children(figure, "axiomfig-mantel-legend")
-    cells = _gid_children(figure, "axiomfig-mantel-cell")
+    cells = _gid_children(figure, "axiomfig-mantel-glyph")
     labels = _gid_children(figure, "axiomfig-mantel-variable-label")
 
     assert len(legends) == 2

@@ -128,11 +128,50 @@ def test_intent_without_data_uses_deterministic_canonical_example() -> None:
             [
                 artist
                 for artist in figure.axes[0].get_children()
-                if artist.get_gid() == "axiomfig-mantel-cell"
+                if artist.get_gid() == "axiomfig-mantel-glyph"
             ]
         )
-        == 15
+        == 45
     )
+    plt.close(figure)
+
+
+def test_advanced_mantel_intent_reaches_one_parameterized_public_template() -> None:
+    from axiomfig.intent import build_intent_figure, parse_figure_intent
+
+    intent = parse_figure_intent(
+        {
+            "template": "association.mantel",
+            "data": {
+                "correlation_matrix": "matrix",
+                "labels": "labels",
+                "links": "links",
+                "p_values": "p_values",
+            },
+            "semantics": {
+                "matrix_type": "mixed",
+                "lower_method": "square",
+                "upper_method": "number",
+                "diagonal": "hide",
+                "significance_mode": "label_sig",
+            },
+        }
+    )
+    figure = build_intent_figure(
+        intent,
+        {
+            "matrix": [[1.0, 0.4, -0.2], [0.4, 1.0, 0.6], [-0.2, 0.6, 1.0]],
+            "labels": ["A", "B", "C"],
+            "links": [{"source": "Source", "target": "A", "mantel_r": -0.4, "p_value": 0.02}],
+            "p_values": [[0.0, 0.04, 0.2], [0.04, 0.0, 0.004], [0.2, 0.004, 0.0]],
+        },
+    )
+    methods = {
+        artist._axiomfig_method
+        for artist in figure.axes[0].get_children()
+        if artist.get_gid() == "axiomfig-mantel-glyph"
+    }
+    assert methods == {"square", "number"}
     plt.close(figure)
 
 

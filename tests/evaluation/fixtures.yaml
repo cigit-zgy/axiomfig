@@ -82,10 +82,10 @@ fixtures:
       - [0.18, 0.27, -0.54, 1.0]
     labels: [Oxygen, Ammonium, Nitrate, Phosphate]
     mantel_links:
-      - {source_group: Surface, target_label: Oxygen, mantel_r: 0.62, p_value: 0.0006}
-      - {source_group: Surface, target_label: Nitrate, mantel_r: 0.41, p_value: 0.008}
-      - {source_group: Deep, target_label: Ammonium, mantel_r: 0.33, p_value: 0.032}
-      - {source_group: Deep, target_label: Phosphate, mantel_r: 0.18, p_value: 0.21}
+      - {source: Surface, target: Oxygen, mantel_r: 0.62, p_value: 0.0006}
+      - {source: Surface, target: Nitrate, mantel_r: 0.41, p_value: 0.008}
+      - {source: Deep, target: Ammonium, mantel_r: 0.33, p_value: 0.032}
+      - {source: Deep, target: Phosphate, mantel_r: 0.18, p_value: 0.21}
   association_mantel_dense:
     correlation_matrix:
       - [1.0, 0.61, -0.33, 0.22, 0.47, -0.18]
@@ -96,16 +96,16 @@ fixtures:
       - [-0.18, -0.31, 0.44, -0.36, 0.39, 1.0]
     labels: [Oxygen, Ammonium, Nitrate, Phosphate, Temperature, pH]
     mantel_links:
-      - {source_group: Surface, target_label: Oxygen, mantel_r: 0.67, p_value: 0.0004}
-      - {source_group: Surface, target_label: Nitrate, mantel_r: 0.48, p_value: 0.004}
-      - {source_group: Surface, target_label: Temperature, mantel_r: 0.23, p_value: 0.09}
-      - {source_group: Deep, target_label: Ammonium, mantel_r: 0.55, p_value: 0.008}
-      - {source_group: Deep, target_label: Phosphate, mantel_r: 0.37, p_value: 0.026}
-      - {source_group: Deep, target_label: pH, mantel_r: 0.19, p_value: 0.18}
-      - {source_group: Sediment, target_label: Nitrate, mantel_r: 0.51, p_value: 0.0008}
-      - {source_group: Sediment, target_label: Phosphate, mantel_r: 0.42, p_value: 0.014}
-      - {source_group: Sediment, target_label: Temperature, mantel_r: 0.31, p_value: 0.07}
-    show_nonsignificant: true
+      - {source: Surface, target: Oxygen, mantel_r: 0.67, p_value: 0.0004}
+      - {source: Surface, target: Nitrate, mantel_r: 0.48, p_value: 0.004}
+      - {source: Surface, target: Temperature, mantel_r: 0.23, p_value: 0.09}
+      - {source: Deep, target: Ammonium, mantel_r: 0.55, p_value: 0.008}
+      - {source: Deep, target: Phosphate, mantel_r: 0.37, p_value: 0.026}
+      - {source: Deep, target: pH, mantel_r: 0.19, p_value: 0.18}
+      - {source: Sediment, target: Nitrate, mantel_r: 0.51, p_value: 0.0008}
+      - {source: Sediment, target: Phosphate, mantel_r: 0.42, p_value: 0.014}
+      - {source: Sediment, target: Temperature, mantel_r: 0.31, p_value: 0.07}
+    nonsignificant_links: fade
   flow:
     source: [Influent, Influent, Recycle, Recycle, Carbon, Carbon]
     target: [Biomass, Effluent, Biomass, Effluent, Biomass, Effluent]
