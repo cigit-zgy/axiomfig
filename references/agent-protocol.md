@@ -50,6 +50,19 @@ Excel, Parquet, HDF5, NPZ, RDS, or other inputs into temporary CSV/JSON when the
 lossless for the selected contract. Preserve values, labels, missingness, units, and ordering; do
 not perform statistical analysis or silently aggregate during normalization.
 
+## Scientific safety gates
+
+Distinguish display transformation from scientific analysis. Applying a registered axis scale or
+displaying `-log10` of an explicitly supplied adjusted p-value can be plot grammar; computing a
+fold change, adjusted p-value, confidence interval, ordination, clustering, diagnostic curve, or
+survival estimate is upstream analysis. Never perform the latter during normalization.
+
+Quantities sharing an axis, and both axes of a parity plot, must be scientifically compatible.
+Unknown units or a required conversion are clarification gates; do not silently convert. A
+correlation, regression fit, Mantel link, association network, or feature-importance display does
+not establish causality. Preserve associational language unless causal meaning is explicitly
+supported by the user's study design or supplied upstream result.
+
 ## Execution result
 
 Return the validated PDF and PNG plus minimal provenance: selected template, direct or precomputed
