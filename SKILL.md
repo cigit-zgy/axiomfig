@@ -7,24 +7,30 @@ description: Create deterministic publication-oriented scientific PDF and PNG fi
 
 ## Normal Agent route
 
-1. Read `src/axiomfig/templates/index.yaml` and select one registered template.
-2. Read only `src/axiomfig/templates/<family>/contract.yaml` for accepted data roles and
-   `input_mode`.
-3. If scientific intent is ambiguous, read `references/template-knowledge/index.yaml`, then only
-   its routed topic.
-4. Write minimal Figure Intent using `references/figure-intent.md`.
-5. Run `axiomfig-intent <intent.yaml> --data <data.csv|json> --output <stem>`.
-6. Return the validated PDF and PNG. Report any validation failure instead of bypassing it.
+1. Inspect the request and available data schema. Follow the decision gates in
+   `references/agent-protocol.md`.
+2. Resolve scientific intent before final template selection. If it is ambiguous, read
+   `references/template-knowledge/index.yaml`, then only its routed topic. Ask only for missing
+   scientific meaning that would materially change the result.
+3. Read `src/axiomfig/templates/index.yaml`, select exactly one registered template, and read only
+   `src/axiomfig/templates/<family>/contract.yaml`.
+4. Confirm whether the contract requires direct data or precomputed scientific results. Never
+   invent missing analysis or scientific semantics.
+5. Normalize supported user files losslessly to CSV or JSON when needed, then write minimal Figure
+   Intent using `references/figure-intent.md`.
+6. Run `axiomfig-intent <intent.yaml> --data <data.csv|json> --output <stem>`.
+7. Return the validated PDF and PNG with minimal provenance. Report validation failure instead of
+   bypassing it.
 
-Figure Intent should contain only template choice, data mapping, geometry, typography, and
-scientifically meaningful semantics. Use precomputed results when the selected contract declares
-`input_mode: precomputed`.
+Figure Intent contains only template choice, data mapping, geometry, typography, and scientifically
+meaningful semantics. The deterministic runtime owns every reusable visual decision.
 
 ## Progressive disclosure
 
-- Template availability: `src/axiomfig/templates/index.yaml`
+- Execution and clarification gates: `references/agent-protocol.md`
+- Recommendation routing: `references/template-knowledge/index.yaml`
+- Template discovery: `src/axiomfig/templates/index.yaml`
 - Selected input contract: one family `contract.yaml`
-- Recommendation help: one routed file under `references/template-knowledge/`
 - Figure Intent syntax: `references/figure-intent.md`
 - Advanced Mantel customization only: `references/mantel.md`
 - Runtime changes only: `references/style-contract.md`, `layout-contract.md`, `validation.md`,
@@ -35,12 +41,12 @@ Do not read all builders, contracts, references, or Gallery descriptions for a n
 ## Non-negotiable boundary
 
 - Use registered templates when one exists; all 55 public templates have executable data paths.
-- Never expose deterministic fields such as font size, line width, tick length, legend position,
-  bar width, panel offset, margins, or colorbar geometry in Figure Intent.
+- Never expose font size, line width, tick length, legend position, marker or bar size, panel offset,
+  margins, or colorbar geometry in Figure Intent.
 - Do not infer uncertainty type, diverging center, Mantel statistics, ordination, clustering,
   adjusted p-values, diagnostics, or survival models.
+- Do not ask users for deterministic visual defaults or require them to author Figure Intent.
 - Do not bypass deterministic layout, ornaments, typography, Tectonic finalization, or validation.
-- Do not copy proprietary Arial, Times New Roman, SimSun, or Yu Gothic binaries into the project.
 - CJK/Japanese canonical modes and TeX-native Matplotlib labels remain post-v1 work.
 
 ## Development route
@@ -49,5 +55,5 @@ Visual configuration lives only under `src/axiomfig/resources/styles/`. Builders
 family `adapter.py` files own input normalization; `style.py`, `layout.py`, `ornaments.py`,
 `typography.py`, and `validation.py` own deterministic behavior.
 
-Use targeted tests while editing. Before release, run Ruff, full pytest, registry-driven Gallery,
-font and Tectonic probes, release Evaluation, isolated wheel installation, and clean-clone E2E.
+Use targeted tests while editing. Before release, run Ruff, full pytest, Skill validation, release
+Evaluation, registry-driven Gallery checks, isolated wheel installation, and clean-clone E2E.
