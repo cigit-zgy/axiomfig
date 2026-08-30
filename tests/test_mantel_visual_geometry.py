@@ -38,7 +38,10 @@ def test_triangular_masks_are_logically_distinct(matrix_type: str, relation: str
         assert all(row > column for row, column in pairs)
 
 
-@pytest.mark.parametrize(("matrix_type", "corner"), [("upper", "lower-left"), ("lower", "upper-left")])
+@pytest.mark.parametrize(
+    ("matrix_type", "corner"),
+    [("upper", "lower-left"), ("lower", "upper-left")],
+)
 def test_sources_live_inside_unused_matrix_triangle(matrix_type: str, corner: str) -> None:
     figure = build_template("association/mantel", matrix_type=matrix_type)
     figure.canvas.draw()
@@ -79,7 +82,9 @@ def test_bezier_control_polygon_stays_in_coupling_half_plane(matrix_type: str) -
 
 
 @pytest.mark.parametrize("matrix_type", ["upper", "lower"])
-def test_canonical_target_anchors_are_geometry_only_and_colorbar_is_auxiliary(matrix_type: str) -> None:
+def test_canonical_target_anchors_are_geometry_only_and_colorbar_is_auxiliary(
+    matrix_type: str,
+) -> None:
     figure = build_template("association/mantel", matrix_type=matrix_type)
     figure.canvas.draw()
     assert not _artists(figure, "axiomfig-mantel-target-anchor")

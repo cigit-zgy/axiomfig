@@ -32,6 +32,7 @@ def nice_curvature(
     lane_index: float,
 ) -> float:
     """Return semantic Bézier clearance in matrix-cell units."""
+    del orientation
     contract = mantel_plot_contract()["matrix"]
     assert isinstance(contract, Mapping)
     base = float(contract["route_clearance"])
@@ -145,7 +146,10 @@ def render_coupling_layer(
 
     rendered: list[PathPatch] = []
     for source in geometry.source_region.positions:
-        source_links = sorted(grouped[source], key=lambda link: (target_order[link.target], link.target))
+        source_links = sorted(
+            grouped[source],
+            key=lambda link: (target_order[link.target], link.target),
+        )
         for rank, link in enumerate(source_links):
             style = _link_style(link, spec.nonsignificant)
             if style is None:

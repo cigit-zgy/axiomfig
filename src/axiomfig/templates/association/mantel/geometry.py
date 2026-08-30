@@ -75,10 +75,7 @@ def cell_center(
     panel. ``full`` and ``mixed`` keep conventional coordinates.
     """
     y = bounds.y1 - row - 0.5
-    if matrix_type == "lower":
-        x = bounds.x1 - column - 0.5
-    else:
-        x = bounds.x0 + column + 0.5
+    x = bounds.x1 - column - 0.5 if matrix_type == "lower" else bounds.x0 + column + 0.5
     return x, y
 
 
@@ -110,10 +107,7 @@ def _source_positions(
 
     span_x = min(2.35, max(0.0, bounds.size * 0.16))
     span_y = min(1.85, max(0.0, bounds.size * 0.12))
-    if count == 1:
-        fractions = np.asarray((0.5,))
-    else:
-        fractions = np.linspace(0.0, 1.0, count)
+    fractions = np.asarray((0.5,)) if count == 1 else np.linspace(0.0, 1.0, count)
 
     if matrix_type == "upper":
         corner = "lower-left"
