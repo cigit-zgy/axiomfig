@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING
 
 from matplotlib.artist import Artist
@@ -21,6 +21,47 @@ if TYPE_CHECKING:
 _LAYOUT_KEY = "_axiomfig_figure_layout"
 
 
+class LayoutConstraintError(ValueError):
+    """Raised when physical panel constraints cannot be satisfied."""
+
+
+@dataclass(frozen=True)
+class PanelSpaceAccounting:
+    """Physical reservations around one Primary Visual Area, in points."""
+
+    left_pt: float
+    right_pt: float
+    bottom_pt: float
+    top_pt: float
+    primary_right_without_aux_pt: float
+    colorbar_width_pt: float = 0.0
+    colorbar_gap_pt: float = 0.0
+    colorbar_right_overhang_pt: float = 0.0
+
+
+@dataclass(frozen=True)
+class PrimaryAreaDiagnostic:
+    """Renderer-derived capacity and efficiency for a square scientific area."""
+
+    outer_width_pt: float
+    outer_height_pt: float
+    actual_side_pt: float
+    maximum_side_without_aux_pt: float
+    maximum_side_with_aux_pt: float
+    primary_area_efficiency: float
+    shrinkage_reason: str
+    left_pt: float
+    right_pt: float
+    bottom_pt: float
+    top_pt: float
+    intrinsic_left_pt: float
+    intrinsic_right_pt: float
+    intrinsic_bottom_pt: float
+    intrinsic_top_pt: float
+    unused_horizontal_pt: float
+    unused_vertical_pt: float
+
+
 @dataclass
 class PanelFootprint:
     """One equal top-level GridSpec slot and everything owned by that panel."""
@@ -35,6 +76,7 @@ class PanelFootprint:
     artists: list[Artist] = field(default_factory=list)
     panel_label: Artist | None = None
     vertical_colorbar_reference: tuple[Axes, tuple[float, float, float, float]] | None = None
+    space_accounting: PanelSpaceAccounting | None = None
 
     def bbox(self) -> Bbox:
         return self.spec.get_position(self.figure)
@@ -203,9 +245,8 @@ def add_panel_axes(
     if panel.primary_axes is not None:
         raise ValueError(f"panel {index} already has primary axes")
     if colorbar:
-        inner = panel.spec.subgridspec(1, 3, width_ratios=(0.90, 0.02, 0.08), wspace=0.0)
-        primary = layout.figure.add_subplot(inner[0, 0])
-        auxiliary = layout.figure.add_subplot(inner[0, 2])
+        primary = layout.figure.add_subplot(panel.spec)
+        auxiliary = layout.figure.add_subplot(panel.spec)
         panel.auxiliary_axes.append(auxiliary)
     else:
         primary = layout.figure.add_subplot(panel.spec)
@@ -214,16 +255,22 @@ def add_panel_axes(
     return primary, auxiliary
 
 
-def _place_registered_vertical_colorbar(panel: PanelFootprint) -> None:
+def _vertical_colorbar_reference_bbox(panel: PanelFootprint) -> Bbox:
+    if panel.primary_axes is None:
+        raise LayoutConstraintError("physical Colorbar layout requires a Primary Axes")
     if panel.vertical_colorbar_reference is None:
-        return
+        return panel.primary_axes.bbox
     primary, (x0, y0, x1, y1) = panel.vertical_colorbar_reference
+    lower_left, upper_right = primary.transData.transform(((x0, y0), (x1, y1)))
+    return Bbox.from_extents(*lower_left, *upper_right)
+
+
+def _place_vertical_colorbar(panel: PanelFootprint) -> None:
     if not panel.auxiliary_axes:
-        raise ValueError("vertical colorbar layout requires a registered auxiliary axes")
+        return
     auxiliary = panel.auxiliary_axes[0]
     figure = panel.figure
-    lower_left, upper_right = primary.transData.transform(((x0, y0), (x1, y1)))
-    reference = Bbox.from_extents(*lower_left, *upper_right)
+    reference = _vertical_colorbar_reference_bbox(panel)
     contract = load_contracts().style["colorbar"]["vertical"]
     width_px = float(contract["width_pt"]) * figure.dpi / 72.0
     gap_px = float(contract["gap_pt"]) * figure.dpi / 72.0
@@ -235,6 +282,17 @@ def _place_registered_vertical_colorbar(panel: PanelFootprint) -> None:
         reference.x1 + gap_px + width_px,
         center_y + height_px / 2.0,
     )
+    footprint = panel.bbox().transformed(figure.transFigure)
+    if display.width <= 0.0 or display.height <= 0.0:
+        raise LayoutConstraintError("physical Colorbar dimensions must be positive")
+    if (
+        display.x1 > footprint.x1 + 0.5
+        or display.y0 < footprint.y0 - 0.5
+        or display.y1 > (footprint.y1 + 0.5)
+    ):
+        raise LayoutConstraintError(
+            "physical panel cannot contain the vertical Colorbar beside its Primary Visual Area"
+        )
     auxiliary.set_position(display.transformed(figure.transFigure.inverted()))
 
 
@@ -252,8 +310,85 @@ def register_vertical_colorbar_layout(
         raise ValueError("vertical colorbar axes is not owned by the primary panel")
     panel.vertical_colorbar_reference = (primary, reference_bounds)
     primary.figure.canvas.draw()
-    _place_registered_vertical_colorbar(panel)
+    _place_vertical_colorbar(panel)
     primary.figure.canvas.draw()
+
+
+def primary_area_diagnostic(primary: Axes) -> PrimaryAreaDiagnostic:
+    """Explain the maximum square scientific area within the current panel."""
+    figure = primary.figure
+    layout = get_figure_layout(figure)
+    if layout is None:
+        raise ValueError("primary-area diagnostic requires a registered panel layout")
+    panel = layout.panel_for_axis(primary)
+    if panel is None or panel.primary_axes is not primary:
+        raise ValueError("axis is not the registered Primary Axes")
+    if panel.vertical_colorbar_reference is None:
+        raise ValueError("primary-area diagnostic requires a square reference registration")
+    if panel.space_accounting is None:
+        raise ValueError("panel layout must be solved before primary-area diagnosis")
+
+    figure.canvas.draw()
+    accounting = panel.space_accounting
+    footprint = panel.bbox().transformed(figure.transFigure)
+    allocation = primary.get_position(original=True).transformed(figure.transFigure)
+    reference = _vertical_colorbar_reference_bbox(panel)
+    _axis, (x0, y0, x1, y1) = panel.vertical_colorbar_reference
+    reference_width = abs(x1 - x0)
+    reference_height = abs(y1 - y0)
+    x_limits = primary.get_xlim()
+    y_limits = primary.get_ylim()
+    x_span = abs(x_limits[1] - x_limits[0])
+    y_span = abs(y_limits[1] - y_limits[0])
+    if min(reference_width, reference_height, x_span, y_span) <= 0.0:
+        raise LayoutConstraintError("physical square diagnostic received degenerate data bounds")
+
+    scale = 72.0 / figure.dpi
+    available_height_pt = footprint.height * scale - accounting.bottom_pt - accounting.top_pt
+    available_width_with_pt = footprint.width * scale - accounting.left_pt - accounting.right_pt
+    available_width_without_pt = (
+        footprint.width * scale - accounting.left_pt - accounting.primary_right_without_aux_pt
+    )
+    maximum_with = min(
+        available_width_with_pt * reference_width / x_span,
+        available_height_pt * reference_height / y_span,
+    )
+    maximum_without = min(
+        available_width_without_pt * reference_width / x_span,
+        available_height_pt * reference_height / y_span,
+    )
+    actual = min(reference.width, reference.height) * scale
+    intrinsic_left = max(0.0, reference.x0 - primary.bbox.x0) * scale
+    intrinsic_right = max(0.0, primary.bbox.x1 - reference.x1) * scale
+    intrinsic_bottom = max(0.0, reference.y0 - primary.bbox.y0) * scale
+    intrinsic_top = max(0.0, primary.bbox.y1 - reference.y1) * scale
+    if maximum_with <= 0.0:
+        raise LayoutConstraintError("physical constraints leave no positive Primary Visual Area")
+    efficiency = (actual / maximum_with) ** 2
+    penalty = maximum_without - maximum_with
+    if penalty <= 0.5:
+        reason = "height-limited; the right-side Colorbar strip does not reduce the square side"
+    else:
+        reason = f"right-side Colorbar strip reduces the width-limited square by {penalty:.3f} pt"
+    return PrimaryAreaDiagnostic(
+        outer_width_pt=footprint.width * scale,
+        outer_height_pt=footprint.height * scale,
+        actual_side_pt=actual,
+        maximum_side_without_aux_pt=maximum_without,
+        maximum_side_with_aux_pt=maximum_with,
+        primary_area_efficiency=efficiency,
+        shrinkage_reason=reason,
+        left_pt=accounting.left_pt,
+        right_pt=accounting.right_pt,
+        bottom_pt=accounting.bottom_pt,
+        top_pt=accounting.top_pt,
+        intrinsic_left_pt=intrinsic_left,
+        intrinsic_right_pt=intrinsic_right,
+        intrinsic_bottom_pt=intrinsic_bottom,
+        intrinsic_top_pt=intrinsic_top,
+        unused_horizontal_pt=max(0.0, (allocation.width - primary.bbox.width) * scale),
+        unused_vertical_pt=max(0.0, (allocation.height - primary.bbox.height) * scale),
+    )
 
 
 def register_panel_artist(axis: Axes, artist: Artist) -> None:
@@ -320,6 +455,13 @@ def _panel_label_height_pt(figure: Figure, renderer: object, count: int) -> floa
 def _set_position_pt(axis: Axes, bbox: Bbox, insets: tuple[float, float, float, float]) -> None:
     figure_width, figure_height = _figure_size_pt(axis.figure)
     left, right, bottom, top = insets
+    available_width = bbox.width * figure_width - left - right
+    available_height = bbox.height * figure_height - bottom - top
+    if available_width <= 0.0 or available_height <= 0.0:
+        raise LayoutConstraintError(
+            "physical panel constraints leave no positive Primary Visual Area "
+            f"({available_width:.3f} x {available_height:.3f} pt)"
+        )
     axis.set_position(
         Bbox.from_extents(
             bbox.x0 + left / figure_width,
@@ -339,7 +481,9 @@ def solve_panel_layout(figure: Figure) -> None:
     if layout.solved_size_pt == size_pt:
         return
     style = load_contracts().style
-    colorbar_width = float(style["colorbar"]["vertical"]["width_pt"])
+    vertical_colorbar = style["colorbar"]["vertical"]
+    colorbar_width = float(vertical_colorbar["width_pt"])
+    colorbar_fraction = float(vertical_colorbar["length_fraction"])
     figure_width, figure_height = size_pt
     for legend in tuple(layout.legends):
         legend.remove()
@@ -353,12 +497,14 @@ def solve_panel_layout(figure: Figure) -> None:
         footprint = panel.bbox()
         panel.primary_axes.set_position(footprint)
         for auxiliary in panel.auxiliary_axes:
+            center_y = (footprint.y0 + footprint.y1) / 2.0
+            probe_height = colorbar_fraction * footprint.height
             auxiliary.set_position(
                 Bbox.from_extents(
                     footprint.x1 - colorbar_width / figure_width,
-                    footprint.y0,
+                    center_y - probe_height / 2.0,
                     footprint.x1,
-                    footprint.y1,
+                    center_y + probe_height / 2.0,
                 )
             )
     figure.canvas.draw()
@@ -402,6 +548,13 @@ def solve_panel_layout(figure: Figure) -> None:
         assert panel.primary_axes is not None
         footprint = panel.bbox()
         if not panel.auxiliary_axes:
+            panel.space_accounting = PanelSpaceAccounting(
+                left_pt=common_left,
+                right_pt=common_right,
+                bottom_pt=common_bottom,
+                top_pt=common_top,
+                primary_right_without_aux_pt=common_right,
+            )
             _set_position_pt(
                 panel.primary_axes,
                 footprint,
@@ -411,23 +564,63 @@ def solve_panel_layout(figure: Figure) -> None:
         auxiliary = panel.auxiliary_axes[0]
         auxiliary_overhang = _axis_overhang_pt(auxiliary, renderer)
         left = overhang[0] + padding
-        right = auxiliary_overhang[1] + padding
-        bottom = max(common_bottom, auxiliary_overhang[2] + padding)
-        top = max(common_top, auxiliary_overhang[3] + padding)
+        primary_right_without_aux = overhang[1] + padding
+        right = colorbar_gap + colorbar_width + auxiliary_overhang[1] + padding
+        bottom = common_bottom
+        top = common_top
         x0 = footprint.x0 + left / figure_width
-        x1 = footprint.x1 - right / figure_width
+        primary_x1 = footprint.x1 - right / figure_width
         y0 = footprint.y0 + bottom / figure_height
         y1 = footprint.y1 - top / figure_height
-        auxiliary_x0 = x1 - colorbar_width / figure_width
-        primary_x1 = auxiliary_x0 - colorbar_gap / figure_width
         if primary_x1 <= x0 or y1 <= y0:
-            raise ValueError(f"panel {panel.index} cannot contain primary and colorbar axes")
+            raise LayoutConstraintError(
+                f"physical panel {panel.index} cannot contain its Primary Visual Area and "
+                "measured right Colorbar strip"
+            )
         panel.primary_axes.set_position(Bbox.from_extents(x0, y0, primary_x1, y1))
-        auxiliary.set_position(Bbox.from_extents(auxiliary_x0, y0, x1, y1))
+        panel.space_accounting = PanelSpaceAccounting(
+            left_pt=left,
+            right_pt=right,
+            bottom_pt=bottom,
+            top_pt=top,
+            primary_right_without_aux_pt=primary_right_without_aux,
+            colorbar_width_pt=colorbar_width,
+            colorbar_gap_pt=colorbar_gap,
+            colorbar_right_overhang_pt=auxiliary_overhang[1],
+        )
     layout.solved_size_pt = size_pt
     figure.canvas.draw()
     for panel in layout.panels:
-        _place_registered_vertical_colorbar(panel)
+        _place_vertical_colorbar(panel)
+    figure.canvas.draw()
+
+    # A compact final Colorbar can select different tick text than the initial probe.
+    # One bounded renderer correction makes the right strip match that actual bbox.
+    renderer = figure.canvas.get_renderer()
+    for panel in layout.panels:
+        if not panel.auxiliary_axes:
+            continue
+        assert panel.primary_axes is not None
+        assert panel.space_accounting is not None
+        actual_overhang = _axis_overhang_pt(panel.auxiliary_axes[0], renderer)[1]
+        accounting = panel.space_accounting
+        if abs(actual_overhang - accounting.colorbar_right_overhang_pt) <= 0.05:
+            continue
+        corrected_right = colorbar_gap + colorbar_width + actual_overhang + padding
+        corrected = replace(
+            accounting,
+            right_pt=corrected_right,
+            colorbar_right_overhang_pt=actual_overhang,
+        )
+        _set_position_pt(
+            panel.primary_axes,
+            panel.bbox(),
+            (corrected.left_pt, corrected.right_pt, corrected.bottom_pt, corrected.top_pt),
+        )
+        panel.space_accounting = corrected
+    figure.canvas.draw()
+    for panel in layout.panels:
+        _place_vertical_colorbar(panel)
     for callback in layout.post_solve_callbacks:
         callback(figure)
     figure.canvas.draw()

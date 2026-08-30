@@ -82,10 +82,14 @@ a categorical legend. The global vertical Colorbar contract is stored only in `s
 - major/minor ticks: the shared filled-axis tick contract;
 - tick labels and the concise scalar label: right side.
 
-The layout subsystem owns the Auxiliary Axes dimensions and placement. A template supplies only
-the scalar mapping, tick values, label, and the data-space reference square. It must not set a local
-box aspect, inset position, width, gap, or length. Categorical keys continue to use ordinary legend
-artists rather than a Colorbar.
+The vertical Colorbar occupies a measured right Ornament Strip. Its reservation is the `6 pt` gap,
+`9 pt` bar, actual renderer-measured right tick/label overhang, and containment padding. Its compact
+height does not reserve top or bottom space. The layout subsystem owns the Auxiliary Axes dimensions
+and placement and maximizes the remaining Primary Visual Area. A template supplies only the scalar
+mapping, tick values, label, and an optional data-space reference square. It must not set a local box
+aspect, inset position, width, gap, or length. Categorical keys continue to use ordinary legend
+artists rather than a Colorbar. Horizontal Colorbar geometry remains intentionally unspecified
+until a real production consumer requires it.
 
 ## Redundant series identity
 

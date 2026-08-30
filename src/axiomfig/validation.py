@@ -16,7 +16,12 @@ from matplotlib.transforms import Bbox
 from pypdf import PdfReader
 
 from axiomfig.config import load_contracts
-from axiomfig.layout import FigureLayout, PanelFootprint, get_figure_layout
+from axiomfig.layout import (
+    FigureLayout,
+    PanelFootprint,
+    get_figure_layout,
+    primary_area_diagnostic,
+)
 
 
 class FigureAnatomyError(RuntimeError):
@@ -90,6 +95,11 @@ def _validate_primary_visual_square(figure: object, issues: list[str]) -> None:
     cell_height_px = height_px / int(cell_count)
     if abs(cell_width_px - cell_height_px) > 0.1:
         issues.append("primary visual square has unequal rendered cell dimensions")
+    diagnostic = primary_area_diagnostic(axis)
+    if diagnostic.primary_area_efficiency < 0.98 - 1e-6:
+        issues.append(
+            f"primary area efficiency below 0.98 ({diagnostic.primary_area_efficiency:.4f})"
+        )
 
 
 def validate_figure_anatomy(figure: object, *, tolerance_pt: float = 0.25) -> None:

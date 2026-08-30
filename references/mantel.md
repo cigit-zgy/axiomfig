@@ -153,9 +153,10 @@ may reorder its own data.
   `resources/styles/colors.yaml`, and every active mode shows all of its bins in the legend.
 - The Pearson key is a true Matplotlib colorbar on a registered Auxiliary Axes. Mantel strength and
   p-value legends are measured before their side-by-side or stacked placement is selected. Pearson
-  r uses the global vertical Colorbar contract: outside-right and vertically centered on the Primary
-  Visual Square. Mantel supplies the scalar mapping, ticks, and `Pearson r` label but owns no generic
-  Colorbar dimensions.
+  r uses the global Primary Visual Area and vertical Colorbar contracts in
+  `references/layout-contract.md` and `references/style-contract.md`. Mantel supplies the scalar
+  mapping, ticks, `Pearson r` label, and scientific reference square but owns no generic Colorbar
+  dimensions or reservation logic.
 
 ## SourceRail packing contract
 

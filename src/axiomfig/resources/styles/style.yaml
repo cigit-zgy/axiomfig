@@ -70,8 +70,6 @@ output:
 layout:
   single_panel:
     margins: { left: 0.20, right: 0.89, bottom: 0.20, top: 0.84 }
-    colorbar_width_ratio: 0.055
-    colorbar_wspace: 0.10
   multi_panel:
     horizontal_gap_pt: 12.0
     vertical_gap_pt: 16.0

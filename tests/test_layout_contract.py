@@ -106,8 +106,11 @@ def test_multi_panel_data_axes_are_equal_and_colorbar_is_independent() -> None:
     assert outer[1].x0 == pytest.approx(outer[3].x0, abs=0.02)
     assert colorbar_axis.bbox.x0 > data_axes[3].bbox.x1
     assert colorbar_axis.get_position().x1 <= outer[3].x1 + 0.0001
-    assert colorbar_axis.bbox.y0 == pytest.approx(data_axes[3].bbox.y0, abs=0.02)
-    assert colorbar_axis.bbox.y1 == pytest.approx(data_axes[3].bbox.y1, abs=0.02)
+    assert colorbar_axis.bbox.height / data_axes[3].bbox.height == pytest.approx(0.72, abs=0.01)
+    assert colorbar_axis.bbox.y0 + colorbar_axis.bbox.y1 == pytest.approx(
+        data_axes[3].bbox.y0 + data_axes[3].bbox.y1,
+        abs=0.02,
+    )
     assert colorbar_axis.yaxis._major_tick_kw["tickdir"] == "out"
     assert colorbar_axis.yaxis._minor_tick_kw["tickdir"] == "out"
     assert colorbar_axis.yaxis._major_tick_kw["tick1On"] is False
