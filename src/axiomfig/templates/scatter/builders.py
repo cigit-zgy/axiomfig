@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.figure import Figure
 
-from axiomfig.ornaments import request_legend
+from axiomfig.layout import add_panel_axes, create_panel_grid
+from axiomfig.ornaments import apply_colorbar_contract, request_legend
 from axiomfig.style import (
     apply_axis_contract,
     apply_filled_collection_contract,
@@ -272,7 +273,10 @@ def build_hexbin(
         limits = _limits(values_x, values_y)
     else:
         raise ValueError("hexbin requires x and y together")
-    figure, axis = plt.subplots()
+    figure = plt.figure()
+    layout = create_panel_grid(figure, 1, 1, panel_labels=False)
+    axis, colorbar_axis = add_panel_axes(layout, 0, colorbar=True)
+    assert colorbar_axis is not None
     collection = axis.hexbin(
         values_x,
         values_y,
@@ -285,9 +289,13 @@ def build_hexbin(
         xlabel="Observed loading" if xlabel is None else str(xlabel),
         ylabel="Response density" if ylabel is None else str(ylabel),
     )
-    if count_label is not None:
-        axis.text(0.04, 0.92, str(count_label), transform=axis.transAxes)
     _open(axis, *limits)
+    colorbar = figure.colorbar(
+        collection,
+        cax=colorbar_axis,
+        label="Count" if count_label is None else str(count_label),
+    )
+    apply_colorbar_contract(colorbar)
     return figure
 
 

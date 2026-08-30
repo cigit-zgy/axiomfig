@@ -378,6 +378,14 @@ def apply_scatter_contract(collection: PathCollection, *, size_ratio: float = 1.
     collection.set_sizes([float(contract["marker_size_pt2"]) * size_ratio])
 
 
+def apply_distribution_point_contract(collection: PathCollection) -> None:
+    """Apply the shared contract for dense raw observations in distributions."""
+    plots = load_contracts().style["plots"]
+    base_size = float(plots["scatter"]["marker_size_pt2"])
+    point_size = float(plots["distribution"]["raw_point_size_pt2"])
+    apply_scatter_contract(collection, size_ratio=point_size / base_size)
+
+
 def apply_filled_collection_contract(
     collection: object, *, alpha: float | None = None, edge_width_token: str = "fill_edge"
 ) -> None:

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
@@ -11,8 +13,8 @@ from axiomfig.style import (
     apply_axis_contract,
     apply_boxplot_contract,
     apply_categorical_axis,
+    apply_distribution_point_contract,
     apply_nice_linear_axis,
-    apply_scatter_contract,
     apply_violin_contract,
     confidence_interval_kwargs,
     histogram_kwargs,
@@ -157,10 +159,13 @@ def build_ecdf(
         padding = max(float(np.ptp(values)) * 0.05, 0.1)
         x_limits = (float(values.min()) - padding, float(values.max()) + padding)
     figure, axis = plt.subplots()
+    maximum_markers = int(load_contracts().style["plots"]["distribution"]["ecdf_max_markers"])
     for index, (selected, label) in enumerate(series):
         ordered = np.sort(selected)
         probability = np.arange(1, ordered.size + 1) / ordered.size
-        axis.step(ordered, probability, where="post", label=label, **series_style(index))
+        style = series_style(index)
+        style["markevery"] = max(1, math.ceil(ordered.size / maximum_markers))
+        axis.step(ordered, probability, where="post", label=label, **style)
     axis.set(
         xlabel="Standardized score" if xlabel is None else str(xlabel),
         ylabel="Cumulative probability" if ylabel is None else str(ylabel),
@@ -285,7 +290,7 @@ def build_strip(
         amount = 0.13 if jitter is None else float(jitter)
         offsets = rng.uniform(-amount, amount, values.size)
         collection = axis.scatter(np.full(values.size, position) + offsets, values, color=color)
-        apply_scatter_contract(collection)
+        apply_distribution_point_contract(collection)
     _distribution_axis(axis, samples, labels)
     if ylabel is not None:
         axis.set_ylabel(str(ylabel))
@@ -327,7 +332,7 @@ def build_raincloud(
         amount = 0.18 if jitter is None else float(jitter)
         offsets = rng.uniform(0.07, 0.07 + amount, values.size)
         collection = axis.scatter(np.full(values.size, position) + offsets, values, color=color)
-        apply_scatter_contract(collection)
+        apply_distribution_point_contract(collection)
         axis.plot(
             [position - 0.05, position + 0.05],
             [float(np.median(values)), float(np.median(values))],

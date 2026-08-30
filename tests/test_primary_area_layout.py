@@ -139,6 +139,7 @@ def test_colorbar_decorations_are_contained_by_the_outer_panel() -> None:
         "heatmap/clustered",
         "heatmap/confusion_matrix",
         "heatmap/annotated",
+        "scatter/hexbin",
         "field/contour",
         "field/quiver",
         "omics/enrichment_dot",

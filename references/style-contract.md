@@ -55,6 +55,12 @@ Raster measurement confirms that Matplotlib divides an `inout` tick approximatel
 - Line markers and errorbar markers: `5.2 pt`, black `0.6 pt` edge; errorbar caps are `2.5 pt`.
 - Confidence intervals: face alpha `0.22`, opaque black `0.6 pt` edge.
 - Scatter: opaque black `0.6 pt` edge, face alpha `0.55`, marker area `36 pt²`.
+- Dense raw distribution observations (strip and raincloud): the shared scatter
+  face/edge contract with a smaller `20 pt²` marker area. ECDF markers are
+  sampled deterministically to at most 12 per series so that the empirical
+  step remains the dominant artist.
+- Hexbin count is a continuous quantitative color encoding and therefore uses
+  the global vertical Colorbar contract rather than an unlabelled palette.
 - Bar: opaque black `0.6 pt` edge, face alpha `0.82`, value labels enabled, two decimals, no category tick marks. Single-series width is exactly `0.60`; grouped total width is exactly `0.76`, divided by series count and independent of category count.
 - Box/violin: black `0.6 pt` edges, YAML-owned fill alpha/width, and no category tick marks.
 - Histogram: face alpha `0.72` with opaque black `0.6 pt` bin edges.

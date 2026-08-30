@@ -97,6 +97,9 @@ plots:
     alpha: 0.55
     edge_color: black
     edge_width_token: fill_edge
+  distribution:
+    raw_point_size_pt2: 20.0
+    ecdf_max_markers: 12
   errorbar:
     marker: o
     marker_size_pt: 5.2

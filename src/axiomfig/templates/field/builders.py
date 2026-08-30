@@ -24,6 +24,15 @@ def _grid(x_values: object, y_values: object) -> tuple[np.ndarray, np.ndarray]:
     return x_array, y_array
 
 
+def _vector_grid_limits(values: np.ndarray) -> tuple[float, float]:
+    """Pad vector anchors by half a grid interval before nice-axis snapping."""
+    coordinates = np.unique(np.asarray(values, dtype=float))
+    intervals = np.diff(coordinates)
+    positive = intervals[intervals > 0.0]
+    padding = float(np.median(positive)) / 2.0 if positive.size else 0.5
+    return float(coordinates[0] - padding), float(coordinates[-1] + padding)
+
+
 def build_contour(
     x_grid: object | None = None,
     y_grid: object | None = None,
@@ -122,8 +131,8 @@ def build_quiver(
     apply_filled_collection_contract(arrows)
     axis.set(xlabel=xlabel, ylabel=ylabel)
     apply_axis_contract(axis, surface="filled")
-    apply_nice_linear_axis(axis, float(xx.min()), float(xx.max()), coordinate="x")
-    apply_nice_linear_axis(axis, float(yy.min()), float(yy.max()), coordinate="y")
+    apply_nice_linear_axis(axis, *_vector_grid_limits(xx), coordinate="x")
+    apply_nice_linear_axis(axis, *_vector_grid_limits(yy), coordinate="y")
     colorbar = figure.colorbar(arrows, cax=colorbar_axis, label=colorbar_label)
     apply_colorbar_contract(colorbar)
     return figure
