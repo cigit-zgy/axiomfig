@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 import yaml
 
 from axiomfig.config import build_rcparams, load_contracts
+from axiomfig.gallery import GALLERY_SPECS
 from axiomfig.intent import build_intent_figure, parse_figure_intent
 from axiomfig.rendering import render_figure
 from axiomfig.templates import build_template
@@ -211,12 +212,18 @@ def _gallery_coverage(gallery_root: Path) -> tuple[int, int]:
     specs = public_template_specs()
     present = 0
     for spec in specs:
+        gallery_specs = tuple(
+            gallery_spec
+            for gallery_spec in GALLERY_SPECS
+            if gallery_spec.template_id == spec.template_id
+        )
         paths = tuple(
-            gallery_root / mode / f"{spec.template_id}.{suffix}"
+            gallery_root / mode / f"{gallery_spec.output_id}.{suffix}"
+            for gallery_spec in gallery_specs
             for mode in ("sans", "serif")
             for suffix in ("pdf", "png")
         )
-        if all(path.is_file() and path.stat().st_size > 0 for path in paths):
+        if gallery_specs and all(path.is_file() and path.stat().st_size > 0 for path in paths):
             present += 1
     return len(specs), present
 

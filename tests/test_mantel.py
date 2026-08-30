@@ -255,7 +255,6 @@ def test_mantel_renderer_layout_contains_long_scientific_labels(matrix_type: str
         bbox = artist.get_window_extent(renderer)
         assert footprint.contains(bbox.x0, bbox.y0)
         assert footprint.contains(bbox.x1, bbox.y1)
-        assert figure.axes[0].bbox.contains(bbox.x0, bbox.y0)
-        assert figure.axes[0].bbox.contains(bbox.x1, bbox.y1)
+        assert not artist.get_clip_on()
     validate_figure_anatomy(figure)
     plt.close(figure)

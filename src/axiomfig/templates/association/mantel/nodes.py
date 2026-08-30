@@ -41,6 +41,20 @@ def _node(
     return artist
 
 
+def _source_label_placement(
+    geometry: MantelGeometry,
+    center: tuple[float, float],
+    offset: float,
+) -> tuple[tuple[float, float], str, str]:
+    """Place labels diagonally outward from the route fan inside the measured source margin."""
+    del center
+    if geometry.coupling_region == "upper-right":
+        return (offset, offset), "left", "bottom"
+    if geometry.coupling_region == "lower-left":
+        return (-offset, -offset), "right", "top"
+    return (offset, 0.0), "left", "center"
+
+
 def render_node_layer(
     axis: Axes,
     geometry: MantelGeometry,
@@ -60,20 +74,20 @@ def render_node_layer(
         source_nodes.append(
             _node(axis, center, radius=source_radius, kind="source", identity=source)
         )
-        normal_offset = (
-            source_label_offset
-            if geometry.coupling_region == "upper-right"
-            else -source_label_offset
+        label_offset, horizontal_alignment, vertical_alignment = _source_label_placement(
+            geometry,
+            center,
+            source_label_offset,
         )
         label = axis.annotate(
             source_labels.get(source, source) if source_labels is not None else source,
             center,
-            xytext=(normal_offset, normal_offset),
+            xytext=label_offset,
             textcoords="offset points",
-            ha="center",
-            va="center",
+            ha=horizontal_alignment,
+            va=vertical_alignment,
             fontsize=source_label_size(),
-            clip_on=True,
+            clip_on=False,
             zorder=7,
         )
         label.set_gid("axiomfig-mantel-source-label")

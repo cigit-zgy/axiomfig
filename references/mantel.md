@@ -134,7 +134,7 @@ may reorder its own data.
   target node on that interface; variable names are not repeated there. Each source group owns a
   larger node distributed in two dimensions through the coupling triangle. Every link begins and
   ends at those explicit node coordinates.
-- Each route is a deterministic two-cubic fan. Its envelope derives from source order, target
+- Each route is a deterministic cubic fan. Its envelope derives from source order, target
   order, link density, orientation, and lane allocation; convex control geometry keeps it inside
   the complementary triangle. There is no gate column, detached network panel, or stochastic graph
   layout.
@@ -153,11 +153,10 @@ surface of [corrplot](https://github.com/taiyun/corrplot),
 [linkET](https://github.com/Hy4m/linkET), and [ggcor](https://github.com/hannet91/ggcor).
 No R source is copied and no R runtime is required.
 
-The audited mapping is stored in `references/mantel-r-parity.yaml`. It is an R grammar reference,
-not a claim of pixel identity. Its generated PDF/PNG evidence lives under
-`gallery/parity/mantel/`, with permanent contact sheets under `gallery/parity/mantel/review/`; both
-are intentionally outside the public Template Registry. Normal Agents do not read the manifest or
-atlas.
+The formal Gallery deliberately keeps only four publication-oriented Mantel figures under each
+typography tree: `mantel_canonical`, `mantel_dense`, `mantel_long_labels`, and
+`mantel_multigroup`. Combinatorial capability coverage remains in tests rather than a separate
+user-facing atlas.
 
 | R capability | AxiomFig implementation | Status | Notes |
 |---|---|---|---|

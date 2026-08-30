@@ -149,7 +149,7 @@ def test_lower_and_upper_share_a_diagonal_interface_and_mirror_coupling_regions(
 
 
 @pytest.mark.parametrize("matrix_type", ["lower", "upper"])
-def test_coupling_uses_two_triangle_fan_cubics_and_exact_target_endpoints(
+def test_coupling_uses_smooth_subdivided_cubics_and_exact_target_endpoints(
     matrix_type: str,
 ) -> None:
     figure = build_template("association/mantel", **_case(6), matrix_type=matrix_type)
@@ -160,8 +160,10 @@ def test_coupling_uses_two_triangle_fan_cubics_and_exact_target_endpoints(
     assert links
     for link in links:
         assert tuple(link.get_path().codes) == (Path.MOVETO, *(Path.CURVE4,) * 6)
-        assert link._axiomfig_route_model == "triangle-fan-double-cubic"
-        np.testing.assert_allclose(link.get_path().vertices[-1], anchors[link._axiomfig_target])
+        assert link._axiomfig_route_model == "triangle-fan-cubic"
+        vertices = link.get_path().vertices
+        np.testing.assert_allclose(vertices[3] - vertices[2], vertices[4] - vertices[3])
+        np.testing.assert_allclose(vertices[-1], anchors[link._axiomfig_target])
     plt.close(figure)
 
 

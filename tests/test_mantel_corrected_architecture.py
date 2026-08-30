@@ -108,7 +108,7 @@ def test_source_nodes_are_two_dimensionally_distributed_and_links_fan() -> None:
             acos(float(np.clip(np.dot(first, second), -1.0, 1.0)))
             for first, second in combinations(vectors, 2)
         ]
-        assert min(angles, default=1.0) > np.deg2rad(1.0)
+        assert min(angles, default=1.0) > np.deg2rad(4.0)
     plt.close(figure)
 
 

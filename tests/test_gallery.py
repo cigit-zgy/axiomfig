@@ -12,10 +12,8 @@ def test_gallery_specs_are_derived_from_public_template_registry() -> None:
 
     public = public_template_specs()
     assert GALLERY_MODES == ("sans", "serif")
-    assert tuple(spec.template_id for spec in GALLERY_SPECS) == tuple(
-        spec.template_id for spec in public
-    )
-    assert tuple(spec.geometry for spec in GALLERY_SPECS) == tuple(spec.geometry for spec in public)
+    assert {spec.template_id for spec in GALLERY_SPECS} == {spec.template_id for spec in public}
+    assert len(GALLERY_SPECS) == len(public) + 3
 
 
 def test_gallery_declares_semantic_technical_latex_cases() -> None:
@@ -25,20 +23,16 @@ def test_gallery_declares_semantic_technical_latex_cases() -> None:
 
 
 def test_expected_gallery_paths_are_registry_projection() -> None:
-    from axiomfig.gallery import expected_gallery_stems
+    from axiomfig.gallery import GALLERY_SPECS, expected_gallery_stems
     from axiomfig.templates.registry import public_template_specs
 
     expected = {
-        *(
-            f"{mode}/{spec.template_id}"
-            for mode in ("sans", "serif")
-            for spec in public_template_specs()
-        ),
+        *(f"{mode}/{spec.output_id}" for mode in ("sans", "serif") for spec in GALLERY_SPECS),
         "technical/latex/scientific_typography",
         "technical/latex/palettes",
     }
     assert set(expected_gallery_stems()) == expected
-    assert len(expected) == 2 * len(public_template_specs()) + 2
+    assert len(expected) == 2 * (len(public_template_specs()) + 3) + 2
 
 
 def test_gallery_cli_validates_registry_projection(
@@ -65,16 +59,8 @@ def test_committed_gallery_has_no_numbered_flat_or_orphan_artifacts() -> None:
 
     gallery = Path(__file__).resolve().parents[1] / "gallery"
     expected = set(expected_gallery_stems())
-    pdfs = {
-        path.relative_to(gallery).with_suffix("").as_posix()
-        for path in gallery.rglob("*.pdf")
-        if not path.relative_to(gallery).as_posix().startswith("parity/")
-    }
-    pngs = {
-        path.relative_to(gallery).with_suffix("").as_posix()
-        for path in gallery.rglob("*.png")
-        if not path.relative_to(gallery).as_posix().startswith("parity/")
-    }
+    pdfs = {path.relative_to(gallery).with_suffix("").as_posix() for path in gallery.rglob("*.pdf")}
+    pngs = {path.relative_to(gallery).with_suffix("").as_posix() for path in gallery.rglob("*.png")}
 
     assert pdfs == pngs == expected
     assert not any(re.match(r"(?:^|/)\d+_", stem) for stem in pdfs)
@@ -90,8 +76,8 @@ def test_gallery_builds_only_registry_pdf_png_pairs(tmp_path: Path) -> None:
     expected = set(expected_gallery_stems())
     entries = validate_gallery(gallery, expected_stems=expected)
 
-    assert len(results) == 112
-    assert len(entries) == 112
+    assert len(results) == 118
+    assert len(entries) == 118
     assert {
         path.relative_to(gallery).with_suffix("").as_posix() for path in gallery.rglob("*.pdf")
     } == expected

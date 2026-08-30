@@ -79,7 +79,7 @@ def _draw_labels(
                 va="bottom",
                 rotation=45,
                 fontsize=size,
-                clip_on=True,
+                clip_on=False,
                 zorder=5,
             )
             artist.set_gid("axiomfig-mantel-variable-label")
@@ -93,7 +93,7 @@ def _draw_labels(
                 ha="right",
                 va="center",
                 fontsize=size,
-                clip_on=True,
+                clip_on=False,
                 zorder=5,
             )
             artist.set_gid("axiomfig-mantel-variable-label")
@@ -121,7 +121,7 @@ def _draw_labels(
                 label,
                 rotation_mode="anchor",
                 fontsize=size,
-                clip_on=True,
+                clip_on=False,
                 zorder=5,
                 **options,
             )

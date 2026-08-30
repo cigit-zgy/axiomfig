@@ -83,12 +83,13 @@ See the compact [registry](src/axiomfig/templates/index.yaml) and
 
 ## Gallery
 
-Gallery is generated from the public registry. Sans and serif trees each contain 55 matching
-PDF/PNG pairs; two technical Tectonic pairs bring the total to 112 pairs.
+Gallery is generated from the public registry. Sans and serif trees each contain 58 matching
+PDF/PNG pairs: one canonical example for every public template plus three additional formal Mantel
+stress cases. Two technical Tectonic pairs bring the total to 118 pairs.
 
 | Parity | Mantel | Correlation heatmap |
 |---|---|---|
-| ![Parity](gallery/sans/scatter/parity.png) | ![Mantel](gallery/sans/association/mantel.png) | ![Correlation heatmap](gallery/sans/heatmap/correlation.png) |
+| ![Parity](gallery/sans/scatter/parity.png) | ![Mantel](gallery/sans/association/mantel_canonical.png) | ![Correlation heatmap](gallery/sans/heatmap/correlation.png) |
 
 ## Figure Intent
 

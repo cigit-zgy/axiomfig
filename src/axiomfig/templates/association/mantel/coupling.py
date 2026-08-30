@@ -71,7 +71,8 @@ def _lane_anchor(
     geometry: MantelGeometry,
     *,
     lane_fraction: float,
-    clearance: float,
+    envelope_fraction: float,
+    source_depth: float,
 ) -> np.ndarray:
     bounds = geometry.bounds
     fraction = 0.18 + 0.64 * lane_fraction
@@ -83,7 +84,11 @@ def _lane_anchor(
         dtype=float,
     )
     maximum_depth = np.sqrt(2.0) * bounds.size * min(fraction, 1.0 - fraction)
-    depth = min(maximum_depth * 0.62, max(0.45, clearance * 1.25))
+    depth = min(
+        maximum_depth * 0.82,
+        source_depth * 0.72,
+        max(maximum_depth * envelope_fraction, min(0.30, maximum_depth * 0.60)),
+    )
     return diagonal + _coupling_normal(geometry.matrix_type) * depth
 
 
@@ -91,33 +96,64 @@ def _route_vertices(
     start: tuple[float, float],
     end: tuple[float, float],
     *,
+    fan_point: np.ndarray,
     lane_anchor: np.ndarray,
 ) -> tuple[tuple[float, float], ...]:
-    """Create two fanned cubics whose convex control polygons stay in the coupling triangle.
+    """Create one smooth fanned cubic using a source exit and target-side lane control.
 
-    Start, target, and lane anchor are all inside the complementary triangle. Convex combinations
-    of those points therefore cannot enter the colored matrix triangle.
+    The local fan exit makes departures legible. The second control pulls the route toward its
+    selected envelope without forcing the curve through a visible bend. De Casteljau subdivision
+    retains the existing seven-vertex metadata without changing the cubic geometry.
     """
     start_array = np.asarray(start, dtype=float)
     end_array = np.asarray(end, dtype=float)
-    diagonal_origin = np.asarray((end_array[0], end_array[1]), dtype=float)
-    normal = np.asarray((1.0, 1.0), dtype=float) / np.sqrt(2.0)
-    source_depth = float(np.dot(start_array - diagonal_origin, normal))
-    projection = start_array - normal * source_depth
-    fan_exit = 0.15 * start_array + 0.65 * projection + 0.20 * lane_anchor
-    control1 = 0.05 * start_array + 0.55 * projection + 0.40 * lane_anchor
-    control2 = 0.05 * start_array + 0.80 * fan_exit + 0.15 * lane_anchor
-    control3 = 0.75 * fan_exit + 0.15 * end_array + 0.10 * lane_anchor
-    control4 = 0.03 * fan_exit + 0.90 * end_array + 0.07 * lane_anchor
+    target_control = 0.68 * end_array + 0.32 * lane_anchor
+    first = 0.5 * (start_array + fan_point)
+    middle = 0.5 * (fan_point + target_control)
+    last = 0.5 * (target_control + end_array)
+    first_middle = 0.5 * (first + middle)
+    last_middle = 0.5 * (middle + last)
+    split = 0.5 * (first_middle + last_middle)
     return (
         start,
-        (float(control1[0]), float(control1[1])),
-        (float(control2[0]), float(control2[1])),
-        (float(fan_exit[0]), float(fan_exit[1])),
-        (float(control3[0]), float(control3[1])),
-        (float(control4[0]), float(control4[1])),
+        (float(first[0]), float(first[1])),
+        (float(first_middle[0]), float(first_middle[1])),
+        (float(split[0]), float(split[1])),
+        (float(last_middle[0]), float(last_middle[1])),
+        (float(last[0]), float(last[1])),
         end,
     )
+
+
+def _source_fan_point(
+    geometry: MantelGeometry,
+    start: tuple[float, float],
+    *,
+    rank: int,
+    link_count: int,
+) -> np.ndarray:
+    """Return a local fan exit that points toward the rail and away from source labels."""
+    start_array = np.asarray(start, dtype=float)
+    toward_rail = -_coupling_normal(geometry.matrix_type)
+    tangent = np.asarray((-toward_rail[1], toward_rail[0]), dtype=float)
+    if link_count <= 1:
+        angle = 0.0
+    else:
+        span = min(np.deg2rad(64.0), np.deg2rad(12.0) * (link_count - 1))
+        angle = -span / 2.0 + span * rank / (link_count - 1)
+    direction = np.cos(angle) * toward_rail + np.sin(angle) * tangent
+    bounds = geometry.bounds
+    diagonal = bounds.x0 + bounds.y1
+    depth = abs(float(start_array[0] + start_array[1] - diagonal)) / np.sqrt(2.0)
+    distance = min(0.58, max(0.24, depth * 0.24))
+    return start_array + direction * distance
+
+
+def _source_depth(geometry: MantelGeometry, start: tuple[float, float]) -> float:
+    bounds = geometry.bounds
+    diagonal = bounds.x0 + bounds.y1
+    point = np.asarray(start, dtype=float)
+    return abs(float(point[0] + point[1] - diagonal)) / np.sqrt(2.0)
 
 
 def _cubic(control: np.ndarray, value: float) -> np.ndarray:
@@ -134,12 +170,13 @@ def _obstacle_hits(vertices: tuple[tuple[float, float], ...], obstacles: tuple[B
     if not obstacles:
         return 0
     array = np.asarray(vertices, dtype=float)
-    values = np.linspace(0.04, 0.96, 25)
+    values = np.linspace(0.02, 0.98, 49)
+    padded = tuple(box.padded(0.05) for box in obstacles)
     samples = (
         *(_cubic(array[:4], float(value)) for value in values),
         *(_cubic(array[3:7], float(value)) for value in values),
     )
-    return sum(any(box.contains(*point) for box in obstacles) for point in samples)
+    return sum(any(box.contains(*point) for box in padded) for point in samples)
 
 
 def _lane_fractions(
@@ -151,15 +188,18 @@ def _lane_fractions(
     source_index: int,
     source_count: int,
 ) -> tuple[float, ...]:
-    base = (rank + 1.0) / (link_count + 1.0)
+    target_fraction = (target_index + 0.5) / target_count
+    source_fraction = (source_index + 0.5) / source_count
+    rank_offset = (rank - (link_count - 1) / 2.0) * 0.018
+    base = float(np.clip(0.72 * target_fraction + 0.28 * source_fraction + rank_offset, 0.06, 0.94))
     semantic = (
         base,
         *(
             float(np.clip(base + offset, 0.06, 0.94))
             for offset in (-0.18, -0.12, -0.06, 0.06, 0.12, 0.18)
         ),
-        (target_index + 0.5) / target_count,
-        (source_index + 0.5) / source_count,
+        target_fraction,
+        source_fraction,
         0.12,
         0.88,
         0.28,
@@ -257,24 +297,62 @@ def render_coupling_layer(
                 orientation=geometry.target_rail.orientation,
                 lane_index=lane_index,
             )
-            candidates = []
-            base_lane = (rank + 1.0) / (len(source_links) + 1.0)
-            for candidate_index, lane_fraction in enumerate(
-                _lane_fractions(
-                    rank=rank,
-                    link_count=len(source_links),
-                    target_index=target_order[link.target],
-                    target_count=len(target_order),
-                    source_index=source_order[source],
-                    source_count=len(source_order),
+            envelope_fraction = float(
+                np.clip(
+                    0.44
+                    + 0.08 * (source_order[source] % 3)
+                    + 0.025 * min(len(source_links) - 1, 6)
+                    + 0.04 * min(clearance, 1.0),
+                    0.44,
+                    0.72,
                 )
-            ):
+            )
+            candidates = []
+            source_depth = _source_depth(geometry, start)
+            target_fraction = (target_order[link.target] + 0.5) / len(target_order)
+            source_fraction = (source_order[source] + 0.5) / len(source_order)
+            base_lane = float(
+                np.clip(
+                    0.72 * target_fraction
+                    + 0.28 * source_fraction
+                    + (rank - (len(source_links) - 1) / 2.0) * 0.018,
+                    0.06,
+                    0.94,
+                )
+            )
+            fan_point = _source_fan_point(
+                geometry,
+                start,
+                rank=rank,
+                link_count=len(source_links),
+            )
+            lane_fractions = _lane_fractions(
+                rank=rank,
+                link_count=len(source_links),
+                target_index=target_order[link.target],
+                target_count=len(target_order),
+                source_index=source_order[source],
+                source_count=len(source_order),
+            )
+            for candidate_index, lane_fraction in enumerate(lane_fractions):
                 lane_anchor = _lane_anchor(
                     geometry,
                     lane_fraction=lane_fraction,
-                    clearance=clearance,
+                    envelope_fraction=float(
+                        np.clip(
+                            envelope_fraction + 0.08 * (lane_fraction - base_lane),
+                            0.38,
+                            0.76,
+                        )
+                    ),
+                    source_depth=source_depth,
                 )
-                candidate = _route_vertices(start, end, lane_anchor=lane_anchor)
+                candidate = _route_vertices(
+                    start,
+                    end,
+                    fan_point=fan_point,
+                    lane_anchor=lane_anchor,
+                )
                 samples = _route_samples(candidate)
                 crossings, proximity = _route_interference(samples, tuple(selected_routes))
                 length = sum(
@@ -348,7 +426,7 @@ def render_coupling_layer(
             artist._axiomfig_p_value = link.p_value
             artist._axiomfig_label = link.label
             artist._axiomfig_metadata = dict(link.metadata)
-            artist._axiomfig_route_model = "triangle-fan-double-cubic"
+            artist._axiomfig_route_model = "triangle-fan-cubic"
             artist._axiomfig_lane_fraction = selected_lane
             artist._axiomfig_source_label_intersections = selected_hits
             artist._axiomfig_prior_route_crossings = selected_crossings
