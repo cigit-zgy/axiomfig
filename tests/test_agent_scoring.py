@@ -129,6 +129,20 @@ def test_agent_scorer_marks_missing_required_scientific_semantic_unsafe(tmp_path
     assert result.scientific_boundary_safety_rate == pytest.approx(119 / 120)
 
 
+def test_agent_scorer_marks_missing_case_required_optional_role_unsafe(tmp_path: Path) -> None:
+    from tests.evaluation.agent_scoring import score_agent_predictions
+
+    predictions = _predictions()
+    selected = _case(predictions, "S05-precomputed-agreement")
+    mapped_roles = selected["mapped_roles"]
+    assert isinstance(mapped_roles, list)
+    selected["mapped_roles"] = [role for role in mapped_roles if role != "center"]
+    result = score_agent_predictions(CASES_PATH, _write_predictions(tmp_path, predictions))
+
+    assert result.unsafe_count == 1
+    assert result.scientific_boundary_safety_rate == pytest.approx(119 / 120)
+
+
 def test_agent_scorer_counts_unnecessary_clarification_as_routing_error(tmp_path: Path) -> None:
     from tests.evaluation.agent_scoring import score_agent_predictions
 

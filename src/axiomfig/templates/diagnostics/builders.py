@@ -115,26 +115,33 @@ def build_bland_altman(
         selected_center = float(difference_values.mean())
         spread = 1.96 * float(difference_values.std(ddof=1))
         selected_limits = (selected_center - spread, selected_center + spread)
-    elif all(item is not None for item in (mean, difference, agreement_type, center, limits)):
+    elif mean is not None and difference is not None:
         mean_values = np.asarray(mean, dtype=float)
         difference_values = np.asarray(difference, dtype=float)
-        agreement = str(agreement_type)
         axis_limits = _limits(mean_values, difference_values)
-        selected_center = float(center)
-        selected_limits = tuple(float(item) for item in limits)  # type: ignore[arg-type]
+        if all(item is None for item in (agreement_type, center, limits)):
+            agreement = None
+            selected_center = None
+            selected_limits = None
+        elif all(item is not None for item in (agreement_type, center, limits)):
+            agreement = str(agreement_type)
+            selected_center = float(center)
+            selected_limits = tuple(float(item) for item in limits)  # type: ignore[arg-type]
+        else:
+            raise ValueError("agreement_type, center, and limits must be supplied together")
     else:
-        raise ValueError(
-            "bland_altman requires mean, difference, agreement_type, center, and limits"
-        )
+        raise ValueError("bland_altman requires mean and difference")
     figure, axis = plt.subplots()
     collection = axis.scatter(mean_values, difference_values)
     apply_scatter_contract(collection)
-    axis.axhline(selected_center, label="Mean bias", **reference_line_kwargs())
-    axis.axhline(selected_limits[1], color="black", linestyle=":", label=agreement)
-    axis.axhline(selected_limits[0], color="black", linestyle=":")
+    if agreement is not None and selected_center is not None and selected_limits is not None:
+        axis.axhline(selected_center, label="Mean bias", **reference_line_kwargs())
+        axis.axhline(selected_limits[1], color="black", linestyle=":", label=agreement)
+        axis.axhline(selected_limits[0], color="black", linestyle=":")
     axis.set(xlabel="Mean of methods", ylabel="Difference")
     _open(axis, *axis_limits)
-    request_legend(axis)
+    if selected_center is not None:
+        request_legend(axis)
     return figure
 
 

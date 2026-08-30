@@ -44,9 +44,10 @@ often do so.
 
 - `diagnostics.residual` receives fitted values and residuals. Its zero line is the invariant
   no-residual reference; an optional supplied trend is descriptive, not a model AxiomFig fits.
-- `diagnostics.bland_altman` receives precomputed means, differences, center, limits, and an
-  explicit `agreement_type`. All must come from the upstream agreement analysis. It addresses
-  agreement, not correlation.
+- `diagnostics.bland_altman` receives precomputed means and differences. When agreement reference
+  lines are requested, it additionally requires a supplied center, limits, and explicit
+  `agreement_type`. These quantities must come from upstream agreement analysis. The template
+  addresses agreement, not correlation.
 - `diagnostics.calibration` receives predicted probabilities and observed frequencies. The
   identity relation represents perfect calibration and must not be described as an ordinary
   regression fit.

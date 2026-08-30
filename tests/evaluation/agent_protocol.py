@@ -142,8 +142,16 @@ def validate_agent_protocol_cases(path: Path) -> AgentProtocolBenchmarkResult:
             required_roles = set(
                 _strings(expected.get("required_roles"), f"{case_id}.expected.required_roles")
             )
-            if required_roles != set(contract["required"]):
-                raise ValueError(f"{case_id}: required roles do not match {template_id}")
+            contract_required = set(contract["required"])
+            contract_roles = contract_required | set(contract["optional"])
+            if not contract_required <= required_roles:
+                raise ValueError(f"{case_id}: required roles omit contract roles for {template_id}")
+            unknown_roles = required_roles - contract_roles
+            if unknown_roles:
+                raise ValueError(
+                    f"{case_id}: required roles are not declared by {template_id}: "
+                    f"{sorted(unknown_roles)}"
+                )
             if action == "require_precomputed" and contract_mode != "precomputed":
                 raise ValueError(f"{case_id}: require_precomputed targets a direct-data template")
 

@@ -83,20 +83,40 @@ def test_diverging_continuous_fields_require_explicit_center(
     plt.close(figure)
 
 
-def test_bland_altman_contract_requires_upstream_center_and_limits() -> None:
-    from axiomfig.intent import FigureIntentError, parse_figure_intent
+def test_bland_altman_contract_preserves_base_input_and_keeps_limits_precomputed() -> None:
+    from axiomfig.intent import FigureIntentError, build_intent_figure, parse_figure_intent
     from axiomfig.templates.registry import load_family_contract
 
     contract = load_family_contract("diagnostics")["variants"]["bland_altman"]
-    assert {"center", "limits"} <= set(contract["required"])
+    assert set(contract["required"]) == {"mean", "difference"}
+    assert {"agreement_type", "center", "limits"} <= set(contract["optional"])
 
-    with pytest.raises(FigureIntentError, match="center.*limits|limits.*center"):
-        parse_figure_intent(
-            {
-                "template": "diagnostics.bland_altman",
-                "data": {"mean": "mean", "difference": "difference"},
-                "semantics": {"agreement_type": "95% limits"},
-            }
+    intent = parse_figure_intent(
+        {
+            "template": "diagnostics.bland_altman",
+            "data": {"mean": "mean", "difference": "difference"},
+        }
+    )
+    figure = build_intent_figure(
+        intent,
+        {"mean": [1.0, 2.0], "difference": [0.2, -0.1]},
+    )
+    assert _horizontal_reference_values(figure.axes[0]) == []
+    plt.close(figure)
+
+    with pytest.raises(
+        FigureIntentError,
+        match="agreement_type, center, and limits must be supplied together",
+    ):
+        build_intent_figure(
+            parse_figure_intent(
+                {
+                    "template": "diagnostics.bland_altman",
+                    "data": {"mean": "mean", "difference": "difference"},
+                    "semantics": {"agreement_type": "95% limits", "center": 0.05},
+                }
+            ),
+            {"mean": [1.0, 2.0], "difference": [0.2, -0.1]},
         )
 
 

@@ -59,6 +59,10 @@ def adapt(variant: str, supplied: dict[str, object]) -> dict[str, object]:
     for role in ("center", "target", "baseline"):
         if role in values:
             values[role] = scalar(values[role], role)
+    agreement_roles = {"agreement_type", "center", "limits"}
+    supplied_agreement_roles = agreement_roles & values.keys()
+    if supplied_agreement_roles and supplied_agreement_roles != agreement_roles:
+        raise ValueError("agreement_type, center, and limits must be supplied together")
     if "limits" in values:
         limits = numeric_1d(values["limits"], "limits")
         if limits.shape != (2,) or limits[0] >= limits[1]:
