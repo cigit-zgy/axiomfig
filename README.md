@@ -70,7 +70,7 @@ legend coordinates, panel offsets, or colorbar geometry.
 
 AxiomFig v1 provides 55 public templates across 13 plot families. All 55 accept external structured
 input: 28 direct-data paths and 27 explicit precomputed-result paths. There are no canonical-only
-public templates.
+public plot templates.
 
 | Families | Scope |
 |---|---|
@@ -79,10 +79,12 @@ public templates.
 | `ordination`, `association`, `omics` | Multivariate and domain results |
 | `field`, `flow` | Continuous fields and transport structure |
 
-`layouts` supplies composition capabilities and is not counted as a plot family. Mantel is a
-first-class `association/mantel` template and accepts a precomputed Pearson matrix plus structured
-links containing `source`, `target`, `mantel_r`, and `p_value`. Advanced corrplot-style matrix
-methods and linkET-style coupling options are documented in `references/mantel.md`.
+`layouts` is registered separately from the 13 plot families and currently provides validated
+canonical composition fixtures. User-data multi-panel composition through nested Figure Intents is
+not yet a public-operable path. Mantel is a first-class `association/mantel` template and accepts a
+precomputed Pearson matrix plus structured links containing `source`, `target`, `mantel_r`, and
+`p_value`. Advanced corrplot-style matrix methods and linkET-style coupling options are documented
+in `references/mantel.md`.
 
 See the compact [registry](src/axiomfig/templates/index.yaml) and
 [template-system contract](references/template-system.md).
@@ -142,6 +144,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the release boundary.
 
 ## Current limitations
 
+- User-data multi-panel composition through nested Figure Intents is not yet public-operable;
+  registered `layouts/*` are canonical composition fixtures.
 - CJK and Japanese typography are not canonical v1 modes.
 - Matplotlib labels are not TeX-native.
 - Interactive graphics, animation, GIS, microscopy, chemical structures, and a large 3D suite are
