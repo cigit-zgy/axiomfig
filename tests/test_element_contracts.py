@@ -71,6 +71,22 @@ def test_available_geometry_and_typography_execute_through_figure_intent() -> No
     assert intent.typography == "serif"
 
 
+def test_available_parity_identity_limits_execute() -> None:
+    _intent, figure = _build(
+        {
+            "template": "scatter.parity",
+            "data": {"observed": "observed", "predicted": "predicted"},
+            "semantics": {"identity_limits": [0.0, 50.0]},
+        },
+        {"observed": [2.0, 20.0, 45.0], "predicted": [1.0, 21.0, 47.0]},
+    )
+    try:
+        assert np.allclose(figure.axes[0].get_xlim(), [0.0, 50.0])
+        assert np.allclose(figure.axes[0].get_ylim(), [0.0, 50.0])
+    finally:
+        plt.close(figure)
+
+
 def test_available_axes_step_and_area_surfaces_execute() -> None:
     dataset = {"time": [0.0, 1.0, 2.0], "value": [1.0, 2.0, 1.5]}
     step_intent, step = _build(
