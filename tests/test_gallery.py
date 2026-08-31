@@ -59,11 +59,33 @@ def test_committed_gallery_has_no_numbered_flat_or_orphan_artifacts() -> None:
 
     gallery = Path(__file__).resolve().parents[1] / "gallery"
     expected = set(expected_gallery_stems())
-    pdfs = {path.relative_to(gallery).with_suffix("").as_posix() for path in gallery.rglob("*.pdf")}
-    pngs = {path.relative_to(gallery).with_suffix("").as_posix() for path in gallery.rglob("*.png")}
+    pdfs = {
+        path.relative_to(gallery).with_suffix("").as_posix()
+        for path in gallery.rglob("*.pdf")
+        if path.relative_to(gallery).parts[0] != "layout_benchmark"
+    }
+    pngs = {
+        path.relative_to(gallery).with_suffix("").as_posix()
+        for path in gallery.rglob("*.png")
+        if path.relative_to(gallery).parts[0] != "layout_benchmark"
+    }
 
     assert pdfs == pngs == expected
     assert not any(re.match(r"(?:^|/)\d+_", stem) for stem in pdfs)
+
+
+def test_gallery_build_preserves_layout_benchmark_namespace(tmp_path: Path) -> None:
+    from axiomfig.gallery import _prepare_gallery
+
+    gallery = tmp_path / "gallery"
+    benchmark = gallery / "layout_benchmark" / "default"
+    benchmark.mkdir(parents=True)
+    artifact = benchmark / "01_clustered_heatmap.pdf"
+    artifact.write_bytes(b"benchmark evidence")
+
+    _prepare_gallery(gallery)
+
+    assert artifact.read_bytes() == b"benchmark evidence"
 
 
 @pytest.mark.e2e

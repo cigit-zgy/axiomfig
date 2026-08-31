@@ -27,6 +27,7 @@ from axiomfig.validation import validate_pair
 
 GALLERY_MODES = ("sans", "serif")
 TECHNICAL_LATEX_STEMS = ("scientific_typography", "palettes")
+PRESERVED_GALLERY_ROOTS = ("layout_benchmark",)
 
 
 @dataclass(frozen=True)
@@ -96,6 +97,8 @@ def _prepare_gallery(root: Path) -> None:
     root.mkdir(parents=True, exist_ok=True)
     allowed_roots = {*GALLERY_MODES, "latex", "technical"}
     for path in root.iterdir():
+        if path.is_dir() and path.name in PRESERVED_GALLERY_ROOTS:
+            continue
         if not path.is_dir() or path.name not in allowed_roots:
             raise RuntimeError(f"unexpected Gallery content: {path}")
         _assert_generated_tree(path)
