@@ -3,8 +3,6 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import re
-import shutil
-import subprocess
 from pathlib import Path
 
 import yaml
@@ -34,6 +32,16 @@ def _archive_digest() -> str:
         digest.update(path.relative_to(ARCHIVE).as_posix().encode())
         digest.update(hashlib.sha256(path.read_bytes()).digest())
     return digest.hexdigest()
+
+
+def _page_font_rows(path: Path) -> list[tuple[str, str]]:
+    page = PdfReader(path).pages[0]
+    resources = page["/Resources"].get_object()
+    fonts = resources.get("/Font", {})
+    return [
+        (str(font.get_object().get("/Subtype")), str(font.get_object().get("/BaseFont")))
+        for font in fonts.values()
+    ]
 
 
 def test_figure_capability_manifest_has_twenty_unique_cases() -> None:
@@ -68,17 +76,12 @@ def test_capability_pdfs_are_single_page_serif_without_type3() -> None:
             page = reader.pages[0]
             assert float(page.mediabox.width) > 0
             assert float(page.mediabox.height) > 0
-            if shutil.which("pdffonts") is not None:
-                completed = subprocess.run(
-                    ["pdffonts", str(path)], check=True, capture_output=True, text=True
-                )
-                assert "Type 3" not in completed.stdout, path
-    build_path = ROOT / "scripts" / "build_figure_capability_audit.py"
-    spec = importlib.util.spec_from_file_location("build_figure_capability_audit", build_path)
-    assert spec is not None and spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    module.validate_fonts(AUDIT)
+            assert all(subtype != "/Type3" for subtype, _base in _page_font_rows(path)), path
+            if column == "matplotlib_native":
+                assert any(
+                    "XCharter" in base or "Charter" in base
+                    for _subtype, base in _page_font_rows(path)
+                ), path
 
 
 def test_native_page_dimensions_match_frozen_publication_geometry() -> None:
