@@ -35,6 +35,14 @@ GOLD_FIELDS = tuple(
     for field in DECISION_FIELDS
     if field not in {"low_level_parameters_proposed", "backend_names_exposed", "reason"}
 )
+SEMANTIC_CORE_FIELDS = (
+    "needs_nondefault",
+    "topic",
+    "surface_status",
+    "implementation_level",
+    "default_retained_elsewhere",
+    "scientific_anchor_preserved",
+)
 
 
 def _text(value: object, location: str) -> str:
@@ -157,19 +165,28 @@ def score_adjustment_predictions(
 
     total = len(parsed)
     exact = 0
+    semantic_core = 0
+    field_matches: Counter[str] = Counter()
     fabricated = low_level = numeric = backend = unnecessary = 0
     per_group: dict[str, Counter[str]] = {}
     for decision, case in parsed:
         expected = case["expected"]
         correct = all(decision[field] == expected[field] for field in GOLD_FIELDS)
+        core_correct = all(decision[field] == expected[field] for field in SEMANTIC_CORE_FIELDS)
         exact += int(correct)
+        semantic_core += int(core_correct)
+        for field in GOLD_FIELDS:
+            field_matches[field] += int(decision[field] == expected[field])
         group = str(case["group"])
         counts = per_group.setdefault(group, Counter())
         counts["total"] += 1
         counts["correct"] += int(correct)
-        is_fabricated = decision["surface_status"] == "AVAILABLE" and (
-            expected["surface_status"] != "AVAILABLE"
-            or decision["recommended_surface"] != expected["recommended_surface"]
+        counts["core_correct"] += int(core_correct)
+        # A differently worded real public surface is not a hallucinated API. The separate
+        # recommended-surface exact-match field records naming precision. This rate captures the
+        # unsafe claim that a public surface exists where the audited gold says none exists.
+        is_fabricated = (
+            decision["surface_status"] == "AVAILABLE" and expected["surface_status"] != "AVAILABLE"
         )
         fabricated += int(is_fabricated)
         has_low = bool(decision["low_level_parameters_proposed"])
@@ -246,7 +263,8 @@ def score_adjustment_predictions(
     group_metrics = {
         group: {
             "cases": counts["total"],
-            "decision_accuracy": counts["correct"] / counts["total"],
+            "strict_all_field_accuracy": counts["correct"] / counts["total"],
+            "semantic_core_accuracy": counts["core_correct"] / counts["total"],
         }
         for group, counts in sorted(per_group.items())
     }
@@ -255,7 +273,14 @@ def score_adjustment_predictions(
     ]
     return {
         "predictions": total,
+        "parse_success_rate": total / len(disclosures) if disclosures else None,
         "decision_accuracy": exact / denominator,
+        "strict_all_field_accuracy": exact / denominator,
+        "semantic_core_accuracy": semantic_core / denominator,
+        "session_semantic_core_accuracy": (
+            semantic_core / len(disclosures) if disclosures else None
+        ),
+        "field_accuracy": {field: field_matches[field] / denominator for field in GOLD_FIELDS},
         "fabricated_api_rate": fabricated / denominator,
         "low_level_parameter_leakage_rate": low_level / denominator,
         "numeric_visual_invention_rate": numeric / denominator,
