@@ -36,6 +36,7 @@ Issues = "https://github.com/cigit-zgy/axiomfig-skill/issues"
 dev = [
   "pytest>=8.4",
   "ruff>=0.12",
+  "scipy>=1.16",
   "setuptools>=80",
 ]
 
