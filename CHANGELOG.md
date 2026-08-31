@@ -11,6 +11,8 @@
 - added a provider-independent blind Agent benchmark harness that exposes only the normal Skill
   surface, launches one fresh external process per case, and preserves observable decisions for
   offline scientific-safety scoring;
+- added a fail-closed progressive-disclosure broker and stateless routed benchmark mode that starts
+  from `SKILL.md`, permits only one allowlisted AxiomFig read per turn, and measures disclosure cost;
 - removed hidden scientific defaults from external estimation, Bland–Altman, and precision–recall
   rendering, and made diverging heatmap/contour centers explicitly executable scientific semantics.
 

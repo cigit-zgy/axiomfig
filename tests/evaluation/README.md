@@ -40,3 +40,14 @@ The runner copies only the normal Agent-facing Skill surface, strips gold metada
 from prompts, launches one fresh process per case, and stores only observable JSON decisions. The
 external command remains responsible for disabling repository, network, memory, and prior-session
 access. Do not call a benchmark blind unless those controls have been verified independently.
+
+For routed progressive disclosure, add `--progressive`. The Agent then starts with only `SKILL.md`
+and may return `{"read":"relative/path"}` to request one allowlisted reference, registry, or family
+contract. The runner validates that path, reconstructs only the current case's broker transcript in
+a new stateless process, and records successful reads, bytes, estimated tokens, denials, and process
+count in `<output>.disclosure.jsonl`. `--all-cases` selects the frozen corpus without exposing its IDs
+or gold fields to Agent prompts.
+
+The external command must still use a clean Agent environment. In particular, disable host skill
+instructions and all shell, network, plugin, MCP, browser, memory, collaboration, and code-execution
+surfaces. The broker cannot compensate for a command that exposes another host capability.

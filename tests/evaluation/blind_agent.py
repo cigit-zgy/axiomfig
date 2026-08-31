@@ -16,19 +16,8 @@ import yaml
 from axiomfig.intent import FigureIntentError, parse_figure_intent
 from axiomfig.templates.registry import load_family_contract, load_template_registry
 from tests.evaluation.agent_protocol import VALID_ACTIONS, VALID_INPUT_MODES
+from tests.evaluation.read_broker import CORE_FILES, GLOBS, ProgressiveReadBroker
 
-_CORE_FILES = (
-    Path("SKILL.md"),
-    Path("references/agent-protocol.md"),
-    Path("references/figure-intent.md"),
-    Path("references/mantel.md"),
-    Path("references/template-knowledge/index.yaml"),
-    Path("src/axiomfig/templates/index.yaml"),
-)
-_GLOBS = (
-    "references/template-knowledge/*.md",
-    "src/axiomfig/templates/*/contract.yaml",
-)
 _OUTPUT_FIELDS = frozenset(
     {
         "action",
@@ -47,8 +36,8 @@ _OUTPUT_FIELDS = frozenset(
 
 def _allowed_files(source_root: Path) -> tuple[Path, ...]:
     source_root = Path(source_root).resolve()
-    paths = [source_root / relative for relative in _CORE_FILES]
-    for pattern in _GLOBS:
+    paths = [source_root / relative for relative in CORE_FILES]
+    for pattern in GLOBS:
         paths.extend(sorted(source_root.glob(pattern)))
     missing = [path for path in paths if not path.is_file()]
     if missing:
@@ -123,6 +112,78 @@ minimal valid Figure Intent. Do not include an evaluation identifier or explanat
 {case_input}
 </researcher-input>
 """
+
+
+def build_progressive_agent_prompt(
+    workspace: Path,
+    case: Mapping[str, Any],
+    history: Sequence[tuple[str | None, str | None]] = (),
+) -> str:
+    """Build a blind case prompt that preloads only the top-level AxiomFig Skill."""
+
+    request = case.get("request")
+    available_data = case.get("available_data")
+    if not isinstance(request, str) or not request.strip():
+        raise ValueError("case request must be a non-empty string")
+    if not isinstance(available_data, Mapping):
+        raise ValueError("case available_data must be a mapping")
+    workspace = Path(workspace).resolve()
+    skill = (workspace / "SKILL.md").read_text(encoding="utf-8")
+    case_input = json.dumps(
+        {"request": request, "available_data": dict(available_data)},
+        ensure_ascii=False,
+        sort_keys=True,
+    )
+    disclosed: list[str] = []
+    for path, content in history:
+        if path is None:
+            disclosed.append("<broker-denied>read denied</broker-denied>")
+        else:
+            disclosed.append(f'<broker-response path="{path}">\n{content}\n</broker-response>')
+    disclosure = "\n\n".join(disclosed)
+    disclosure_block = f"\n\n<broker-history>\n{disclosure}\n</broker-history>" if disclosed else ""
+    return f"""You are the AxiomFig scientific-routing Agent. Start from the embedded top-level
+AxiomFig Skill and the supplied researcher request. Request additional AxiomFig files only through
+the read broker by returning exactly `{{"read":"relative/path"}}`, one path per turn, following the
+Skill's normal progressive-disclosure route. A later prompt will include only that broker response
+and this case's prior broker history. Do not try to list, search, browse, execute code, use another
+tool, or access any host/repository path. Decide conservatively: scientific safety is more important
+than render rate. Never perform missing upstream analysis or infer material scientific semantics.
+Do not provide chain-of-thought.
+
+Return exactly one JSON object with all of these fields and no others:
+action, template, input_mode, mapped_roles, scientific_semantics, scientific_inferences,
+clarification_question, upstream_requirement, unsupported_reason, figure_intent.
+
+Use action render, clarify, require_precomputed, or unsupported. Use null for fields that do not
+apply. mapped_roles maps scientific roles to supplied column/key names. scientific_semantics maps
+only explicit scientific meanings needed for the decision. scientific_inferences lists any extra
+scientific assumptions you made and should normally be empty. A render decision must include a
+minimal valid Figure Intent. Do not include an evaluation identifier or explanatory essay.
+
+<axiomfig-file path="SKILL.md">
+{skill}
+</axiomfig-file>
+
+<researcher-input>
+{case_input}
+</researcher-input>{disclosure_block}
+"""
+
+
+def parse_progressive_turn(payload: str) -> dict[str, Any]:
+    """Parse either one broker read request or one final observable decision."""
+
+    try:
+        raw = json.loads(payload)
+    except json.JSONDecodeError as exc:
+        raise ValueError("Agent response must be one JSON object") from exc
+    if isinstance(raw, Mapping) and set(raw) == {"read"}:
+        path = raw["read"]
+        if not isinstance(path, str) or not path:
+            raise ValueError("read must be a non-empty relative path")
+        return {"read": path}
+    return parse_agent_decision(payload)
 
 
 def _mapping(value: object, location: str) -> dict[str, Any]:
@@ -310,7 +371,13 @@ def run_blind_cases(
     records: list[dict[str, Any]] = []
     failures: list[dict[str, Any]] = []
     child_environment = os.environ.copy()
-    for name in ("CODEX_SESSION_ID", "CODEX_THREAD_ID", "CODEX_APP_TOOLS_PIPE_PATH"):
+    for name in (
+        "CODEX_APP_TOOLS_PIPE_PATH",
+        "CODEX_MCP_NODE_PATH",
+        "CODEX_PERMISSION_PROFILE",
+        "CODEX_SESSION_ID",
+        "CODEX_THREAD_ID",
+    ):
         child_environment.pop(name, None)
     child_environment["CODEX_INTERNAL_ORIGINATOR_OVERRIDE"] = "axiomfig-blind-benchmark"
 
@@ -350,26 +417,184 @@ def run_blind_cases(
     return len(records), len(failures)
 
 
+def run_progressive_cases(
+    source_root: Path,
+    cases_path: Path,
+    case_ids: Sequence[str],
+    agent_command: Sequence[str],
+    output_path: Path,
+    workspace_root: Path,
+    *,
+    max_turns: int = 12,
+) -> tuple[int, int]:
+    """Run stateless progressive-disclosure turns in one isolated logical context per case."""
+
+    if not case_ids:
+        raise ValueError("at least one case ID is required")
+    if not agent_command:
+        raise ValueError("an external Agent command is required")
+    if max_turns < 2:
+        raise ValueError("max_turns must allow at least one read and one decision")
+    workspace_root = Path(workspace_root).resolve()
+    if workspace_root.exists() and any(workspace_root.iterdir()):
+        raise ValueError("benchmark workspace must be empty")
+    skill_workspace = workspace_root / "sandbox" / "skill"
+    prepare_sanitized_workspace(source_root, skill_workspace)
+    broker = ProgressiveReadBroker(skill_workspace)
+    cases = _load_selected_cases(cases_path, case_ids)
+    output_path = Path(output_path).resolve()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    failure_path = output_path.with_suffix(".failures.jsonl")
+    disclosure_path = output_path.with_suffix(".disclosure.jsonl")
+    records: list[dict[str, Any]] = []
+    failures: list[dict[str, Any]] = []
+    disclosures: list[dict[str, Any]] = []
+    child_environment = os.environ.copy()
+    for name in (
+        "CODEX_APP_TOOLS_PIPE_PATH",
+        "CODEX_MCP_NODE_PATH",
+        "CODEX_PERMISSION_PROFILE",
+        "CODEX_SESSION_ID",
+        "CODEX_THREAD_ID",
+    ):
+        child_environment.pop(name, None)
+    child_environment["CODEX_INTERNAL_ORIGINATOR_OVERRIDE"] = "axiomfig-routed-benchmark"
+    initial_bytes = len((skill_workspace / "SKILL.md").read_bytes())
+
+    for index, (case_id, case) in enumerate(zip(case_ids, cases, strict=True), start=1):
+        case_directory = workspace_root / "sandbox" / "cases" / f"{index:03d}"
+        case_directory.mkdir(parents=True)
+        log_directory = workspace_root / "logs" / f"{index:03d}"
+        log_directory.mkdir(parents=True)
+        history: list[tuple[str | None, str | None]] = []
+        files_read: list[str] = []
+        read_bytes = 0
+        denied_reads = 0
+        final_decision: dict[str, Any] | None = None
+        error: str | None = None
+
+        for turn_number in range(1, max_turns + 1):
+            prompt = build_progressive_agent_prompt(skill_workspace, case, history)
+            (log_directory / f"turn-{turn_number:02d}.prompt").write_text(prompt, encoding="utf-8")
+            completed = subprocess.run(
+                list(agent_command),
+                input=prompt,
+                cwd=case_directory,
+                env=child_environment,
+                capture_output=True,
+                check=False,
+                text=True,
+            )
+            (log_directory / f"turn-{turn_number:02d}.stdout").write_text(
+                completed.stdout, encoding="utf-8"
+            )
+            (log_directory / f"turn-{turn_number:02d}.stderr").write_text(
+                completed.stderr, encoding="utf-8"
+            )
+            if completed.returncode:
+                error = f"Agent command exited with status {completed.returncode}"
+                break
+            try:
+                turn = parse_progressive_turn(completed.stdout)
+            except ValueError as exc:
+                error = str(exc)
+                break
+            requested_path = turn.get("read")
+            if isinstance(requested_path, str):
+                try:
+                    content = broker.read(requested_path)
+                except ValueError:
+                    history.append((None, None))
+                    denied_reads += 1
+                else:
+                    history.append((requested_path, content))
+                    files_read.append(requested_path)
+                    read_bytes += len(content.encode("utf-8"))
+                continue
+            final_decision = turn
+            break
+        else:
+            error = f"Agent did not return a final decision within {max_turns} turns"
+
+        process_count = len(list(log_directory.glob("turn-*.stdout")))
+        agent_facing_bytes = initial_bytes + read_bytes
+        disclosures.append(
+            {
+                "id": case_id,
+                "read_count": len(files_read),
+                "files": files_read,
+                "read_bytes": read_bytes,
+                "agent_facing_bytes": agent_facing_bytes,
+                "estimated_tokens": (agent_facing_bytes + 3) // 4,
+                "denied_reads": denied_reads,
+                "process_count": process_count,
+            }
+        )
+        if error is not None or final_decision is None:
+            failures.append(
+                {"id": case_id, "sequence": index, "error": error or "missing decision"}
+            )
+            continue
+        records.append(scoring_record(case_id, final_decision))
+
+    output_path.write_text(
+        "".join(json.dumps(record, ensure_ascii=False) + "\n" for record in records),
+        encoding="utf-8",
+    )
+    failure_path.write_text(
+        "".join(json.dumps(failure, ensure_ascii=False) + "\n" for failure in failures),
+        encoding="utf-8",
+    )
+    disclosure_path.write_text(
+        "".join(json.dumps(item, ensure_ascii=False) + "\n" for item in disclosures),
+        encoding="utf-8",
+    )
+    return len(records), len(failures)
+
+
 def _main() -> None:
     root = Path(__file__).resolve().parents[2]
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--cases", type=Path, default=root / "tests/evaluation/agent_protocol_cases.yaml"
     )
-    parser.add_argument("--case-id", action="append", required=True)
+    selection = parser.add_mutually_exclusive_group(required=True)
+    selection.add_argument("--case-id", action="append")
+    selection.add_argument("--all-cases", action="store_true")
+    parser.add_argument("--progressive", action="store_true")
+    parser.add_argument("--max-turns", type=int, default=12)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--workspace", type=Path, required=True)
     parser.add_argument("agent_command", nargs=argparse.REMAINDER)
     args = parser.parse_args()
     command = args.agent_command[1:] if args.agent_command[:1] == ["--"] else args.agent_command
-    passed, failed = run_blind_cases(
-        root,
-        args.cases,
-        args.case_id,
-        command,
-        args.output,
-        args.workspace,
-    )
+    if args.all_cases:
+        document = _mapping(yaml.safe_load(args.cases.read_text(encoding="utf-8")), "benchmark")
+        raw_cases = document.get("cases")
+        if not isinstance(raw_cases, list):
+            parser.error("benchmark.cases must be a list")
+        case_ids = [str(_mapping(case, "case")["id"]) for case in raw_cases]
+    else:
+        case_ids = args.case_id
+    if args.progressive:
+        passed, failed = run_progressive_cases(
+            root,
+            args.cases,
+            case_ids,
+            command,
+            args.output,
+            args.workspace,
+            max_turns=args.max_turns,
+        )
+    else:
+        passed, failed = run_blind_cases(
+            root,
+            args.cases,
+            case_ids,
+            command,
+            args.output,
+            args.workspace,
+        )
     print(f"Agent benchmark completed: {passed} parsed, {failed} format failures")
     if failed:
         raise SystemExit(2)
