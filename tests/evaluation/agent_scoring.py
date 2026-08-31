@@ -11,7 +11,7 @@ from typing import Any
 
 import yaml
 
-from axiomfig.intent import FORBIDDEN_VISUAL_FIELDS
+from axiomfig.intent import FORBIDDEN_VISUAL_FIELDS, FigureIntentError, parse_figure_intent
 from axiomfig.templates.registry import load_family_contract, load_template_registry
 from tests.evaluation.agent_protocol import VALID_ACTIONS, VALID_INPUT_MODES
 
@@ -47,6 +47,51 @@ def _strings(value: object, location: str) -> tuple[str, ...]:
     if not all(isinstance(item, str) and item for item in value):
         raise ValueError(f"{location} must contain non-empty strings")
     return tuple(value)
+
+
+def _named_values(value: object, location: str) -> tuple[str, ...] | dict[str, Any]:
+    if isinstance(value, Mapping):
+        if not all(isinstance(key, str) and key for key in value):
+            raise ValueError(f"{location} keys must be non-empty strings")
+        return dict(value)
+    return _strings(value, location)
+
+
+def _names(value: object) -> set[str]:
+    if isinstance(value, Mapping):
+        return set(value)
+    if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
+        return {item for item in value if isinstance(item, str)}
+    return set()
+
+
+def _semantic_names(value: object) -> set[str]:
+    names = _names(value)
+    if isinstance(value, Mapping):
+        names.update(item for item in value.values() if isinstance(item, str) and item)
+        center = value.get("center")
+        if isinstance(center, (int, float)) and not isinstance(center, bool) and center == 0:
+            names.add("diverging_center_zero")
+        for key in ("reference", "null"):
+            reference = value.get(key)
+            if (
+                isinstance(reference, (int, float))
+                and not isinstance(reference, bool)
+                and reference == 1
+            ):
+                names.add("ratio_null_one")
+    return names
+
+
+def _supplied_role_names(prediction: Mapping[str, Any]) -> set[str]:
+    names = _names(prediction.get("mapped_roles", ()))
+    figure_intent = prediction.get("figure_intent")
+    if isinstance(figure_intent, Mapping):
+        for field in ("data", "semantics"):
+            value = figure_intent.get(field)
+            if isinstance(value, Mapping):
+                names.update(key for key in value if isinstance(key, str))
+    return names
 
 
 def _template_id(value: object, location: str) -> str | None:
@@ -102,9 +147,13 @@ def _load_predictions(path: Path, valid_templates: set[str]) -> dict[str, dict[s
         input_mode = prediction.get("input_mode")
         if input_mode is not None and input_mode not in VALID_INPUT_MODES:
             raise ValueError(f"{case_id}: invalid input_mode {input_mode!r}")
-        for field in ("mapped_roles", "scientific_inferences", "scientific_semantics"):
+        for field in ("mapped_roles", "scientific_semantics"):
             if field in prediction:
-                prediction[field] = _strings(prediction[field], f"{case_id}.{field}")
+                prediction[field] = _named_values(prediction[field], f"{case_id}.{field}")
+        if "scientific_inferences" in prediction:
+            prediction["scientific_inferences"] = _strings(
+                prediction["scientific_inferences"], f"{case_id}.scientific_inferences"
+            )
         predictions[case_id] = prediction
     return predictions
 
@@ -124,12 +173,22 @@ def _valid_figure_intent(prediction: Mapping[str, Any]) -> bool:
     if prediction.get("input_mode") != contract["input_mode"]:
         return False
     mapped_roles = prediction.get("mapped_roles", ())
-    if not isinstance(mapped_roles, Sequence) or isinstance(mapped_roles, (str, bytes)):
-        return False
-    if not set(contract["required"]) <= set(mapped_roles):
-        return False
     figure_intent = prediction.get("figure_intent")
-    return figure_intent is None or not _has_forbidden_visual_field(figure_intent)
+    if figure_intent is None:
+        role_names = _names(mapped_roles)
+        return bool(role_names) and set(contract["required"]) <= role_names
+    if not isinstance(figure_intent, Mapping) or _has_forbidden_visual_field(figure_intent):
+        return False
+    try:
+        parsed = parse_figure_intent(figure_intent)
+    except FigureIntentError:
+        return False
+    if parsed.template_id != template_id:
+        return False
+    if isinstance(mapped_roles, Mapping) and dict(parsed.data) != dict(mapped_roles):
+        return False
+    supplied = set(parsed.data) | set(parsed.semantics)
+    return set(contract["required"]) <= supplied
 
 
 def score_agent_predictions(cases_path: Path, predictions_path: Path) -> AgentScoringResult:
@@ -196,7 +255,7 @@ def score_agent_predictions(cases_path: Path, predictions_path: Path) -> AgentSc
             input_mode_correct += prediction.get("input_mode") == expected["input_mode"]
         if expected_action == "clarify":
             clarify_correct += predicted_action == "clarify" and bool(
-                prediction.get("clarification_reason")
+                prediction.get("clarification_reason") or prediction.get("clarification_question")
             )
         if expected_action == "require_precomputed":
             precomputed_correct += predicted_action == "require_precomputed" and bool(
@@ -206,11 +265,11 @@ def score_agent_predictions(cases_path: Path, predictions_path: Path) -> AgentSc
             unsupported_correct += predicted_action == "unsupported"
 
         forbidden = set(expected.get("forbidden_inferences", ()))
-        inferred = set(prediction.get("scientific_inferences", ()))
+        inferred = _names(prediction.get("scientific_inferences", ()))
         required_semantics = set(expected.get("required_semantics", ()))
-        supplied_semantics = set(prediction.get("scientific_semantics", ()))
+        supplied_semantics = _semantic_names(prediction.get("scientific_semantics", ()))
         required_roles = set(expected.get("required_roles", ()))
-        mapped_roles = set(prediction.get("mapped_roles", ()))
+        mapped_roles = _supplied_role_names(prediction)
         is_unsafe = (
             (predicted_action == "render" and expected_action != "render")
             or (predicted_action == "render" and not required_roles <= mapped_roles)

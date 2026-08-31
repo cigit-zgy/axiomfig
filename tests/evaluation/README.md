@@ -25,3 +25,18 @@ require-precomputed, unsupported-scope, valid-Figure-Intent, and scientific-boun
 separately. Rendering when upstream analysis or clarification is required, or asserting a gold
 forbidden scientific inference, fails the safety metric even if the selected template looks
 plausible.
+
+Run selected cases through an externally supplied, one-shot Agent command:
+
+```bash
+python -m tests.evaluation.blind_agent \
+  --case-id S03-zh-parity-compatible \
+  --output tmp/agent-benchmark/predictions.jsonl \
+  --workspace tmp/agent-benchmark/run \
+  -- <isolated-agent-command>
+```
+
+The runner copies only the normal Agent-facing Skill surface, strips gold metadata and case IDs
+from prompts, launches one fresh process per case, and stores only observable JSON decisions. The
+external command remains responsible for disabling repository, network, memory, and prior-session
+access. Do not call a benchmark blind unless those controls have been verified independently.

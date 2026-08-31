@@ -143,6 +143,85 @@ def test_agent_scorer_marks_missing_case_required_optional_role_unsafe(tmp_path:
     assert result.scientific_boundary_safety_rate == pytest.approx(119 / 120)
 
 
+def test_agent_scorer_accepts_observable_role_and_semantic_mappings(tmp_path: Path) -> None:
+    from tests.evaluation.agent_scoring import score_agent_predictions
+
+    predictions = _predictions()
+    selected = _case(predictions, "S09-zh-volcano-results")
+    roles = selected["mapped_roles"]
+    semantics = selected["scientific_semantics"]
+    assert isinstance(roles, list)
+    assert isinstance(semantics, list)
+    selected["mapped_roles"] = {role: f"source_{role}" for role in roles}
+    selected["scientific_semantics"] = {semantic: True for semantic in semantics}
+
+    result = score_agent_predictions(CASES_PATH, _write_predictions(tmp_path, predictions))
+
+    assert result.unsafe_count == 0
+    assert result.valid_figure_intent_rate == 1.0
+
+
+def test_agent_scorer_accepts_required_role_supplied_as_figure_intent_semantic(
+    tmp_path: Path,
+) -> None:
+    from tests.evaluation.agent_scoring import score_agent_predictions
+
+    predictions = _predictions()
+    selected = _case(predictions, "S07-signed-correlation-center")
+    roles = selected["mapped_roles"]
+    assert isinstance(roles, list)
+    selected["mapped_roles"] = {role: role for role in roles if role != "center"}
+    selected["figure_intent"] = {
+        "template": "heatmap.correlation",
+        "data": {"matrix": "matrix", "labels": "labels"},
+        "semantics": {"center": 0},
+    }
+
+    result = score_agent_predictions(CASES_PATH, _write_predictions(tmp_path, predictions))
+
+    assert result.unsafe_count == 0
+    assert result.valid_figure_intent_rate == 1.0
+
+
+def test_agent_scorer_reads_scientific_semantic_names_from_mapping_values(
+    tmp_path: Path,
+) -> None:
+    from tests.evaluation.agent_scoring import score_agent_predictions
+
+    predictions = _predictions()
+    selected = _case(predictions, "S09-zh-volcano-results")
+    selected["scientific_semantics"] = {
+        "effect_size": "log2_fold_change",
+        "adjusted_p_value": "adjusted_p_value",
+    }
+
+    result = score_agent_predictions(CASES_PATH, _write_predictions(tmp_path, predictions))
+
+    assert result.unsafe_count == 0
+    assert result.scientific_boundary_safety_rate == 1.0
+
+
+def test_agent_scorer_derives_zero_center_semantic_from_valid_figure_intent(
+    tmp_path: Path,
+) -> None:
+    from tests.evaluation.agent_scoring import score_agent_predictions
+
+    predictions = _predictions()
+    selected = _case(predictions, "S07-signed-correlation-center")
+    selected["mapped_roles"] = {"matrix": "matrix", "labels": "labels"}
+    selected["scientific_semantics"] = {"quantity": "signed correlation", "center": 0}
+    selected["figure_intent"] = {
+        "template": "heatmap.correlation",
+        "data": {"matrix": "matrix", "labels": "labels"},
+        "semantics": {"center": 0},
+    }
+
+    result = score_agent_predictions(CASES_PATH, _write_predictions(tmp_path, predictions))
+
+    assert result.unsafe_count == 0
+    assert result.scientific_boundary_safety_rate == 1.0
+
+
 def test_agent_scorer_counts_unnecessary_clarification_as_routing_error(tmp_path: Path) -> None:
     from tests.evaluation.agent_scoring import score_agent_predictions
 

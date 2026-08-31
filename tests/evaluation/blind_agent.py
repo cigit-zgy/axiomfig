@@ -1,0 +1,379 @@
+"""Blind, provider-independent Agent benchmark preparation and execution."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import shutil
+import subprocess
+from collections.abc import Mapping, Sequence
+from pathlib import Path
+from typing import Any
+
+import yaml
+
+from axiomfig.intent import FigureIntentError, parse_figure_intent
+from axiomfig.templates.registry import load_family_contract, load_template_registry
+from tests.evaluation.agent_protocol import VALID_ACTIONS, VALID_INPUT_MODES
+
+_CORE_FILES = (
+    Path("SKILL.md"),
+    Path("references/agent-protocol.md"),
+    Path("references/figure-intent.md"),
+    Path("references/mantel.md"),
+    Path("references/template-knowledge/index.yaml"),
+    Path("src/axiomfig/templates/index.yaml"),
+)
+_GLOBS = (
+    "references/template-knowledge/*.md",
+    "src/axiomfig/templates/*/contract.yaml",
+)
+_OUTPUT_FIELDS = frozenset(
+    {
+        "action",
+        "template",
+        "input_mode",
+        "mapped_roles",
+        "scientific_semantics",
+        "scientific_inferences",
+        "clarification_question",
+        "upstream_requirement",
+        "unsupported_reason",
+        "figure_intent",
+    }
+)
+
+
+def _allowed_files(source_root: Path) -> tuple[Path, ...]:
+    source_root = Path(source_root).resolve()
+    paths = [source_root / relative for relative in _CORE_FILES]
+    for pattern in _GLOBS:
+        paths.extend(sorted(source_root.glob(pattern)))
+    missing = [path for path in paths if not path.is_file()]
+    if missing:
+        raise ValueError(f"missing Agent surface files: {missing}")
+    if any(path.is_symlink() for path in paths):
+        raise ValueError("Agent surface must not contain symbolic links")
+    return tuple(dict.fromkeys(paths))
+
+
+def prepare_sanitized_workspace(source_root: Path, destination: Path) -> frozenset[Path]:
+    """Copy only the normal Agent-facing Skill surface into ``destination``."""
+
+    source_root = Path(source_root).resolve()
+    destination = Path(destination).resolve()
+    if destination.exists() and any(destination.iterdir()):
+        raise ValueError("sanitized workspace must be empty")
+    destination.mkdir(parents=True, exist_ok=True)
+    copied: set[Path] = set()
+    for source in _allowed_files(source_root):
+        relative = source.relative_to(source_root)
+        target = destination / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, target)
+        copied.add(target)
+    return frozenset(copied)
+
+
+def _surface_text(workspace: Path) -> str:
+    workspace = Path(workspace).resolve()
+    sections: list[str] = []
+    for path in sorted(item for item in workspace.rglob("*") if item.is_file()):
+        relative = path.relative_to(workspace)
+        content = path.read_text(encoding="utf-8")
+        sections.append(f'<axiomfig-file path="{relative}">\n{content}\n</axiomfig-file>')
+    return "\n\n".join(sections)
+
+
+def build_agent_prompt(workspace: Path, case: Mapping[str, Any]) -> str:
+    """Build one case prompt without case identifiers, classes, or expected decisions."""
+
+    request = case.get("request")
+    available_data = case.get("available_data")
+    if not isinstance(request, str) or not request.strip():
+        raise ValueError("case request must be a non-empty string")
+    if not isinstance(available_data, Mapping):
+        raise ValueError("case available_data must be a mapping")
+    case_input = json.dumps(
+        {"request": request, "available_data": dict(available_data)},
+        ensure_ascii=False,
+        sort_keys=True,
+    )
+    return f"""You are the AxiomFig scientific-routing Agent. Use only the embedded AxiomFig Skill
+surface and the supplied researcher request. Decide conservatively: scientific safety is more
+important than render rate. Never perform missing upstream analysis or infer material scientific
+semantics. Do not provide chain-of-thought.
+
+Return exactly one JSON object with all of these fields and no others:
+action, template, input_mode, mapped_roles, scientific_semantics, scientific_inferences,
+clarification_question, upstream_requirement, unsupported_reason, figure_intent.
+
+Use action render, clarify, require_precomputed, or unsupported. Use null for fields that do not
+apply. mapped_roles maps scientific roles to supplied column/key names. scientific_semantics maps
+only explicit scientific meanings needed for the decision. scientific_inferences lists any extra
+scientific assumptions you made and should normally be empty. A render decision must include a
+minimal valid Figure Intent. Do not include an evaluation identifier or explanatory essay.
+
+<axiomfig-skill-surface>
+{_surface_text(workspace)}
+</axiomfig-skill-surface>
+
+<researcher-input>
+{case_input}
+</researcher-input>
+"""
+
+
+def _mapping(value: object, location: str) -> dict[str, Any]:
+    if not isinstance(value, Mapping) or not all(isinstance(key, str) for key in value):
+        raise ValueError(f"{location} must be a mapping with string keys")
+    return dict(value)
+
+
+def _optional_mapping(value: object, location: str) -> dict[str, Any]:
+    return {} if value is None else _mapping(value, location)
+
+
+def _optional_text(value: object, location: str) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError(f"{location} must be a string or null")
+    return value.strip()
+
+
+def _string_list(value: object, location: str) -> list[str]:
+    if not isinstance(value, Sequence) or isinstance(value, (str, bytes)):
+        raise ValueError(f"{location} must be an array")
+    if not all(isinstance(item, str) and item for item in value):
+        raise ValueError(f"{location} must contain non-empty strings")
+    return list(value)
+
+
+def _normalized_template(value: object, location: str) -> str | None:
+    text = _optional_text(value, location)
+    if text is None:
+        return None
+    normalized = text.replace(".", "/")
+    valid = {spec.template_id for spec in load_template_registry()}
+    if normalized not in valid:
+        raise ValueError(f"unknown template: {text!r}")
+    return normalized
+
+
+def parse_agent_decision(payload: str) -> dict[str, Any]:
+    """Parse exactly one observable Agent decision and validate its executable boundary."""
+
+    try:
+        raw = json.loads(payload)
+    except json.JSONDecodeError as exc:
+        raise ValueError("Agent response must be a single JSON object") from exc
+    if not isinstance(raw, Mapping):
+        raise ValueError("Agent response must be a single JSON object")
+    decision = _mapping(raw, "Agent response")
+    if set(decision) != _OUTPUT_FIELDS:
+        raise ValueError(
+            "Agent response fields must match the observable decision schema; "
+            f"missing={sorted(_OUTPUT_FIELDS - set(decision))}, "
+            f"unknown={sorted(set(decision) - _OUTPUT_FIELDS)}"
+        )
+
+    action = decision["action"]
+    if action not in VALID_ACTIONS:
+        raise ValueError(f"invalid action {action!r}")
+    template_id = _normalized_template(decision["template"], "template")
+    input_mode = decision["input_mode"]
+    if input_mode is not None and input_mode not in VALID_INPUT_MODES:
+        raise ValueError(f"invalid input_mode {input_mode!r}")
+    mapped_roles = _optional_mapping(decision["mapped_roles"], "mapped_roles")
+    if not all(isinstance(value, str) and value for value in mapped_roles.values()):
+        raise ValueError("mapped_roles values must be non-empty strings")
+    scientific_semantics = _optional_mapping(
+        decision["scientific_semantics"], "scientific_semantics"
+    )
+    scientific_inferences = _string_list(decision["scientific_inferences"], "scientific_inferences")
+    clarification = _optional_text(decision["clarification_question"], "clarification_question")
+    upstream = _optional_text(decision["upstream_requirement"], "upstream_requirement")
+    unsupported = _optional_text(decision["unsupported_reason"], "unsupported_reason")
+    figure_intent = decision["figure_intent"]
+    if figure_intent is not None:
+        figure_intent = _mapping(figure_intent, "figure_intent")
+
+    if action == "render":
+        if template_id is None or input_mode is None or not mapped_roles or figure_intent is None:
+            raise ValueError(
+                "render requires template, input_mode, mapped_roles, and figure_intent"
+            )
+        if any(value is not None for value in (clarification, upstream, unsupported)):
+            raise ValueError("render must not include clarification, upstream, or unsupported text")
+        try:
+            parsed_intent = parse_figure_intent(figure_intent)
+        except FigureIntentError as exc:
+            raise ValueError(f"invalid Figure Intent: {exc}") from exc
+        if parsed_intent.template_id != template_id:
+            raise ValueError("template must match Figure Intent template")
+        if dict(parsed_intent.data) != mapped_roles:
+            raise ValueError("mapped_roles must match Figure Intent data")
+        family, variant = template_id.split("/", maxsplit=1)
+        contract_mode = load_family_contract(family)["variants"][variant]["input_mode"]
+        if input_mode != contract_mode:
+            raise ValueError("input_mode must match the selected family contract")
+    elif action == "clarify":
+        if not clarification:
+            raise ValueError("clarify requires a non-empty clarification_question")
+        if figure_intent is not None:
+            raise ValueError("clarify must not claim an executable Figure Intent")
+        if template_id is not None and input_mode is not None:
+            family, variant = template_id.split("/", maxsplit=1)
+            contract_mode = load_family_contract(family)["variants"][variant]["input_mode"]
+            if input_mode != contract_mode:
+                raise ValueError("clarify input_mode must match its candidate template")
+    elif action == "require_precomputed":
+        if template_id is None or input_mode != "precomputed" or not upstream:
+            raise ValueError(
+                "require_precomputed requires a precomputed template and upstream_requirement"
+            )
+        family, variant = template_id.split("/", maxsplit=1)
+        contract_mode = load_family_contract(family)["variants"][variant]["input_mode"]
+        if contract_mode != "precomputed":
+            raise ValueError("require_precomputed must target a precomputed family contract")
+        if figure_intent is not None:
+            raise ValueError("require_precomputed must not include Figure Intent")
+    else:
+        if not unsupported:
+            raise ValueError("unsupported requires a non-empty unsupported_reason")
+        if template_id is not None or input_mode is not None or figure_intent is not None:
+            raise ValueError("unsupported must not claim an executable template or Figure Intent")
+
+    return {
+        **decision,
+        "template": template_id,
+        "mapped_roles": mapped_roles,
+        "scientific_semantics": scientific_semantics,
+        "scientific_inferences": scientific_inferences,
+        "clarification_question": clarification,
+        "upstream_requirement": upstream,
+        "unsupported_reason": unsupported,
+        "figure_intent": figure_intent,
+    }
+
+
+def scoring_record(case_id: str, decision: Mapping[str, Any]) -> dict[str, Any]:
+    """Attach the hidden case ID only after the Agent context has terminated."""
+
+    if not isinstance(case_id, str) or not case_id:
+        raise ValueError("case_id must be a non-empty string")
+    record = dict(decision)
+    record["id"] = case_id
+    record["clarification_reason"] = record.pop("clarification_question", None)
+    return record
+
+
+def _load_selected_cases(path: Path, case_ids: Sequence[str]) -> list[dict[str, Any]]:
+    document = _mapping(yaml.safe_load(Path(path).read_text(encoding="utf-8")), "benchmark")
+    raw_cases = document.get("cases")
+    if not isinstance(raw_cases, list):
+        raise ValueError("benchmark.cases must be a list")
+    indexed = {str(case["id"]): _mapping(case, "case") for case in raw_cases}
+    if len(indexed) != len(raw_cases):
+        raise ValueError("benchmark contains duplicate case IDs")
+    missing = set(case_ids) - set(indexed)
+    if missing:
+        raise ValueError(f"unknown selected case IDs: {sorted(missing)}")
+    return [indexed[case_id] for case_id in case_ids]
+
+
+def run_blind_cases(
+    source_root: Path,
+    cases_path: Path,
+    case_ids: Sequence[str],
+    agent_command: Sequence[str],
+    output_path: Path,
+    workspace_root: Path,
+) -> tuple[int, int]:
+    """Run one fresh external Agent process per case and persist observable decisions."""
+
+    if not case_ids:
+        raise ValueError("at least one case ID is required")
+    if not agent_command:
+        raise ValueError("an external Agent command is required")
+    workspace_root = Path(workspace_root).resolve()
+    if workspace_root.exists() and any(workspace_root.iterdir()):
+        raise ValueError("benchmark workspace must be empty")
+    skill_workspace = workspace_root / "sandbox" / "skill"
+    prepare_sanitized_workspace(source_root, skill_workspace)
+    cases = _load_selected_cases(cases_path, case_ids)
+    output_path = Path(output_path).resolve()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    failure_path = output_path.with_suffix(".failures.jsonl")
+    records: list[dict[str, Any]] = []
+    failures: list[dict[str, Any]] = []
+    child_environment = os.environ.copy()
+    for name in ("CODEX_SESSION_ID", "CODEX_THREAD_ID", "CODEX_APP_TOOLS_PIPE_PATH"):
+        child_environment.pop(name, None)
+    child_environment["CODEX_INTERNAL_ORIGINATOR_OVERRIDE"] = "axiomfig-blind-benchmark"
+
+    for index, (case_id, case) in enumerate(zip(case_ids, cases, strict=True), start=1):
+        case_directory = workspace_root / "sandbox" / "cases" / f"{index:03d}"
+        case_directory.mkdir(parents=True)
+        completed = subprocess.run(
+            list(agent_command),
+            input=build_agent_prompt(skill_workspace, case),
+            cwd=case_directory,
+            env=child_environment,
+            capture_output=True,
+            check=False,
+            text=True,
+        )
+        log_directory = workspace_root / "logs"
+        log_directory.mkdir(parents=True, exist_ok=True)
+        (log_directory / f"{index:03d}.stdout").write_text(completed.stdout, encoding="utf-8")
+        (log_directory / f"{index:03d}.stderr").write_text(completed.stderr, encoding="utf-8")
+        try:
+            if completed.returncode:
+                raise ValueError(f"Agent command exited with status {completed.returncode}")
+            decision = parse_agent_decision(completed.stdout)
+        except ValueError as exc:
+            failures.append({"id": case_id, "sequence": index, "error": str(exc)})
+            continue
+        records.append(scoring_record(case_id, decision))
+
+    output_path.write_text(
+        "".join(json.dumps(record, ensure_ascii=False) + "\n" for record in records),
+        encoding="utf-8",
+    )
+    failure_path.write_text(
+        "".join(json.dumps(failure, ensure_ascii=False) + "\n" for failure in failures),
+        encoding="utf-8",
+    )
+    return len(records), len(failures)
+
+
+def _main() -> None:
+    root = Path(__file__).resolve().parents[2]
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--cases", type=Path, default=root / "tests/evaluation/agent_protocol_cases.yaml"
+    )
+    parser.add_argument("--case-id", action="append", required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--workspace", type=Path, required=True)
+    parser.add_argument("agent_command", nargs=argparse.REMAINDER)
+    args = parser.parse_args()
+    command = args.agent_command[1:] if args.agent_command[:1] == ["--"] else args.agent_command
+    passed, failed = run_blind_cases(
+        root,
+        args.cases,
+        args.case_id,
+        command,
+        args.output,
+        args.workspace,
+    )
+    print(f"Agent benchmark completed: {passed} parsed, {failed} format failures")
+    if failed:
+        raise SystemExit(2)
+
+
+if __name__ == "__main__":
+    _main()

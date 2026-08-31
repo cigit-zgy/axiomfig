@@ -8,6 +8,9 @@
 - expanded the Agent protocol specification from 72 to 120 decision-boundary cases, including 12
   Chinese research requests, and added model/provider-independent JSONL decision scoring with a
   separate scientific-safety metric;
+- added a provider-independent blind Agent benchmark harness that exposes only the normal Skill
+  surface, launches one fresh external process per case, and preserves observable decisions for
+  offline scientific-safety scoring;
 - removed hidden scientific defaults from external estimation, Bland–Altman, and precision–recall
   rendering, and made diverging heatmap/contour centers explicitly executable scientific semantics.
 
