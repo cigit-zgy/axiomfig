@@ -63,6 +63,23 @@ correlation, regression fit, Mantel link, association network, or feature-import
 not establish causality. Preserve associational language unless causal meaning is explicitly
 supported by the user's study design or supplied upstream result.
 
+## Observable decision contract
+
+The Agent returns one strict action variant. Fields that do not apply are absent rather than
+filled with `null` or provisional render mappings.
+
+| Action | Required fields | Optional fields | Meaning |
+|---|---|---|---|
+| `render` | `template`, `input_mode`, `mapped_roles`, `scientific_semantics`, `scientific_inferences`, `figure_intent` | none | The selected registered template and Figure Intent are executable now. Role mappings are one scientific role to one supplied column/key. |
+| `clarify` | `question`, `reason` | none | One material scientific distinction is missing. Do not invent a final template or provisional data mapping. |
+| `require_precomputed` | `missing_result`, `reason` | `candidate_template` | Upstream analysis is missing. Name the result and why current input is insufficient. Include a candidate only when the downstream registered precomputed figure is already resolved. |
+| `unsupported` | `reason` | none | The requested scientific/visual grammar is outside the registered public surface. |
+
+Every variant also contains `action`. A candidate template is not an executable Figure Intent.
+`mapped_roles`, `input_mode`, scientific semantics, and Figure Intent are render-only because no
+production consumer exists for provisional mappings on non-render actions. All variants reject
+unknown fields and empty required text.
+
 ## Execution result
 
 Return the validated PDF and PNG plus minimal provenance: selected template, direct or precomputed

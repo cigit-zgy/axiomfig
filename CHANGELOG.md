@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Replaced the render-shaped Agent benchmark response with strict action-specific decisions for
+  render, clarification, missing upstream results, and unsupported scope.
+
 - strengthened the five progressively disclosed template-knowledge topics with scientific routing,
   clarification, upstream-analysis, units, uncertainty, scale, and causality boundaries across all
   55 public templates;

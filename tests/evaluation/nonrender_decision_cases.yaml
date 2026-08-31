@@ -1,0 +1,161 @@
+version: 1
+cases:
+  - id: N01-parity-ready
+    request: Compare the supplied laboratory measurements with model predictions of the same nitrate quantity; both use mg/L.
+    classes: [render, parity, unit_compatibility]
+    available_data: {format: csv, columns: [observed, predicted]}
+    expected: {action: render, template: scatter.parity, input_mode: direct, required_roles: [observed, predicted]}
+  - id: N02-ecdf-ready
+    request: Compare the complete cumulative distributions of nitrate measurements across the supplied reactor groups without binning.
+    classes: [render, distribution]
+    available_data: {format: csv, columns: [value, group]}
+    expected: {action: render, template: distribution.ecdf, input_mode: direct, required_roles: [value, group]}
+  - id: N03-correlation-ready
+    request: Display this supplied signed correlation matrix with zero as the neutral value.
+    classes: [render, matrix, scale_semantics]
+    available_data: {format: json, keys: [matrix, labels, center]}
+    expected: {action: render, template: heatmap.correlation, input_mode: precomputed, required_roles: [matrix, labels, center], required_semantics: [diverging_center_zero]}
+  - id: N04-ratio-forest-ready
+    request: Show these supplied risk ratios and 95 percent confidence intervals with the supplied null reference of one.
+    classes: [render, estimation, reference_semantics]
+    available_data: {format: csv, columns: [label, estimate, interval, uncertainty_type, reference]}
+    expected: {action: render, template: estimation.forest, input_mode: precomputed, required_roles: [label, estimate, interval, uncertainty_type, reference], required_semantics: [ratio_null_one]}
+  - id: N05-zh-quiver-ready
+    language: zh
+    request: 这里给出了二维坐标 x、y 和速度分量 u、v，颜色含义也已经注明，请绘制矢量场。
+    classes: [render, field]
+    available_data: {format: json, keys: [x, y, u, v, color_semantics]}
+    expected: {action: render, template: field.quiver, input_mode: direct, required_roles: [x, y, u, v, color_semantics]}
+  - id: N06-zh-survival-ready
+    language: zh
+    request: 这是已经计算好的 Kaplan-Meier 时间和生存概率，请按给定分组绘制生存曲线。
+    classes: [render, survival, precomputed_result]
+    available_data: {format: csv, columns: [time, survival_probability, group]}
+    expected: {action: render, template: survival.kaplan_meier, input_mode: precomputed, required_roles: [time, survival_probability, group]}
+
+  - id: N07-uncertainty-undefined
+    request: Plot the estimate with the supplied error column, but its definition is not recorded.
+    classes: [clarify, uncertainty_semantics]
+    available_data: {format: csv, columns: [x, estimate, error]}
+    expected: {action: clarify, clarification_reason: The error type must be identified as SD, SE, CI, PI, or another explicit uncertainty definition., forbidden_inferences: [uncertainty_type]}
+  - id: N08-summary-or-distribution
+    request: Compare three treatment groups and show which is higher; I have all replicate values but have not said whether individual distributions or only summaries matter.
+    classes: [clarify, distribution_vs_summary]
+    available_data: {format: csv, columns: [treatment, value]}
+    expected: {action: clarify, clarification_reason: The scientific objective does not distinguish complete distributions/raw observations from summary magnitudes., forbidden_inferences: [aggregation, uncertainty_type]}
+  - id: N09-parity-conversion-unknown
+    request: Make a parity plot between measured phosphate in mg/L and predictions reported in mol/L; the chemical conversion basis is absent.
+    classes: [clarify, unit_compatibility, parity]
+    available_data: {format: csv, columns: [measured_mg_l, predicted_mol_l]}
+    expected: {action: clarify, clarification_reason: Parity requires compatible quantities and an explicit deterministic unit conversion., forbidden_inferences: [unit_conversion]}
+  - id: N10-heatmap-center-unknown
+    request: Plot this matrix with a diverging heatmap, but the quantity and scientifically meaningful center were not documented.
+    classes: [clarify, scale_semantics, matrix]
+    available_data: {format: json, keys: [matrix, row_labels, column_labels]}
+    expected: {action: clarify, clarification_reason: A diverging display requires an explicit scientific center and quantity meaning., forbidden_inferences: [diverging_center]}
+  - id: N11-importance-type-unknown
+    request: Plot these feature importance values; the method used to calculate importance is missing.
+    classes: [clarify, feature_importance]
+    available_data: {format: csv, columns: [feature, importance]}
+    expected: {action: clarify, clarification_reason: Feature-importance meaning must be explicit before labeling and interpretation., forbidden_inferences: [importance_type]}
+  - id: N12-volcano-semantics-unknown
+    request: Make a volcano plot from effect and p columns; neither transformation nor adjustment status is known.
+    classes: [clarify, omics, scale_semantics]
+    available_data: {format: csv, columns: [effect, p, significance_threshold, effect_threshold]}
+    expected: {action: clarify, clarification_reason: Effect transformation and raw-versus-adjusted significance meaning are scientifically material., forbidden_inferences: [log2_fold_change, adjusted_p_value]}
+  - id: N13-zh-ordered-x-meaning
+    language: zh
+    request: 横轴是按大小排列的剂量，纵轴是响应值；我还没有说明这些点是否代表连续轨迹或彼此独立的处理水平。
+    classes: [clarify, trajectory]
+    available_data: {format: csv, columns: [dose, response]}
+    expected: {action: clarify, clarification_reason: Connecting points would assert trajectory or continuity that is not yet established., forbidden_inferences: [trajectory]}
+  - id: N14-ambiguous-role-mapping
+    request: Draw the supplied fitted relationship, but fit_a and fit_b are two plausible model outputs and I have not identified the selected fit.
+    classes: [clarify, ambiguous_mapping]
+    available_data: {format: csv, columns: [x, y, fit_a, fit_b]}
+    expected: {action: clarify, clarification_reason: More than one supplied field plausibly maps to the required fitted role., forbidden_inferences: [selected_model]}
+
+  - id: N15-pca-raw
+    request: Compute PCA from this raw samples-by-features table and draw the score plot.
+    classes: [require_precomputed, ordination]
+    available_data: {format: csv, columns: [sample, feature_1, feature_2, feature_3]}
+    expected: {action: require_precomputed, template: ordination.pca_scores, input_mode: precomputed, required_roles: [coordinates, explained_variance], reason: PCA computation is upstream analysis., forbidden_inferences: [ordination_coordinates, explained_variance]}
+  - id: N16-zh-mantel-raw
+    language: zh
+    request: 我只有原始群落丰度表和环境变量表，请替我计算 Mantel 检验并画图。
+    classes: [require_precomputed, association]
+    available_data: {format: csv, columns: [sample, abundance_features, environmental_variables]}
+    expected: {action: require_precomputed, template: association.mantel, input_mode: precomputed, required_roles: [correlation_matrix, labels, links], reason: Mantel statistics and the environmental correlation matrix require upstream analysis., forbidden_inferences: [mantel_statistics, correlation_matrix]}
+  - id: N17-clustering-raw
+    request: Choose a clustering distance and linkage for this abundance matrix, then draw a clustered heatmap.
+    classes: [require_precomputed, clustering]
+    available_data: {format: json, keys: [matrix, row_labels, column_labels, color_semantics]}
+    expected: {action: require_precomputed, template: heatmap.clustered, input_mode: precomputed, required_roles: [matrix, row_labels, column_labels, row_order, column_order, color_semantics], reason: Distance, linkage, and cluster ordering are upstream analysis., forbidden_inferences: [distance_metric, linkage, clustering_order]}
+  - id: N18-roc-raw
+    request: Train a classifier from these predictors and outcomes and make an ROC curve.
+    classes: [require_precomputed, diagnostics]
+    available_data: {format: csv, columns: [outcome, predictor_a, predictor_b]}
+    expected: {action: require_precomputed, template: diagnostics.roc, input_mode: precomputed, required_roles: [false_positive_rate, true_positive_rate], reason: Model fitting and ROC coordinates are upstream analysis., forbidden_inferences: [roc_coordinates, fitted_model]}
+  - id: N19-zh-survival-raw
+    language: zh
+    request: 我有每位受试者的随访时间、结局和分组，请计算 Kaplan-Meier 估计后画生存曲线。
+    classes: [require_precomputed, survival]
+    available_data: {format: csv, columns: [duration, event, group]}
+    expected: {action: require_precomputed, template: survival.kaplan_meier, input_mode: precomputed, required_roles: [time, survival_probability], reason: Survival estimation is upstream analysis., forbidden_inferences: [survival_probability, confidence_interval]}
+  - id: N20-volcano-raw-counts
+    request: Use these raw RNA-seq counts to calculate differential expression and produce a volcano plot.
+    classes: [require_precomputed, omics]
+    available_data: {format: csv, columns: [feature, sample_a, sample_b, sample_c]}
+    expected: {action: require_precomputed, template: omics.volcano, input_mode: precomputed, required_roles: [effect_size, adjusted_p_value, significance_threshold, effect_threshold], reason: Differential expression and multiple-testing adjustment are upstream analysis., forbidden_inferences: [log2_fold_change, adjusted_p_value, significance_threshold]}
+  - id: N21-enrichment-raw-list
+    request: Run pathway enrichment on this gene list and make the enrichment dot plot.
+    classes: [require_precomputed, omics]
+    available_data: {format: csv, columns: [gene]}
+    expected: {action: require_precomputed, template: omics.enrichment_dot, input_mode: precomputed, required_roles: [term, enrichment, significance, size], reason: Enrichment and multiple-testing analysis are upstream., forbidden_inferences: [enrichment_method, adjusted_p_value, size_meaning]}
+  - id: N22-regression-raw
+    request: Select the best regression for x and y, fit it, and plot the fitted relationship.
+    classes: [require_precomputed, regression]
+    available_data: {format: csv, columns: [x, y]}
+    expected: {action: require_precomputed, template: scatter.regression, input_mode: precomputed, required_roles: [x, y, fitted], reason: Model selection and fitting are upstream analysis., forbidden_inferences: [regression_model, fitted_values]}
+  - id: N23-density-raw
+    request: Estimate a kernel density from these observations and display it; no kernel or bandwidth has been selected.
+    classes: [require_precomputed, distribution]
+    available_data: {format: csv, columns: [value]}
+    expected: {action: require_precomputed, template: distribution.density, input_mode: precomputed, required_roles: [x, density], reason: Kernel and bandwidth choices belong to upstream density estimation., forbidden_inferences: [kernel, bandwidth]}
+  - id: N24-calibration-raw
+    request: Bin these binary outcomes and prediction scores, compute observed frequencies, and draw a calibration curve.
+    classes: [require_precomputed, diagnostics]
+    available_data: {format: csv, columns: [outcome, predicted_score]}
+    expected: {action: require_precomputed, template: diagnostics.calibration, input_mode: precomputed, required_roles: [predicted_probability, observed_frequency], reason: Calibration binning and observed-frequency estimation are upstream analysis., forbidden_inferences: [calibration_bins, observed_frequency]}
+
+  - id: N25-paired-slope
+    request: Make a paired before-after slope graph with one connected line for every subject.
+    classes: [unsupported, specialty_graphic]
+    available_data: {format: csv, columns: [subject, condition, value]}
+    expected: {action: unsupported, reason: A paired/repeated-measures slope grammar is not registered.}
+  - id: N26-causal-dag
+    request: Infer a causal DAG from this observational table and draw the causal mechanisms.
+    classes: [unsupported, causality]
+    available_data: {format: csv, columns: [x, y, z]}
+    expected: {action: unsupported, reason: Causal inference and DAG visualization are outside the registered public grammar., forbidden_inferences: [causality]}
+  - id: N27-zh-microscopy
+    language: zh
+    request: 请分割这些显微图像中的细胞并输出形态学分析图。
+    classes: [unsupported, image_analysis]
+    available_data: {format: tiff, keys: [images]}
+    expected: {action: unsupported, reason: Microscopy segmentation and morphology analysis are outside AxiomFig.}
+  - id: N28-gis-choropleth
+    request: Join this shapefile to regional attributes and create a geographic choropleth map.
+    classes: [unsupported, geospatial]
+    available_data: {format: shapefile, keys: [geometry, region_id, value]}
+    expected: {action: unsupported, reason: Geographic map grammar and GIS processing are not registered.}
+  - id: N29-chemical-structure
+    request: Convert this SMILES string into a journal-ready chemical structure drawing.
+    classes: [unsupported, chemical_structure]
+    available_data: {format: text, keys: [smiles]}
+    expected: {action: unsupported, reason: Chemical structure drawing is outside AxiomFig scope.}
+  - id: N30-independent-panel-composition
+    request: Combine four unrelated external datasets into a user-defined 2 by 2 figure with independent plot specifications.
+    classes: [unsupported, composition]
+    available_data: {format: json, keys: [panel_a, panel_b, panel_c, panel_d]}
+    expected: {action: unsupported, reason: General user-data nested multi-panel composition is outside the current public interface.}

@@ -8,6 +8,9 @@ variants:
     input_mode: direct
     required: [x, series_values, series_labels]
     optional: [xlabel, ylabel]
+    role_semantics:
+      series_values: series_by_shared_x_matrix
+      series_labels: one_label_per_series_row
   marker:
     input_mode: direct
     required: [x, y]

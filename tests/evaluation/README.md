@@ -7,12 +7,19 @@ and forbidden visual fields. It does not execute an LLM and does not measure mod
 Future isolated Agent runs may emit one JSON object per line:
 
 ```json
-{"id":"R11-scatter-parity","action":"render","template":"scatter.parity","input_mode":"direct","mapped_roles":["observed","predicted"],"scientific_inferences":[]}
+{"id":"R11-scatter-parity","action":"render","template":"scatter.parity","input_mode":"direct","mapped_roles":{"observed":"measured","predicted":"predicted"},"scientific_semantics":{},"scientific_inferences":[],"figure_intent":{"template":"scatter.parity","data":{"observed":"measured","predicted":"predicted"}}}
 ```
 
 Only observable decisions belong in this file. Do not include chain-of-thought or private model
-reasoning. Depending on the action, a record may also provide `scientific_semantics`,
-`clarification_reason`, `upstream_requirement`, or a minimal `figure_intent`.
+reasoning. The action-specific contract is strict: `clarify` provides `question` and `reason`;
+`require_precomputed` provides `missing_result`, `reason`, and an optional `candidate_template`;
+`unsupported` provides only `reason`. Render-only fields are absent from non-render records.
+
+Scientific-semantic normalization is finite and exact. The scorer accepts `SE`, `standard error`,
+and `standard_error` as the same standard-error meaning; it likewise accepts
+`prediction_interval`, `prediction interval`, `95 percent prediction interval`, and
+`95% prediction interval` as one prediction-interval meaning. It does not conflate SD with SE or
+confidence intervals with prediction intervals, and it performs no fuzzy or model-based matching.
 
 Score predictions without a model call:
 

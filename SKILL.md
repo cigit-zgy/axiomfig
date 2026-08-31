@@ -47,8 +47,6 @@ Do not read all builders, contracts, references, or Gallery descriptions for a n
   adjusted p-values, diagnostics, or survival models.
 - Do not ask users for deterministic visual defaults or require them to author Figure Intent.
 - Do not bypass deterministic layout, ornaments, typography, Tectonic finalization, or validation.
-- CJK/Japanese canonical modes and TeX-native Matplotlib labels remain post-v1 work.
-
 ## Development route
 
 Visual configuration lives only under `src/axiomfig/resources/styles/`. Builders own plot grammar;

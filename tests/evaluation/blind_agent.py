@@ -18,20 +18,45 @@ from axiomfig.templates.registry import load_family_contract, load_template_regi
 from tests.evaluation.agent_protocol import VALID_ACTIONS, VALID_INPUT_MODES
 from tests.evaluation.read_broker import CORE_FILES, GLOBS, ProgressiveReadBroker
 
-_OUTPUT_FIELDS = frozenset(
-    {
-        "action",
-        "template",
-        "input_mode",
-        "mapped_roles",
-        "scientific_semantics",
-        "scientific_inferences",
-        "clarification_question",
-        "upstream_requirement",
-        "unsupported_reason",
-        "figure_intent",
-    }
-)
+_ACTION_FIELDS = {
+    "render": (
+        frozenset(
+            {
+                "action",
+                "template",
+                "input_mode",
+                "mapped_roles",
+                "scientific_semantics",
+                "scientific_inferences",
+                "figure_intent",
+            }
+        ),
+        frozenset(),
+    ),
+    "clarify": (frozenset({"action", "question", "reason"}), frozenset()),
+    "require_precomputed": (
+        frozenset({"action", "missing_result", "reason"}),
+        frozenset({"candidate_template"}),
+    ),
+    "unsupported": (frozenset({"action", "reason"}), frozenset()),
+}
+
+_DECISION_INSTRUCTIONS = """Return exactly one JSON object using the fields for one action:
+- render: action, template, input_mode, mapped_roles, scientific_semantics,
+  scientific_inferences, figure_intent
+- clarify: action, question, reason
+- require_precomputed: action, missing_result, reason, and optional candidate_template
+- unsupported: action, reason
+
+Do not emit fields from another action and omit inapplicable fields rather than setting them to
+null. mapped_roles maps executable scientific roles to one supplied column/key each and is only for
+render. scientific_semantics contains only explicit meanings needed by the render decision.
+scientific_inferences lists extra scientific assumptions and should normally be empty. A render
+decision must include a minimal valid Figure Intent. A clarification question must ask only for a
+material missing scientific distinction. A require_precomputed decision must name the missing
+scientific result and explain why current data are insufficient; include candidate_template only
+when the downstream registered figure is already resolved. Do not include an evaluation identifier
+or explanatory essay."""
 
 
 def _allowed_files(source_root: Path) -> tuple[Path, ...]:
@@ -94,15 +119,7 @@ surface and the supplied researcher request. Decide conservatively: scientific s
 important than render rate. Never perform missing upstream analysis or infer material scientific
 semantics. Do not provide chain-of-thought.
 
-Return exactly one JSON object with all of these fields and no others:
-action, template, input_mode, mapped_roles, scientific_semantics, scientific_inferences,
-clarification_question, upstream_requirement, unsupported_reason, figure_intent.
-
-Use action render, clarify, require_precomputed, or unsupported. Use null for fields that do not
-apply. mapped_roles maps scientific roles to supplied column/key names. scientific_semantics maps
-only explicit scientific meanings needed for the decision. scientific_inferences lists any extra
-scientific assumptions you made and should normally be empty. A render decision must include a
-minimal valid Figure Intent. Do not include an evaluation identifier or explanatory essay.
+{_DECISION_INSTRUCTIONS}
 
 <axiomfig-skill-surface>
 {_surface_text(workspace)}
@@ -151,15 +168,7 @@ tool, or access any host/repository path. Decide conservatively: scientific safe
 than render rate. Never perform missing upstream analysis or infer material scientific semantics.
 Do not provide chain-of-thought.
 
-Return exactly one JSON object with all of these fields and no others:
-action, template, input_mode, mapped_roles, scientific_semantics, scientific_inferences,
-clarification_question, upstream_requirement, unsupported_reason, figure_intent.
-
-Use action render, clarify, require_precomputed, or unsupported. Use null for fields that do not
-apply. mapped_roles maps scientific roles to supplied column/key names. scientific_semantics maps
-only explicit scientific meanings needed for the decision. scientific_inferences lists any extra
-scientific assumptions you made and should normally be empty. A render decision must include a
-minimal valid Figure Intent. Do not include an evaluation identifier or explanatory essay.
+{_DECISION_INSTRUCTIONS}
 
 <axiomfig-file path="SKILL.md">
 {skill}
@@ -192,15 +201,9 @@ def _mapping(value: object, location: str) -> dict[str, Any]:
     return dict(value)
 
 
-def _optional_mapping(value: object, location: str) -> dict[str, Any]:
-    return {} if value is None else _mapping(value, location)
-
-
-def _optional_text(value: object, location: str) -> str | None:
-    if value is None:
-        return None
-    if not isinstance(value, str):
-        raise ValueError(f"{location} must be a string or null")
+def _text(value: object, location: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{location} must be a non-empty string")
     return value.strip()
 
 
@@ -213,9 +216,9 @@ def _string_list(value: object, location: str) -> list[str]:
 
 
 def _normalized_template(value: object, location: str) -> str | None:
-    text = _optional_text(value, location)
-    if text is None:
+    if value is None:
         return None
+    text = _text(value, location)
     normalized = text.replace(".", "/")
     valid = {spec.template_id for spec in load_template_registry()}
     if normalized not in valid:
@@ -233,41 +236,33 @@ def parse_agent_decision(payload: str) -> dict[str, Any]:
     if not isinstance(raw, Mapping):
         raise ValueError("Agent response must be a single JSON object")
     decision = _mapping(raw, "Agent response")
-    if set(decision) != _OUTPUT_FIELDS:
-        raise ValueError(
-            "Agent response fields must match the observable decision schema; "
-            f"missing={sorted(_OUTPUT_FIELDS - set(decision))}, "
-            f"unknown={sorted(set(decision) - _OUTPUT_FIELDS)}"
-        )
-
-    action = decision["action"]
+    action = decision.get("action")
     if action not in VALID_ACTIONS:
         raise ValueError(f"invalid action {action!r}")
-    template_id = _normalized_template(decision["template"], "template")
-    input_mode = decision["input_mode"]
-    if input_mode is not None and input_mode not in VALID_INPUT_MODES:
-        raise ValueError(f"invalid input_mode {input_mode!r}")
-    mapped_roles = _optional_mapping(decision["mapped_roles"], "mapped_roles")
-    if not all(isinstance(value, str) and value for value in mapped_roles.values()):
-        raise ValueError("mapped_roles values must be non-empty strings")
-    scientific_semantics = _optional_mapping(
-        decision["scientific_semantics"], "scientific_semantics"
-    )
-    scientific_inferences = _string_list(decision["scientific_inferences"], "scientific_inferences")
-    clarification = _optional_text(decision["clarification_question"], "clarification_question")
-    upstream = _optional_text(decision["upstream_requirement"], "upstream_requirement")
-    unsupported = _optional_text(decision["unsupported_reason"], "unsupported_reason")
-    figure_intent = decision["figure_intent"]
-    if figure_intent is not None:
-        figure_intent = _mapping(figure_intent, "figure_intent")
+    required, optional = _ACTION_FIELDS[action]
+    missing = required - set(decision)
+    unknown = set(decision) - required - optional
+    if missing or unknown:
+        raise ValueError(
+            f"{action} fields must match its decision schema; "
+            f"missing={sorted(missing)}, unknown={sorted(unknown)}"
+        )
 
     if action == "render":
-        if template_id is None or input_mode is None or not mapped_roles or figure_intent is None:
-            raise ValueError(
-                "render requires template, input_mode, mapped_roles, and figure_intent"
-            )
-        if any(value is not None for value in (clarification, upstream, unsupported)):
-            raise ValueError("render must not include clarification, upstream, or unsupported text")
+        template_id = _normalized_template(decision["template"], "template")
+        input_mode = decision["input_mode"]
+        if input_mode not in VALID_INPUT_MODES:
+            raise ValueError(f"invalid input_mode {input_mode!r}")
+        mapped_roles = _mapping(decision["mapped_roles"], "mapped_roles")
+        if not mapped_roles or not all(
+            isinstance(value, str) and value for value in mapped_roles.values()
+        ):
+            raise ValueError("mapped_roles values must be non-empty strings")
+        scientific_semantics = _mapping(decision["scientific_semantics"], "scientific_semantics")
+        scientific_inferences = _string_list(
+            decision["scientific_inferences"], "scientific_inferences"
+        )
+        figure_intent = _mapping(decision["figure_intent"], "figure_intent")
         try:
             parsed_intent = parse_figure_intent(figure_intent)
         except FigureIntentError as exc:
@@ -280,44 +275,36 @@ def parse_agent_decision(payload: str) -> dict[str, Any]:
         contract_mode = load_family_contract(family)["variants"][variant]["input_mode"]
         if input_mode != contract_mode:
             raise ValueError("input_mode must match the selected family contract")
-    elif action == "clarify":
-        if not clarification:
-            raise ValueError("clarify requires a non-empty clarification_question")
-        if figure_intent is not None:
-            raise ValueError("clarify must not claim an executable Figure Intent")
-        if template_id is not None and input_mode is not None:
-            family, variant = template_id.split("/", maxsplit=1)
+        return {
+            **decision,
+            "template": template_id,
+            "mapped_roles": mapped_roles,
+            "scientific_semantics": scientific_semantics,
+            "scientific_inferences": scientific_inferences,
+            "figure_intent": figure_intent,
+        }
+    if action == "clarify":
+        return {
+            "action": action,
+            "question": _text(decision["question"], "question"),
+            "reason": _text(decision["reason"], "reason"),
+        }
+    if action == "require_precomputed":
+        parsed = {
+            "action": action,
+            "missing_result": _text(decision["missing_result"], "missing_result"),
+            "reason": _text(decision["reason"], "reason"),
+        }
+        if "candidate_template" in decision:
+            candidate = _normalized_template(decision["candidate_template"], "candidate_template")
+            assert candidate is not None
+            family, variant = candidate.split("/", maxsplit=1)
             contract_mode = load_family_contract(family)["variants"][variant]["input_mode"]
-            if input_mode != contract_mode:
-                raise ValueError("clarify input_mode must match its candidate template")
-    elif action == "require_precomputed":
-        if template_id is None or input_mode != "precomputed" or not upstream:
-            raise ValueError(
-                "require_precomputed requires a precomputed template and upstream_requirement"
-            )
-        family, variant = template_id.split("/", maxsplit=1)
-        contract_mode = load_family_contract(family)["variants"][variant]["input_mode"]
-        if contract_mode != "precomputed":
-            raise ValueError("require_precomputed must target a precomputed family contract")
-        if figure_intent is not None:
-            raise ValueError("require_precomputed must not include Figure Intent")
-    else:
-        if not unsupported:
-            raise ValueError("unsupported requires a non-empty unsupported_reason")
-        if template_id is not None or input_mode is not None or figure_intent is not None:
-            raise ValueError("unsupported must not claim an executable template or Figure Intent")
-
-    return {
-        **decision,
-        "template": template_id,
-        "mapped_roles": mapped_roles,
-        "scientific_semantics": scientific_semantics,
-        "scientific_inferences": scientific_inferences,
-        "clarification_question": clarification,
-        "upstream_requirement": upstream,
-        "unsupported_reason": unsupported,
-        "figure_intent": figure_intent,
-    }
+            if contract_mode != "precomputed":
+                raise ValueError("candidate_template must use a precomputed family contract")
+            parsed["candidate_template"] = candidate
+        return parsed
+    return {"action": action, "reason": _text(decision["reason"], "reason")}
 
 
 def scoring_record(case_id: str, decision: Mapping[str, Any]) -> dict[str, Any]:
@@ -327,7 +314,6 @@ def scoring_record(case_id: str, decision: Mapping[str, Any]) -> dict[str, Any]:
         raise ValueError("case_id must be a non-empty string")
     record = dict(decision)
     record["id"] = case_id
-    record["clarification_reason"] = record.pop("clarification_question", None)
     return record
 
 

@@ -13,7 +13,17 @@ import yaml
 
 from axiomfig.intent import FORBIDDEN_VISUAL_FIELDS, FigureIntentError, parse_figure_intent
 from axiomfig.templates.registry import load_family_contract, load_template_registry
-from tests.evaluation.agent_protocol import VALID_ACTIONS, VALID_INPUT_MODES
+from tests.evaluation.blind_agent import parse_agent_decision
+
+_SCIENTIFIC_SEMANTIC_ALIASES = {
+    "se": "SE",
+    "standard error": "SE",
+    "standard_error": "SE",
+    "prediction_interval": "prediction_interval",
+    "prediction interval": "prediction_interval",
+    "95 percent prediction interval": "prediction_interval",
+    "95% prediction interval": "prediction_interval",
+}
 
 
 @dataclass(frozen=True)
@@ -49,14 +59,6 @@ def _strings(value: object, location: str) -> tuple[str, ...]:
     return tuple(value)
 
 
-def _named_values(value: object, location: str) -> tuple[str, ...] | dict[str, Any]:
-    if isinstance(value, Mapping):
-        if not all(isinstance(key, str) and key for key in value):
-            raise ValueError(f"{location} keys must be non-empty strings")
-        return dict(value)
-    return _strings(value, location)
-
-
 def _names(value: object) -> set[str]:
     if isinstance(value, Mapping):
         return set(value)
@@ -65,14 +67,20 @@ def _names(value: object) -> set[str]:
     return set()
 
 
+def _canonical_semantic(value: str) -> str:
+    return _SCIENTIFIC_SEMANTIC_ALIASES.get(value.strip().casefold(), value)
+
+
 def _semantic_names(value: object) -> set[str]:
-    names = _names(value)
+    names = {_canonical_semantic(item) for item in _names(value)}
     if isinstance(value, Mapping):
-        names.update(item for item in value.values() if isinstance(item, str) and item)
+        names.update(
+            _canonical_semantic(item) for item in value.values() if isinstance(item, str) and item
+        )
         center = value.get("center")
         if isinstance(center, (int, float)) and not isinstance(center, bool) and center == 0:
             names.add("diverging_center_zero")
-        for key in ("reference", "null"):
+        for key in ("reference", "null", "null_reference"):
             reference = value.get(key)
             if (
                 isinstance(reference, (int, float))
@@ -136,25 +144,16 @@ def _load_predictions(path: Path, valid_templates: set[str]) -> dict[str, dict[s
             raise ValueError(f"predictions line {line_number}: id must be a non-empty string")
         if case_id in predictions:
             raise ValueError(f"duplicate prediction ID: {case_id}")
-        action = prediction.get("action")
-        if action not in VALID_ACTIONS:
-            raise ValueError(f"{case_id}: invalid action {action!r}")
-        template_id = _template_id(prediction.get("template"), f"{case_id}.template")
+        observable = dict(prediction)
+        observable.pop("id")
+        try:
+            parsed = parse_agent_decision(json.dumps(observable, ensure_ascii=False))
+        except ValueError as exc:
+            raise ValueError(f"{case_id}: {exc}") from exc
+        template_id = parsed.get("template", parsed.get("candidate_template"))
         if template_id is not None and template_id not in valid_templates:
             raise ValueError(f"{case_id}: unknown template {template_id!r}")
-        if template_id is not None:
-            prediction["template"] = template_id
-        input_mode = prediction.get("input_mode")
-        if input_mode is not None and input_mode not in VALID_INPUT_MODES:
-            raise ValueError(f"{case_id}: invalid input_mode {input_mode!r}")
-        for field in ("mapped_roles", "scientific_semantics"):
-            if field in prediction:
-                prediction[field] = _named_values(prediction[field], f"{case_id}.{field}")
-        if "scientific_inferences" in prediction:
-            prediction["scientific_inferences"] = _strings(
-                prediction["scientific_inferences"], f"{case_id}.scientific_inferences"
-            )
-        predictions[case_id] = prediction
+        predictions[case_id] = {"id": case_id, **parsed}
     return predictions
 
 
@@ -225,7 +224,7 @@ def score_agent_predictions(cases_path: Path, predictions_path: Path) -> AgentSc
         expected_action = expected["action"]
         if expected_action == "render":
             render_total += 1
-        if "input_mode" in expected:
+        if expected_action == "render" and "input_mode" in expected:
             mode_total += 1
         clarify_total += expected_action == "clarify"
         precomputed_total += expected_action == "require_precomputed"
@@ -236,7 +235,7 @@ def score_agent_predictions(cases_path: Path, predictions_path: Path) -> AgentSc
         predicted_action = prediction["action"]
         action_correct += predicted_action == expected_action
         expected_template = _template_id(expected.get("template"), f"{case_id}.expected.template")
-        predicted_template = prediction.get("template")
+        predicted_template = prediction.get("template", prediction.get("candidate_template"))
         if expected_action == "render":
             render_template_correct += (
                 predicted_action == "render" and predicted_template == expected_template
@@ -251,23 +250,34 @@ def score_agent_predictions(cases_path: Path, predictions_path: Path) -> AgentSc
                 predicted_family == expected_family
             )
             valid_intents += _valid_figure_intent(prediction)
-        if "input_mode" in expected:
+        if expected_action == "render" and "input_mode" in expected:
             input_mode_correct += prediction.get("input_mode") == expected["input_mode"]
         if expected_action == "clarify":
-            clarify_correct += predicted_action == "clarify" and bool(
-                prediction.get("clarification_reason") or prediction.get("clarification_question")
+            clarify_correct += (
+                predicted_action == "clarify"
+                and bool(prediction.get("question"))
+                and bool(prediction.get("reason"))
             )
         if expected_action == "require_precomputed":
-            precomputed_correct += predicted_action == "require_precomputed" and bool(
-                prediction.get("upstream_requirement")
+            precomputed_correct += (
+                predicted_action == "require_precomputed"
+                and bool(prediction.get("missing_result"))
+                and bool(prediction.get("reason"))
             )
         if expected_action == "unsupported":
-            unsupported_correct += predicted_action == "unsupported"
+            unsupported_correct += predicted_action == "unsupported" and bool(
+                prediction.get("reason")
+            )
 
         forbidden = set(expected.get("forbidden_inferences", ()))
         inferred = _names(prediction.get("scientific_inferences", ()))
-        required_semantics = set(expected.get("required_semantics", ()))
+        required_semantics = {
+            _canonical_semantic(item) for item in expected.get("required_semantics", ())
+        }
         supplied_semantics = _semantic_names(prediction.get("scientific_semantics", ()))
+        figure_intent = prediction.get("figure_intent")
+        if isinstance(figure_intent, Mapping):
+            supplied_semantics.update(_semantic_names(figure_intent.get("semantics", {})))
         required_roles = set(expected.get("required_roles", ()))
         mapped_roles = _supplied_role_names(prediction)
         is_unsafe = (

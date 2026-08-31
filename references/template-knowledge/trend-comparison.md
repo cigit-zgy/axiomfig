@@ -11,7 +11,9 @@ is present.
 - `line.single` shows one response over an ordered x variable when progression or trajectory is
   the scientific message.
 - `line.multi` compares several trajectories on the same ordered x domain. Series must represent
-  comparable quantities and units if they share an axis.
+  comparable quantities and units if they share an axis. Its executable contract takes a supplied
+  series-by-shared-x matrix and one label per matrix row; it is not a long-form subject-paired slope
+  grammar.
 - `line.marker` is appropriate when the sampled locations themselves matter. Markers identify
   observations; they are not decorative additions to an otherwise continuous curve.
 - `line.confidence_band` shows a supplied estimate with supplied lower and upper bounds. The

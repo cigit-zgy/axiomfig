@@ -11,29 +11,63 @@ ROOT = Path(__file__).resolve().parents[1]
 CASES_PATH = ROOT / "tests/evaluation/agent_protocol_cases.yaml"
 
 
+def _render_prediction(case: dict[str, object]) -> dict[str, object]:
+    expected = case["expected"]
+    assert isinstance(expected, dict)
+    roles = list(expected["required_roles"])
+    mapped_roles = {role: role for role in roles}
+    semantics = {name: name for name in expected.get("required_semantics", [])}
+    intent_semantics: dict[str, object] = {}
+    if "ratio_null_one" in expected.get("required_semantics", []):
+        semantics = {"reference": 1}
+        intent_semantics["reference"] = 1
+    figure_intent: dict[str, object] = {
+        "template": expected["template"],
+        "data": mapped_roles,
+    }
+    if intent_semantics:
+        figure_intent["semantics"] = intent_semantics
+    return {
+        "id": case["id"],
+        "action": "render",
+        "template": expected["template"],
+        "input_mode": expected["input_mode"],
+        "mapped_roles": mapped_roles,
+        "scientific_semantics": semantics,
+        "scientific_inferences": [],
+        "figure_intent": figure_intent,
+    }
+
+
 def _predictions() -> list[dict[str, object]]:
     document = yaml.safe_load(CASES_PATH.read_text(encoding="utf-8"))
     predictions: list[dict[str, object]] = []
     for case in document["cases"]:
         expected = case["expected"]
-        prediction: dict[str, object] = {
-            "id": case["id"],
-            "action": expected["action"],
-            "scientific_inferences": [],
-        }
-        for field in ("template", "input_mode"):
-            if field in expected:
-                prediction[field] = expected[field]
-        if "required_roles" in expected:
-            prediction["mapped_roles"] = expected["required_roles"]
-        if "required_semantics" in expected:
-            prediction["scientific_semantics"] = expected["required_semantics"]
-        if expected["action"] == "clarify":
-            prediction["clarification_reason"] = expected["clarification_reason"]
-        if expected["action"] == "require_precomputed":
-            prediction["upstream_requirement"] = expected.get(
-                "upstream_requirement", expected["reason"]
-            )
+        action = expected["action"]
+        if action == "render":
+            prediction = _render_prediction(case)
+        elif action == "clarify":
+            prediction = {
+                "id": case["id"],
+                "action": "clarify",
+                "question": "What scientifically material meaning is missing?",
+                "reason": expected["clarification_reason"],
+            }
+        elif action == "require_precomputed":
+            prediction = {
+                "id": case["id"],
+                "action": "require_precomputed",
+                "candidate_template": expected["template"],
+                "missing_result": expected["reason"],
+                "reason": "The supplied input does not contain the required upstream result.",
+            }
+        else:
+            prediction = {
+                "id": case["id"],
+                "action": "unsupported",
+                "reason": expected["reason"],
+            }
         predictions.append(prediction)
     return predictions
 
@@ -77,12 +111,18 @@ def test_agent_scorer_separates_wrong_template_from_family(tmp_path: Path) -> No
     predictions = _predictions()
     selected = _case(predictions, "S04-unrelated-quantities-scatter")
     selected["template"] = "scatter.grouped"
+    selected["mapped_roles"] = {"x": "x", "y": "y", "group": "group"}
+    selected["figure_intent"] = {
+        "template": "scatter.grouped",
+        "data": {"x": "x", "y": "y", "group": "group"},
+    }
+
     result = score_agent_predictions(CASES_PATH, _write_predictions(tmp_path, predictions))
 
     assert result.action_accuracy == 1.0
     assert result.render_template_accuracy == pytest.approx(69 / 70)
     assert result.family_accuracy == 1.0
-    assert result.valid_figure_intent_rate == pytest.approx(69 / 70)
+    assert result.valid_figure_intent_rate == 1.0
 
 
 def test_agent_scorer_marks_unsafe_render_instead_of_clarification(tmp_path: Path) -> None:
@@ -90,18 +130,36 @@ def test_agent_scorer_marks_unsafe_render_instead_of_clarification(tmp_path: Pat
 
     predictions = _predictions()
     selected = _case(predictions, "C13-zh-uncertainty-unknown")
+    selected.clear()
     selected.update(
+        id="C13-zh-uncertainty-unknown",
         action="render",
-        mapped_roles=["x", "estimate", "error", "uncertainty_type"],
+        template="line.errorbar",
+        input_mode="precomputed",
+        mapped_roles={
+            "x": "x",
+            "estimate": "estimate",
+            "error": "error",
+            "uncertainty_type": "error",
+        },
+        scientific_semantics={"uncertainty_type": "SD"},
         scientific_inferences=["uncertainty_type"],
+        figure_intent={
+            "template": "line.errorbar",
+            "data": {
+                "x": "x",
+                "estimate": "estimate",
+                "error": "error",
+                "uncertainty_type": "error",
+            },
+        },
     )
-    selected.pop("clarification_reason")
+
     result = score_agent_predictions(CASES_PATH, _write_predictions(tmp_path, predictions))
 
     assert result.action_accuracy == pytest.approx(119 / 120)
     assert result.clarification_accuracy == pytest.approx(19 / 20)
     assert result.unsafe_count == 1
-    assert result.scientific_boundary_safety_rate == pytest.approx(119 / 120)
 
 
 def test_agent_scorer_marks_unsafe_render_instead_of_upstream_analysis(tmp_path: Path) -> None:
@@ -109,145 +167,101 @@ def test_agent_scorer_marks_unsafe_render_instead_of_upstream_analysis(tmp_path:
 
     predictions = _predictions()
     selected = _case(predictions, "P08-zh-mantel-raw")
-    selected.update(action="render", scientific_inferences=["mantel_statistics"])
-    selected.pop("upstream_requirement")
+    selected.clear()
+    selected.update(
+        id="P08-zh-mantel-raw",
+        action="render",
+        template="heatmap.basic",
+        input_mode="direct",
+        mapped_roles={
+            "matrix": "abundance_matrix",
+            "row_labels": "sample_labels",
+            "column_labels": "feature_labels",
+            "color_semantics": "color_semantics",
+        },
+        scientific_semantics={},
+        scientific_inferences=["mantel_statistics"],
+        figure_intent={
+            "template": "heatmap.basic",
+            "data": {
+                "matrix": "abundance_matrix",
+                "row_labels": "sample_labels",
+                "column_labels": "feature_labels",
+                "color_semantics": "color_semantics",
+            },
+        },
+    )
+
     result = score_agent_predictions(CASES_PATH, _write_predictions(tmp_path, predictions))
 
     assert result.require_precomputed_accuracy == pytest.approx(19 / 20)
     assert result.unsafe_count == 1
-    assert result.scientific_boundary_safety_rate == pytest.approx(119 / 120)
 
 
-def test_agent_scorer_marks_missing_required_scientific_semantic_unsafe(tmp_path: Path) -> None:
+def test_agent_scorer_marks_missing_required_scientific_semantic_unsafe(
+    tmp_path: Path,
+) -> None:
     from tests.evaluation.agent_scoring import score_agent_predictions
 
     predictions = _predictions()
-    _case(predictions, "S09-zh-volcano-results")["scientific_semantics"] = ["adjusted_p_value"]
+    _case(predictions, "S09-zh-volcano-results")["scientific_semantics"] = {
+        "adjusted_p_value": "adjusted_p_value"
+    }
+
     result = score_agent_predictions(CASES_PATH, _write_predictions(tmp_path, predictions))
 
     assert result.unsafe_count == 1
-    assert result.scientific_boundary_safety_rate == pytest.approx(119 / 120)
 
 
-def test_agent_scorer_marks_missing_case_required_optional_role_unsafe(tmp_path: Path) -> None:
+def test_agent_scorer_marks_missing_case_required_optional_role_unsafe(
+    tmp_path: Path,
+) -> None:
     from tests.evaluation.agent_scoring import score_agent_predictions
 
     predictions = _predictions()
     selected = _case(predictions, "S05-precomputed-agreement")
-    mapped_roles = selected["mapped_roles"]
-    assert isinstance(mapped_roles, list)
-    selected["mapped_roles"] = [role for role in mapped_roles if role != "center"]
+    roles = selected["mapped_roles"]
+    intent = selected["figure_intent"]
+    assert isinstance(roles, dict) and isinstance(intent, dict)
+    roles.pop("center")
+
     result = score_agent_predictions(CASES_PATH, _write_predictions(tmp_path, predictions))
 
     assert result.unsafe_count == 1
-    assert result.scientific_boundary_safety_rate == pytest.approx(119 / 120)
 
 
-def test_agent_scorer_accepts_observable_role_and_semantic_mappings(tmp_path: Path) -> None:
-    from tests.evaluation.agent_scoring import score_agent_predictions
-
-    predictions = _predictions()
-    selected = _case(predictions, "S09-zh-volcano-results")
-    roles = selected["mapped_roles"]
-    semantics = selected["scientific_semantics"]
-    assert isinstance(roles, list)
-    assert isinstance(semantics, list)
-    selected["mapped_roles"] = {role: f"source_{role}" for role in roles}
-    selected["scientific_semantics"] = {semantic: True for semantic in semantics}
-
-    result = score_agent_predictions(CASES_PATH, _write_predictions(tmp_path, predictions))
-
-    assert result.unsafe_count == 0
-    assert result.valid_figure_intent_rate == 1.0
-
-
-def test_agent_scorer_accepts_required_role_supplied_as_figure_intent_semantic(
+def test_agent_scorer_counts_unnecessary_clarification_as_routing_error(
     tmp_path: Path,
 ) -> None:
-    from tests.evaluation.agent_scoring import score_agent_predictions
-
-    predictions = _predictions()
-    selected = _case(predictions, "S07-signed-correlation-center")
-    roles = selected["mapped_roles"]
-    assert isinstance(roles, list)
-    selected["mapped_roles"] = {role: role for role in roles if role != "center"}
-    selected["figure_intent"] = {
-        "template": "heatmap.correlation",
-        "data": {"matrix": "matrix", "labels": "labels"},
-        "semantics": {"center": 0},
-    }
-
-    result = score_agent_predictions(CASES_PATH, _write_predictions(tmp_path, predictions))
-
-    assert result.unsafe_count == 0
-    assert result.valid_figure_intent_rate == 1.0
-
-
-def test_agent_scorer_reads_scientific_semantic_names_from_mapping_values(
-    tmp_path: Path,
-) -> None:
-    from tests.evaluation.agent_scoring import score_agent_predictions
-
-    predictions = _predictions()
-    selected = _case(predictions, "S09-zh-volcano-results")
-    selected["scientific_semantics"] = {
-        "effect_size": "log2_fold_change",
-        "adjusted_p_value": "adjusted_p_value",
-    }
-
-    result = score_agent_predictions(CASES_PATH, _write_predictions(tmp_path, predictions))
-
-    assert result.unsafe_count == 0
-    assert result.scientific_boundary_safety_rate == 1.0
-
-
-def test_agent_scorer_derives_zero_center_semantic_from_valid_figure_intent(
-    tmp_path: Path,
-) -> None:
-    from tests.evaluation.agent_scoring import score_agent_predictions
-
-    predictions = _predictions()
-    selected = _case(predictions, "S07-signed-correlation-center")
-    selected["mapped_roles"] = {"matrix": "matrix", "labels": "labels"}
-    selected["scientific_semantics"] = {"quantity": "signed correlation", "center": 0}
-    selected["figure_intent"] = {
-        "template": "heatmap.correlation",
-        "data": {"matrix": "matrix", "labels": "labels"},
-        "semantics": {"center": 0},
-    }
-
-    result = score_agent_predictions(CASES_PATH, _write_predictions(tmp_path, predictions))
-
-    assert result.unsafe_count == 0
-    assert result.scientific_boundary_safety_rate == 1.0
-
-
-def test_agent_scorer_counts_unnecessary_clarification_as_routing_error(tmp_path: Path) -> None:
     from tests.evaluation.agent_scoring import score_agent_predictions
 
     predictions = _predictions()
     selected = _case(predictions, "S01-raw-replicates-visible")
+    selected.clear()
     selected.update(
+        id="S01-raw-replicates-visible",
         action="clarify",
-        clarification_reason="Ask whether raw observations should be shown.",
+        question="Should raw observations be shown?",
+        reason="Confirm the already explicit request.",
     )
+
     result = score_agent_predictions(CASES_PATH, _write_predictions(tmp_path, predictions))
 
     assert result.action_accuracy == pytest.approx(119 / 120)
     assert result.unsafe_count == 0
-    assert result.scientific_boundary_safety_rate == 1.0
 
 
 def test_agent_scorer_reports_missing_prediction(tmp_path: Path) -> None:
     from tests.evaluation.agent_scoring import score_agent_predictions
 
-    predictions = _predictions()[:-1]
-    result = score_agent_predictions(CASES_PATH, _write_predictions(tmp_path, predictions))
+    result = score_agent_predictions(
+        CASES_PATH,
+        _write_predictions(tmp_path, _predictions()[:-1]),
+    )
 
     assert result.prediction_count == 119
     assert result.missing_count == 1
     assert result.action_accuracy == pytest.approx(119 / 120)
-    assert result.scientific_boundary_safety_rate == pytest.approx(119 / 120)
 
 
 def test_agent_scorer_rejects_duplicate_prediction_id(tmp_path: Path) -> None:
@@ -264,7 +278,11 @@ def test_agent_scorer_rejects_unknown_template(tmp_path: Path) -> None:
     from tests.evaluation.agent_scoring import score_agent_predictions
 
     predictions = _predictions()
-    _case(predictions, "S04-unrelated-quantities-scatter")["template"] = "scatter.unknown"
+    selected = _case(predictions, "S04-unrelated-quantities-scatter")
+    selected["template"] = "scatter.unknown"
+    intent = selected["figure_intent"]
+    assert isinstance(intent, dict)
+    intent["template"] = "scatter.unknown"
 
     with pytest.raises(ValueError, match="unknown template"):
         score_agent_predictions(CASES_PATH, _write_predictions(tmp_path, predictions))

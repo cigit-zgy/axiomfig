@@ -19,9 +19,6 @@ def _render_decision() -> dict[str, object]:
         "mapped_roles": {"observed": "measured", "predicted": "predicted"},
         "scientific_semantics": {},
         "scientific_inferences": [],
-        "clarification_question": None,
-        "upstream_requirement": None,
-        "unsupported_reason": None,
         "figure_intent": {
             "template": "scatter.parity",
             "data": {"observed": "measured", "predicted": "predicted"},
@@ -360,15 +357,7 @@ cases:
 """,
         encoding="utf-8",
     )
-    unsupported = {
-        **_render_decision(),
-        "action": "unsupported",
-        "template": None,
-        "input_mode": None,
-        "mapped_roles": {},
-        "unsupported_reason": "No registered grammar.",
-        "figure_intent": None,
-    }
+    unsupported = {"action": "unsupported", "reason": "No registered grammar."}
     fake_agent = (
         "import json,sys; prompt=sys.stdin.read(); "
         "print("
@@ -501,76 +490,52 @@ def test_agent_decision_parser_rejects_role_mapping_that_differs_from_intent() -
 def test_agent_decision_parser_requires_material_clarification_question() -> None:
     from tests.evaluation.blind_agent import parse_agent_decision
 
-    decision = {
-        **_render_decision(),
-        "action": "clarify",
-        "template": None,
-        "input_mode": None,
-        "mapped_roles": {},
-        "clarification_question": "",
-        "figure_intent": None,
-    }
+    decision = {"action": "clarify", "question": "", "reason": "Meaning is missing."}
 
-    with pytest.raises(ValueError, match="clarification_question"):
+    with pytest.raises(ValueError, match="question"):
         parse_agent_decision(json.dumps(decision))
 
 
-def test_agent_decision_parser_accepts_safe_candidate_on_clarification() -> None:
+def test_agent_decision_parser_rejects_candidate_render_fields_on_clarification() -> None:
     from tests.evaluation.blind_agent import parse_agent_decision
 
     decision = {
-        **_render_decision(),
         "action": "clarify",
         "template": "line.single",
-        "input_mode": "direct",
-        "mapped_roles": None,
-        "scientific_semantics": {"candidate": "ordered trajectory"},
-        "clarification_question": "Should x map to time and y map to concentration?",
-        "figure_intent": None,
+        "question": "Should x map to time and y map to concentration?",
+        "reason": "The variable roles are ambiguous.",
     }
 
-    parsed = parse_agent_decision(json.dumps(decision))
-
-    assert parsed["template"] == "line/single"
-    assert parsed["mapped_roles"] == {}
+    with pytest.raises(ValueError, match="unknown=.*template"):
+        parse_agent_decision(json.dumps(decision))
 
 
-def test_agent_decision_parser_accepts_null_semantics_when_clarifying() -> None:
+def test_agent_decision_parser_rejects_null_or_extra_semantics_when_clarifying() -> None:
     from tests.evaluation.blind_agent import parse_agent_decision
 
     decision = {
-        **_render_decision(),
         "action": "clarify",
-        "template": "estimation.forest",
-        "input_mode": "precomputed",
         "scientific_semantics": None,
-        "clarification_question": "Are these differences or ratios, and what null applies?",
-        "figure_intent": None,
+        "question": "Are these differences or ratios, and what null applies?",
+        "reason": "The null differs by effect type.",
     }
 
-    parsed = parse_agent_decision(json.dumps(decision))
+    with pytest.raises(ValueError, match="unknown=.*scientific_semantics"):
+        parse_agent_decision(json.dumps(decision))
 
-    assert parsed["scientific_semantics"] == {}
 
-
-def test_agent_decision_parser_accepts_provisional_direct_mapping_on_clarification() -> None:
+def test_agent_decision_parser_rejects_provisional_mapping_on_clarification() -> None:
     from tests.evaluation.blind_agent import parse_agent_decision
 
     decision = {
-        **_render_decision(),
         "action": "clarify",
-        "template": None,
-        "input_mode": "direct",
         "mapped_roles": {"x": "x", "y": "y"},
-        "scientific_semantics": {"x": "dose", "y": "response"},
-        "clarification_question": "Does dose order represent a trajectory?",
-        "figure_intent": None,
+        "question": "Does dose order represent a trajectory?",
+        "reason": "Trajectory meaning changes the template.",
     }
 
-    parsed = parse_agent_decision(json.dumps(decision))
-
-    assert parsed["input_mode"] == "direct"
-    assert parsed["mapped_roles"] == {"x": "x", "y": "y"}
+    with pytest.raises(ValueError, match="unknown=.*mapped_roles"):
+        parse_agent_decision(json.dumps(decision))
 
 
 def test_scoring_record_attaches_hidden_case_id_after_agent_response() -> None:
@@ -579,8 +544,8 @@ def test_scoring_record_attaches_hidden_case_id_after_agent_response() -> None:
     record = scoring_record("S04-unrelated-quantities-scatter", _render_decision())
 
     assert record["id"] == "S04-unrelated-quantities-scatter"
-    assert record["clarification_reason"] is None
-    assert "clarification_question" not in record
+    assert "question" not in record
+    assert "reason" not in record
 
 
 def test_blind_runner_hides_id_from_external_agent_and_attaches_it_afterward(

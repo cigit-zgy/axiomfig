@@ -228,8 +228,8 @@ cases:
   - id: R44-ordination-pca-scores
     request: Plot these precomputed PCA scores and explained variance by treatment.
     classes: [implicit_template, precomputed_result]
-    available_data: {format: json, keys: [coordinates, explained_variance]}
-    expected: {action: render, template: ordination.pca_scores, input_mode: precomputed, required_roles: [coordinates, explained_variance]}
+    available_data: {format: json, keys: [coordinates, explained_variance, group]}
+    expected: {action: render, template: ordination.pca_scores, input_mode: precomputed, required_roles: [coordinates, explained_variance, group]}
   - id: R45-ordination-pca-biplot
     request: Make a PCA biplot from the supplied scores, loadings, and explained variance.
     classes: [explicit_template, precomputed_result]
@@ -272,12 +272,12 @@ cases:
     available_data: {format: json, keys: [x, y, u, v, color_semantics]}
     expected: {action: render, template: field.quiver, input_mode: direct, required_roles: [x, y, u, v, color_semantics]}
   - id: R53-omics-volcano
-    request: Plot the supplied effect sizes and adjusted p-values with these thresholds.
+    request: Plot the supplied log2 fold changes and adjusted p-values with these thresholds.
     classes: [implicit_template, precomputed_result]
     available_data: {format: csv, columns: [effect_size, adjusted_p_value, significance_threshold, effect_threshold]}
     expected: {action: render, template: omics.volcano, input_mode: precomputed, required_roles: [effect_size, adjusted_p_value, significance_threshold, effect_threshold]}
   - id: R54-omics-enrichment
-    request: Make an enrichment dot plot from the supplied terms, enrichment, significance, and size.
+    request: Make an enrichment dot plot from the supplied terms, enrichment values, adjusted p-values, and overlapping-gene counts.
     classes: [implicit_template, precomputed_result]
     available_data: {format: csv, columns: [term, enrichment, significance, size]}
     expected: {action: render, template: omics.enrichment_dot, input_mode: precomputed, required_roles: [term, enrichment, significance, size]}
