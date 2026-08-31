@@ -1,5 +1,8 @@
 # Deterministic style contract
 
+Agent-facing non-default requests route through `references/element-contracts/index.md`; this file
+remains the deterministic implementation contract and numeric source-of-truth guide.
+
 ## Canonical sources
 
 `src/axiomfig/resources/styles/style.yaml`, `fonts.yaml`, and `colors.yaml` are the only visual

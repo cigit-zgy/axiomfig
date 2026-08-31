@@ -1,0 +1,38 @@
+version: 1
+cases:
+  - request: Plot measured against predicted values using the normal publication style.
+    topic: none
+    expected: keep deterministic defaults
+  - request: Use a logarithmic concentration axis because the values span orders of magnitude.
+    topic: axes
+    expected: planned semantic scale surface; no Matplotlib call
+  - request: Use supplied parity limits for the same measured quantity.
+    topic: axes
+    expected: available scatter.parity identity_limits
+  - request: Make the physical tick marks longer.
+    topic: axes
+    expected: internal-only physical geometry
+  - request: Draw the supplied prediction interval as a band.
+    topic: marks
+    expected: available confidence-band bounds and uncertainty_type
+  - request: Encode the supplied biomass quantity by bubble area.
+    topic: marks
+    expected: available scatter.bubble size role
+  - request: Put one legend above four panels with the same treatment groups.
+    topic: ornaments
+    expected: planned user-data shared-legend surface
+  - request: Use a horizontal continuous colorbar.
+    topic: ornaments
+    expected: planned colorbar orientation surface
+  - request: Add a risk table aligned under a supplied survival curve.
+    topic: ornaments
+    expected: planned auxiliary-region composition
+  - request: Keep all selected volcano labels readable without moving their data anchors.
+    topic: annotations
+    expected: planned collision-aware selected-label policy
+  - request: Add leaders from displaced labels to their source points.
+    topic: annotations
+    expected: planned semantic connector requirement
+  - request: Set an annotation backend force parameter.
+    topic: annotations
+    expected: reject backend tuning; preserve collision goal

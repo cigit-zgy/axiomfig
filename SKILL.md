@@ -33,6 +33,10 @@ meaningful semantics. The deterministic runtime owns every reusable visual decis
 - Selected input contract: one family `contract.yaml`
 - Figure Intent syntax: `references/figure-intent.md`
 - Advanced Mantel customization only: `references/mantel.md`
+- Non-default visual or positional request only: read `references/element-contracts/index.md`, then
+  at most one routed element topic when possible. Use only a real `AVAILABLE` surface; for
+  `INTERNAL_ONLY`, `PLANNED`, or `NOT_SUPPORTED`, do not invent Figure Intent fields or low-level
+  plotting parameters. Keep deterministic defaults for every unrelated element.
 - Runtime changes only: `references/style-contract.md`, `layout-contract.md`, `validation.md`,
   `typography.md`, or `latex-contract.md`
 

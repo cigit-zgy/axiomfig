@@ -1,5 +1,8 @@
 # Typography contract
 
+Non-default element routing may point here from `references/element-contracts/index.md`; font files,
+roles, sizes, and placement remain deterministic rather than per-element visual options.
+
 ## Complete modes
 
 `sans` is the default. Both modes use exact installed font files; missing files or internal-family mismatches raise `FontContractError` instead of silently falling back.

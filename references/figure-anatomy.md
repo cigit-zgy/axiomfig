@@ -3,6 +3,9 @@
 This reference is a developer/runtime vocabulary for diagnosing layout ownership. It is not Figure
 Intent, an Agent output, a user-authored schema, a runtime object, or a public API.
 
+For the progressively disclosed default -> exception -> supported-surface map, read
+`references/element-contracts/index.md`. That layer reuses this ontology and does not replace it.
+
 ## Hierarchy
 
 A scientific figure contains five levels.

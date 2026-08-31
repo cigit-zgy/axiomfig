@@ -1,0 +1,382 @@
+version: 1
+cases:
+  - id: A01
+    group: A
+    request: Plot observed versus predicted concentration as a publication parity figure using AxiomFig defaults.
+    available_data: {format: csv, columns: [observed, predicted]}
+    expected: &default
+      element: figure
+      needs_nondefault: false
+      topic: none
+      recommended_surface: deterministic defaults
+      surface_status: DEFAULT
+      implementation_level: none
+      default_retained_elsewhere: true
+      scientific_anchor_preserved: true
+  - id: A02
+    group: A
+    request: Show the trajectories of three supplied treatment series over time with the normal AxiomFig style.
+    available_data: {format: json, keys: [time, series_values, series_labels]}
+    expected: *default
+  - id: A03
+    group: A
+    request: Render this supplied correlation matrix without any special visual treatment.
+    available_data: {format: json, keys: [matrix, labels, center]}
+    expected: *default
+  - id: A04
+    group: A
+    request: Make a forest plot from these supplied estimates, confidence intervals, and null reference.
+    available_data: {format: csv, columns: [label, estimate, interval, uncertainty_type, reference]}
+    expected: *default
+  - id: A05
+    group: A
+    request: Draw the supplied Mantel correlation matrix and links using the canonical appearance.
+    available_data: {format: json, keys: [correlation_matrix, labels, links]}
+    expected: *default
+  - id: A06
+    group: A
+    request: Compare the complete distributions for four reactors with a violin plot and standard defaults.
+    available_data: {format: csv, columns: [reactor, concentration]}
+    expected: *default
+
+  - id: B01
+    group: B
+    request: Plot concentration against flow and use a logarithmic concentration axis because values span four orders of magnitude.
+    available_data: {format: csv, columns: [flow, concentration]}
+    expected:
+      element: axis scale
+      needs_nondefault: true
+      topic: axes
+      recommended_surface: semantic axis-scale request
+      surface_status: PLANNED
+      implementation_level: none
+      default_retained_elsewhere: true
+      scientific_anchor_preserved: true
+  - id: B02
+    group: B
+    request: Compare measured and predicted nitrate on identical axes fixed to the supplied scientific range from 0 to 50.
+    available_data: {format: csv, columns: [measured, predicted], supplied_semantics: [identity_limits]}
+    expected:
+      element: axis limits
+      needs_nondefault: true
+      topic: axes
+      recommended_surface: scatter.parity semantics.identity_limits
+      surface_status: AVAILABLE
+      implementation_level: public
+      default_retained_elsewhere: true
+      scientific_anchor_preserved: true
+  - id: B03
+    group: B
+    request: Suppress the physical tick marks on this categorical bar axis but keep category labels.
+    available_data: {format: csv, columns: [category, value]}
+    expected:
+      element: categorical ticks
+      needs_nondefault: true
+      topic: axes
+      recommended_surface: deterministic categorical tick contract
+      surface_status: INTERNAL_ONLY
+      implementation_level: runtime
+      default_retained_elsewhere: true
+      scientific_anchor_preserved: true
+  - id: B04
+    group: B
+    request: The supplied x-y observations are extremely dense; use count bins rather than overlapping points and label the count scale.
+    available_data: {format: csv, columns: [x, y], supplied_semantics: [count_label]}
+    expected:
+      element: dense scatter marks
+      needs_nondefault: true
+      topic: marks
+      recommended_surface: scatter.hexbin template with semantics.gridsize and semantics.count_label
+      surface_status: AVAILABLE
+      implementation_level: public
+      default_retained_elsewhere: true
+      scientific_anchor_preserved: true
+  - id: B05
+    group: B
+    request: Highlight the five regulator-selected observations while keeping the remaining scatter points visually secondary.
+    available_data: {format: csv, columns: [x, y, selected]}
+    expected:
+      element: highlighted points
+      needs_nondefault: true
+      topic: marks
+      recommended_surface: semantic selected-point policy
+      surface_status: PLANNED
+      implementation_level: none
+      default_retained_elsewhere: true
+      scientific_anchor_preserved: true
+  - id: B06
+    group: B
+    request: Encode the supplied biomass measurement by bubble area and include its scientific label.
+    available_data: {format: csv, columns: [x, y, biomass], supplied_semantics: [size_label]}
+    expected:
+      element: marker size encoding
+      needs_nondefault: true
+      topic: marks
+      recommended_surface: scatter.bubble data.size and semantics.size_label
+      surface_status: AVAILABLE
+      implementation_level: public
+      default_retained_elsewhere: true
+      scientific_anchor_preserved: true
+  - id: B07
+    group: B
+    request: Draw the supplied odds-ratio estimates and confidence intervals with the scientific null reference at one.
+    available_data: {format: csv, columns: [label, estimate, interval, uncertainty_type, reference]}
+    expected:
+      element: reference line
+      needs_nondefault: true
+      topic: marks
+      recommended_surface: estimation.forest semantics.reference
+      surface_status: AVAILABLE
+      implementation_level: public
+      default_retained_elsewhere: true
+      scientific_anchor_preserved: true
+  - id: B08
+    group: B
+    request: Show the supplied model prediction with its explicitly identified 95 percent prediction interval as a continuous band.
+    available_data: {format: csv, columns: [x, estimate, lower, upper], supplied_semantics: [uncertainty_type]}
+    expected:
+      element: uncertainty band
+      needs_nondefault: true
+      topic: marks
+      recommended_surface: line.confidence_band supplied bounds and semantics.uncertainty_type
+      surface_status: AVAILABLE
+      implementation_level: public
+      default_retained_elsewhere: true
+      scientific_anchor_preserved: true
+
+  - id: C01
+    group: C
+    request: Use one shared legend for four panels because treatment groups have identical meaning throughout.
+    available_data: {format: json, keys: [panels, group]}
+    expected:
+      element: shared figure legend
+      needs_nondefault: true
+      topic: ornaments
+      recommended_surface: semantic shared-legend scope
+      surface_status: PLANNED
+      implementation_level: none
+      default_retained_elsewhere: true
+      scientific_anchor_preserved: true
+  - id: C02
+    group: C
+    request: Place the group legend on the right in a vertical orientation to match the manuscript topology.
+    available_data: {format: csv, columns: [x, y, group]}
+    expected:
+      element: legend placement
+      needs_nondefault: true
+      topic: ornaments
+      recommended_surface: semantic legend side and orientation
+      surface_status: PLANNED
+      implementation_level: none
+      default_retained_elsewhere: true
+      scientific_anchor_preserved: true
+  - id: C03
+    group: C
+    request: Give three heatmap panels one shared continuous colorbar because quantity, scale, center, and normalization are identical.
+    available_data: {format: json, keys: [panels, matrices, labels, center]}
+    expected:
+      element: shared colorbar
+      needs_nondefault: true
+      topic: ornaments
+      recommended_surface: semantic shared-colorbar scope
+      surface_status: PLANNED
+      implementation_level: none
+      default_retained_elsewhere: true
+      scientific_anchor_preserved: true
+  - id: C04
+    group: C
+    request: Use a horizontal continuous colorbar below this matrix because the journal layout is very wide.
+    available_data: {format: json, keys: [matrix, row_labels, column_labels, color_semantics]}
+    expected:
+      element: colorbar orientation
+      needs_nondefault: true
+      topic: ornaments
+      recommended_surface: semantic colorbar orientation
+      surface_status: PLANNED
+      implementation_level: none
+      default_retained_elsewhere: true
+      scientific_anchor_preserved: true
+  - id: C05
+    group: C
+    request: Move panel label (a) to a different physical offset required by the journal.
+    available_data: {format: json, keys: [panels]}
+    expected:
+      element: panel label placement
+      needs_nondefault: true
+      topic: ornaments
+      recommended_surface: deterministic panel-label contract
+      surface_status: INTERNAL_ONLY
+      implementation_level: runtime
+      default_retained_elsewhere: true
+      scientific_anchor_preserved: true
+  - id: C06
+    group: C
+    request: Use the supplied full environmental quantity names and units on both axes; reserve enough space for the long labels.
+    available_data: {format: csv, columns: [elapsed_time, dissolved_oxygen], supplied_semantics: [xlabel, ylabel]}
+    expected:
+      element: axis labels
+      needs_nondefault: true
+      topic: axes
+      recommended_surface: family semantics.xlabel and semantics.ylabel
+      surface_status: AVAILABLE
+      implementation_level: public
+      default_retained_elsewhere: true
+      scientific_anchor_preserved: true
+  - id: C07
+    group: C
+    request: Add a supplied numbers-at-risk table under the supplied Kaplan-Meier curves and align its columns to time.
+    available_data: {format: json, keys: [time, survival_probability, group, risk_table]}
+    expected:
+      element: risk table region
+      needs_nondefault: true
+      topic: ornaments
+      recommended_surface: user-data auxiliary-region composition
+      surface_status: PLANNED
+      implementation_level: none
+      default_retained_elsewhere: true
+      scientific_anchor_preserved: true
+  - id: C08
+    group: C
+    request: Add supplied marginal distributions above and to the right of the scatter relationship.
+    available_data: {format: json, keys: [x, y, x_density, y_density]}
+    expected:
+      element: marginal axes region
+      needs_nondefault: true
+      topic: ornaments
+      recommended_surface: user-data auxiliary-region composition
+      surface_status: PLANNED
+      implementation_level: none
+      default_retained_elsewhere: true
+      scientific_anchor_preserved: true
+
+  - id: D01
+    group: D
+    request: Label all regulator-selected volcano features and keep every label readable without changing the feature coordinates.
+    available_data: {format: csv, columns: [effect_size, adjusted_p_value, selected_feature]}
+    expected:
+      element: selected-point labels
+      needs_nondefault: true
+      topic: annotations
+      recommended_surface: semantic mandatory-selected-label policy
+      surface_status: PLANNED
+      implementation_level: none
+      default_retained_elsewhere: true
+      scientific_anchor_preserved: true
+  - id: D02
+    group: D
+    request: Resolve overlaps among twelve supplied PCA loading labels while preserving which vector each label identifies.
+    available_data: {format: json, keys: [coordinates, loadings, explained_variance, feature_labels]}
+    expected:
+      element: text-text collision
+      needs_nondefault: true
+      topic: annotations
+      recommended_surface: semantic collision-aware selected-label policy
+      surface_status: PLANNED
+      implementation_level: none
+      default_retained_elsewhere: true
+      scientific_anchor_preserved: true
+  - id: D03
+    group: D
+    request: Keep influential-observation labels from covering the scientific scatter points while retaining their point identity.
+    available_data: {format: csv, columns: [leverage, residual, influence, observation_label]}
+    expected:
+      element: text-data collision
+      needs_nondefault: true
+      topic: annotations
+      recommended_surface: semantic collision-aware selected-label policy
+      surface_status: PLANNED
+      implementation_level: none
+      default_retained_elsewhere: true
+      scientific_anchor_preserved: true
+  - id: D04
+    group: D
+    request: Add leader lines from displaced Manhattan labels back to the exact supplied variants they identify.
+    available_data: {format: csv, columns: [chromosome, position, score, selected_variant]}
+    expected:
+      element: annotation connector
+      needs_nondefault: true
+      topic: annotations
+      recommended_surface: semantic connector requirement
+      surface_status: PLANNED
+      implementation_level: none
+      default_retained_elsewhere: true
+      scientific_anchor_preserved: true
+  - id: D05
+    group: D
+    request: The selected labels may move only upward from their source points and must remain inside the panel.
+    available_data: {format: csv, columns: [x, y, selected_label]}
+    expected:
+      element: bounded annotation displacement
+      needs_nondefault: true
+      topic: annotations
+      recommended_surface: semantic bounded-direction annotation policy
+      surface_status: PLANNED
+      implementation_level: none
+      default_retained_elsewhere: true
+      scientific_anchor_preserved: true
+  - id: D06
+    group: D
+    request: Prioritize six predeclared mandatory biplot feature labels over all optional labels when space is limited.
+    available_data: {format: json, keys: [coordinates, loadings, explained_variance, feature_labels, mandatory]}
+    expected:
+      element: annotation priority
+      needs_nondefault: true
+      topic: annotations
+      recommended_surface: semantic annotation priority
+      surface_status: PLANNED
+      implementation_level: none
+      default_retained_elsewhere: true
+      scientific_anchor_preserved: true
+
+  - id: E01
+    group: E
+    request: Put the group legend above the plot using bbox_to_anchor=(1.13, 0.82).
+    available_data: {format: csv, columns: [x, y, group]}
+    expected:
+      element: legend placement
+      needs_nondefault: true
+      topic: ornaments
+      recommended_surface: semantic legend side and orientation
+      surface_status: PLANNED
+      implementation_level: none
+      default_retained_elsewhere: true
+      scientific_anchor_preserved: true
+  - id: E02
+    group: E
+    request: Make this dense scatter use marker s=17 so the observations do not overlap.
+    available_data: {format: csv, columns: [x, y]}
+    expected:
+      element: physical marker size
+      needs_nondefault: true
+      topic: marks
+      recommended_surface: deterministic marker-size contract
+      surface_status: INTERNAL_ONLY
+      implementation_level: runtime
+      default_retained_elsewhere: true
+      scientific_anchor_preserved: true
+  - id: E03
+    group: E
+    request: Set major tick length to 4.8 and width to 0.73 for this line plot.
+    available_data: {format: csv, columns: [time, response]}
+    expected:
+      element: physical tick geometry
+      needs_nondefault: true
+      topic: axes
+      recommended_surface: deterministic tick contract
+      surface_status: INTERNAL_ONLY
+      implementation_level: runtime
+      default_retained_elsewhere: true
+      scientific_anchor_preserved: true
+  - id: E04
+    group: E
+    request: Use adjustText force parameters and textalloc candidate counts to separate selected volcano labels.
+    available_data: {format: csv, columns: [effect_size, adjusted_p_value, selected_feature]}
+    expected:
+      element: annotation collision policy
+      needs_nondefault: true
+      topic: annotations
+      recommended_surface: semantic collision-aware selected-label policy
+      surface_status: PLANNED
+      implementation_level: none
+      default_retained_elsewhere: true
+      scientific_anchor_preserved: true

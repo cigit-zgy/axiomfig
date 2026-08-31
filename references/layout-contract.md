@@ -1,5 +1,8 @@
 # Deterministic layout and ornament contract
 
+Agent-facing element exceptions route through `references/element-contracts/index.md`; this file
+continues to own physical layout and ornament implementation rules.
+
 ## 1. Anatomy
 
 | Term | Contract |
