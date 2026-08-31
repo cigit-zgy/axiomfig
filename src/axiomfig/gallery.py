@@ -27,7 +27,7 @@ from axiomfig.validation import validate_pair
 
 GALLERY_MODES = ("sans", "serif")
 TECHNICAL_LATEX_STEMS = ("scientific_typography", "palettes")
-PRESERVED_GALLERY_ROOTS = ("layout_benchmark",)
+PRESERVED_GALLERY_ROOTS = ("archive", "capability_audit")
 
 
 @dataclass(frozen=True)

@@ -21,10 +21,11 @@ def test_nested_gallery_validation_checks_relative_expected_stems(tmp_path: Path
         validate_gallery(tmp_path, expected_stems={"sans/01_line", "serif/01_line"})
 
 
-def test_gallery_validation_excludes_pdf_only_layout_benchmark(tmp_path: Path) -> None:
-    benchmark = tmp_path / "layout_benchmark" / "default"
-    benchmark.mkdir(parents=True)
-    (benchmark / "01_clustered_heatmap.pdf").write_bytes(b"benchmark evidence")
+def test_gallery_validation_excludes_pdf_only_evidence_roots(tmp_path: Path) -> None:
+    for root in ("archive", "capability_audit"):
+        benchmark = tmp_path / root / "evidence"
+        benchmark.mkdir(parents=True)
+        (benchmark / "example.pdf").write_bytes(b"benchmark evidence")
 
     assert validate_gallery(tmp_path, expected_stems=set()) == []
 

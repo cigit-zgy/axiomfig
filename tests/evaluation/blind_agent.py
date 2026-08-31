@@ -412,6 +412,7 @@ def run_progressive_cases(
     workspace_root: Path,
     *,
     max_turns: int = 12,
+    turn_timeout: float | None = None,
 ) -> tuple[int, int]:
     """Run stateless progressive-disclosure turns in one isolated logical context per case."""
 
@@ -462,15 +463,32 @@ def run_progressive_cases(
         for turn_number in range(1, max_turns + 1):
             prompt = build_progressive_agent_prompt(skill_workspace, case, history)
             (log_directory / f"turn-{turn_number:02d}.prompt").write_text(prompt, encoding="utf-8")
-            completed = subprocess.run(
-                list(agent_command),
-                input=prompt,
-                cwd=case_directory,
-                env=child_environment,
-                capture_output=True,
-                check=False,
-                text=True,
-            )
+            try:
+                completed = subprocess.run(
+                    list(agent_command),
+                    input=prompt,
+                    cwd=case_directory,
+                    env=child_environment,
+                    capture_output=True,
+                    check=False,
+                    text=True,
+                    timeout=turn_timeout,
+                )
+            except subprocess.TimeoutExpired as exc:
+                stdout = (
+                    exc.stdout.decode() if isinstance(exc.stdout, bytes) else (exc.stdout or "")
+                )
+                stderr = (
+                    exc.stderr.decode() if isinstance(exc.stderr, bytes) else (exc.stderr or "")
+                )
+                (log_directory / f"turn-{turn_number:02d}.stdout").write_text(
+                    stdout, encoding="utf-8"
+                )
+                (log_directory / f"turn-{turn_number:02d}.stderr").write_text(
+                    stderr, encoding="utf-8"
+                )
+                error = f"Agent command exceeded {turn_timeout:g} seconds"
+                break
             (log_directory / f"turn-{turn_number:02d}.stdout").write_text(
                 completed.stdout, encoding="utf-8"
             )
@@ -549,6 +567,7 @@ def _main() -> None:
     selection.add_argument("--all-cases", action="store_true")
     parser.add_argument("--progressive", action="store_true")
     parser.add_argument("--max-turns", type=int, default=12)
+    parser.add_argument("--turn-timeout", type=float)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--workspace", type=Path, required=True)
     parser.add_argument("agent_command", nargs=argparse.REMAINDER)
@@ -571,6 +590,7 @@ def _main() -> None:
             args.output,
             args.workspace,
             max_turns=args.max_turns,
+            turn_timeout=args.turn_timeout,
         )
     else:
         passed, failed = run_blind_cases(

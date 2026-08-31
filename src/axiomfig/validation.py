@@ -23,7 +23,7 @@ from axiomfig.layout import (
     primary_area_diagnostic,
 )
 
-PDF_ONLY_GALLERY_ROOTS = frozenset({"layout_benchmark"})
+PDF_ONLY_GALLERY_ROOTS = frozenset({"archive", "capability_audit"})
 
 
 class FigureAnatomyError(RuntimeError):

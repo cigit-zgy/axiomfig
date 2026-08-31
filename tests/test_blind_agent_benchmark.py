@@ -384,6 +384,38 @@ cases:
     assert disclosure["denied_reads"] == 1
 
 
+def test_progressive_runner_records_agent_turn_timeout(tmp_path: Path) -> None:
+    from tests.evaluation.blind_agent import run_progressive_cases
+
+    cases_path = tmp_path / "cases.yaml"
+    cases_path.write_text(
+        """version: 1
+cases:
+  - id: timeout-case
+    request: Compare measured and predicted values.
+    available_data: {format: csv, columns: [measured, predicted]}
+    expected: {action: render}
+""",
+        encoding="utf-8",
+    )
+    output = tmp_path / "predictions.jsonl"
+
+    passed, failed = run_progressive_cases(
+        ROOT,
+        cases_path,
+        ["timeout-case"],
+        [sys.executable, "-c", "import time; time.sleep(2)"],
+        output,
+        tmp_path / "run",
+        turn_timeout=0.01,
+    )
+
+    assert (passed, failed) == (0, 1)
+    failure = json.loads(output.with_suffix(".failures.jsonl").read_text(encoding="utf-8"))
+    assert failure["error"] == "Agent command exceeded 0.01 seconds"
+    assert (tmp_path / "run/logs/001/turn-01.stdout").is_file()
+
+
 def test_blind_agent_cli_runs_all_cases_with_progressive_disclosure(tmp_path: Path) -> None:
     cases_path = tmp_path / "cases.yaml"
     cases_path.write_text(

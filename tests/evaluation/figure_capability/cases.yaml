@@ -1,0 +1,202 @@
+version: 1
+cases:
+  - id: "01"
+    name: complex_clustermap
+    authoritative_source: https://seaborn.pydata.org/generated/seaborn.clustermap.html
+    researcher_request: Render my preclustered environmental matrix with row and column dendrograms, two row annotations, one column annotation, long labels, a continuous scale, and annotation legend.
+    available_data: {format: json, keys: [matrix, row_order, column_order, row_linkage, column_linkage, row_annotations, column_annotation, row_labels, column_labels]}
+    source_fixture: fixtures.case_01
+    expected_anatomy: [matrix, row_dendrogram, column_dendrogram, row_annotation_strips, column_annotation_strip, colorbar, categorical_legend]
+    positioning_relations: [matrix_alignment, shared_ordering, minimum_gap, containment, non_overlap]
+    publication_geometry: {width_in: 7.48, height_in: 6.40}
+    reference_pdf: gallery/capability_audit/original/01_complex_clustermap.pdf
+  - id: "02"
+    name: dense_pairgrid
+    authoritative_source: https://seaborn.pydata.org/generated/seaborn.PairGrid.html
+    researcher_request: Show five supplied quantitative variables as a grouped 5 by 5 pair grid with diagonal distributions, shared variable limits, outer labels, and one global legend.
+    available_data: {format: csv, columns: [group, oxygen, ammonium, nitrate, phosphate, redox]}
+    source_fixture: fixtures.case_02
+    expected_anatomy: [panel_grid_5x5, diagonal_distributions, pairwise_scatter, global_legend]
+    positioning_relations: [equal_size, shared_axis, alignment, ordering, containment]
+    publication_geometry: {width_in: 7.48, height_in: 7.20}
+    reference_pdf: gallery/capability_audit/original/02_dense_pairgrid.pdf
+  - id: "03"
+    name: joint_complex_marginals
+    authoritative_source: https://seaborn.pydata.org/generated/seaborn.JointGrid.html
+    researcher_request: Plot the grouped joint relationship with supplied density contours, top and right marginals, a global legend, and labels for selected observations.
+    available_data: {format: json, keys: [x, y, group, marginal_x, marginal_y, contour_x, contour_y, contour_density, selected_labels]}
+    source_fixture: fixtures.case_03
+    expected_anatomy: [joint_axes, top_marginal, right_marginal, contours, selected_annotations, global_legend]
+    positioning_relations: [shared_axis, shared_edge, containment, anchor, non_overlap]
+    publication_geometry: {width_in: 5.51, height_in: 5.40}
+    reference_pdf: gallery/capability_audit/original/03_joint_complex_marginals.pdf
+  - id: "04"
+    name: extended_forest
+    authoritative_source: https://www.statsmodels.org/stable/generated/statsmodels.graphics.dotplots.dot_plot.html
+    researcher_request: Render 24 supplied estimates and confidence intervals in subgroups with headers, a null line, long outcome labels, and a right-side numerical statistics column.
+    available_data: {format: csv, columns: [section, label, estimate, lower, upper, formatted_stat]}
+    source_fixture: fixtures.case_04
+    expected_anatomy: [estimate_axis, confidence_intervals, subgroup_headers, null_reference, left_labels, right_statistics]
+    positioning_relations: [row_alignment, anchor, minimum_gap, containment]
+    publication_geometry: {width_in: 7.48, height_in: 7.00}
+    reference_pdf: gallery/capability_audit/original/04_extended_forest.pdf
+  - id: "05"
+    name: km_risk_table
+    authoritative_source: https://lifelines.readthedocs.io/en/stable/lifelines.plotting.html#lifelines.plotting.add_at_risk_counts
+    researcher_request: Plot the supplied survival curves for four groups with confidence bands, censor marks, a legend, and an aligned numbers-at-risk table.
+    available_data: {format: json, keys: [time, survival, lower, upper, censor_time, risk_times, risk_counts, groups]}
+    source_fixture: fixtures.case_05
+    expected_anatomy: [survival_axes, confidence_bands, censor_marks, legend, risk_table]
+    positioning_relations: [shared_axis, row_alignment, minimum_gap, containment]
+    publication_geometry: {width_in: 7.48, height_in: 5.80}
+    reference_pdf: gallery/capability_audit/original/05_km_risk_table.pdf
+  - id: "06"
+    name: calibration_dashboard
+    authoritative_source: https://scikit-learn.org/stable/auto_examples/calibration/plot_calibration_curve.html
+    researcher_request: Build a calibration dashboard from four supplied reliability curves and four probability distributions, with a perfect-calibration reference and one model legend.
+    available_data: {format: json, keys: [probability_grid, observed_fraction, histogram_bins, histogram_counts, models]}
+    source_fixture: fixtures.case_06
+    expected_anatomy: [reliability_axes, identity_reference, model_curves, four_histogram_axes, global_legend]
+    positioning_relations: [shared_axis, alignment, equal_size, containment]
+    publication_geometry: {width_in: 7.48, height_in: 6.00}
+    reference_pdf: gallery/capability_audit/original/06_calibration_dashboard.pdf
+  - id: "07"
+    name: pdp_ice_dashboard
+    authoritative_source: https://scikit-learn.org/stable/modules/generated/sklearn.inspection.PartialDependenceDisplay.html
+    researcher_request: Visualize supplied PDP and ICE curves for four features plus a supplied two-feature partial-dependence surface with decile marks and a colorbar.
+    available_data: {format: json, keys: [feature_grids, pdp, ice, deciles, surface_x, surface_y, surface_z]}
+    source_fixture: fixtures.case_07
+    expected_anatomy: [four_line_axes, ice_lines, pdp_lines, decile_marks, contour_axes, colorbar]
+    positioning_relations: [equal_size, shared_axis, containment, minimum_gap]
+    publication_geometry: {width_in: 7.48, height_in: 5.80}
+    reference_pdf: gallery/capability_audit/original/07_pdp_ice_dashboard.pdf
+  - id: "08"
+    name: influence_labels
+    authoritative_source: https://www.statsmodels.org/stable/generated/statsmodels.graphics.regressionplots.influence_plot.html
+    researcher_request: Plot supplied leverage, studentized residuals, and Cook-style magnitudes and label the 18 selected influential observations without hiding their anchors.
+    available_data: {format: csv, columns: [leverage, studentized_residual, influence, selected_label]}
+    source_fixture: fixtures.case_08
+    expected_anatomy: [bubble_scatter, reference_lines, movable_labels, leader_lines]
+    positioning_relations: [anchor, allowed_displacement, non_overlap, containment]
+    publication_geometry: {width_in: 5.51, height_in: 4.80}
+    reference_pdf: gallery/capability_audit/original/08_influence_labels.pdf
+  - id: "09"
+    name: dense_volcano
+    authoritative_source: https://bioconductor.org/packages/release/bioc/vignettes/EnhancedVolcano/inst/doc/EnhancedVolcano.html#fit-more-labels-by-adding-connectors
+    researcher_request: Render supplied log2 fold changes and adjusted p-values, threshold lines, four significance classes, and connector labels for 30 selected genes.
+    available_data: {format: csv, columns: [gene, log2_fold_change, adjusted_p_value, significance_class, selected]}
+    source_fixture: fixtures.case_09
+    expected_anatomy: [dense_scatter, effect_thresholds, significance_threshold, movable_labels, connectors, legend]
+    positioning_relations: [anchor, allowed_displacement, non_overlap, z_order, containment]
+    publication_geometry: {width_in: 7.48, height_in: 5.80}
+    reference_pdf: gallery/capability_audit/original/09_dense_volcano.pdf
+  - id: "10"
+    name: dotplot_dendrogram
+    authoritative_source: https://scanpy.readthedocs.io/en/latest/tutorials/plotting/core.html#dotplot
+    researcher_request: Show the supplied category-by-feature dot matrix with color and size encodings, aligned dendrogram, long feature labels, size legend, and continuous colorbar.
+    available_data: {format: json, keys: [mean_expression, fraction_expressing, row_order, linkage, categories, features]}
+    source_fixture: fixtures.case_10
+    expected_anatomy: [dot_matrix, dendrogram, size_legend, colorbar, category_labels, feature_labels]
+    positioning_relations: [shared_ordering, alignment, minimum_gap, containment]
+    publication_geometry: {width_in: 7.48, height_in: 5.60}
+    reference_pdf: gallery/capability_audit/original/10_dotplot_dendrogram.pdf
+  - id: "11"
+    name: upset
+    authoritative_source: https://upsetplot.readthedocs.io/en/stable/auto_examples/index.html
+    researcher_request: Plot the supplied set intersections as an UpSet figure with set totals, intersection bars, the membership matrix, connectors, labels, and count annotations.
+    available_data: {format: json, keys: [set_names, membership, intersection_counts, set_totals]}
+    source_fixture: fixtures.case_11
+    expected_anatomy: [set_size_bars, intersection_bars, membership_matrix, connectors, annotations]
+    positioning_relations: [shared_axis, shared_ordering, alignment, containment]
+    publication_geometry: {width_in: 7.48, height_in: 5.60}
+    reference_pdf: gallery/capability_audit/original/11_upset.pdf
+  - id: "12"
+    name: oncoprint
+    authoritative_source: https://jokergoo.github.io/ComplexHeatmap-reference/book/oncoprint.html
+    researcher_request: Render the supplied alteration matrix with multiple glyph types per cell, top and right frequencies, row names, column groups, percentages, and compact legends.
+    available_data: {format: json, keys: [alterations, genes, samples, sample_groups, top_frequency, right_frequency, percentages]}
+    source_fixture: fixtures.case_12
+    expected_anatomy: [alteration_matrix, multi_glyph_cells, top_frequency, right_frequency, percentages, legends]
+    positioning_relations: [shared_axis, shared_ordering, alignment, z_order, containment]
+    publication_geometry: {width_in: 7.48, height_in: 5.80}
+    reference_pdf: gallery/capability_audit/original/12_oncoprint.pdf
+  - id: "13"
+    name: ridge_density
+    authoritative_source: https://seaborn.pydata.org/examples/kde_ridgeplot.html
+    researcher_request: Plot twelve supplied density curves as overlapping ridge rows with group labels, zero baselines, shared x scale, and controlled overlap.
+    available_data: {format: json, keys: [x, density, groups]}
+    source_fixture: fixtures.case_13
+    expected_anatomy: [twelve_density_axes, filled_densities, group_labels, baselines]
+    positioning_relations: [shared_axis, allowed_overlap, ordering, z_order, containment]
+    publication_geometry: {width_in: 5.51, height_in: 6.20}
+    reference_pdf: gallery/capability_audit/original/13_ridge_density.pdf
+  - id: "14"
+    name: distribution_composite
+    authoritative_source: https://seaborn.pydata.org/generated/seaborn.violinplot.html
+    researcher_request: Compare ten categories with supplied violin densities, box summaries, raw observations, group encoding, long labels, and precomputed significance brackets.
+    available_data: {format: json, keys: [category, group, observations, density_x, density_y, quartiles, significance_brackets]}
+    source_fixture: fixtures.case_14
+    expected_anatomy: [violins, boxes, raw_points, significance_brackets, legend, long_labels]
+    positioning_relations: [categorical_ordering, allowed_overlap, minimum_gap, containment]
+    publication_geometry: {width_in: 7.48, height_in: 5.60}
+    reference_pdf: gallery/capability_audit/original/14_distribution_composite.pdf
+  - id: "15"
+    name: pca_biplot
+    authoritative_source: https://scikit-learn.org/stable/auto_examples/decomposition/plot_pca_iris.html
+    researcher_request: Render supplied PCA scores for three groups, supplied dispersion ellipses and loadings, twelve loading labels, explained-variance axes, and origin references.
+    available_data: {format: json, keys: [scores, groups, ellipse_paths, loadings, loading_labels, explained_variance]}
+    source_fixture: fixtures.case_15
+    expected_anatomy: [score_scatter, group_ellipses, loading_arrows, movable_loading_labels, origin_references, legend]
+    positioning_relations: [anchor, allowed_displacement, non_overlap, containment]
+    publication_geometry: {width_in: 5.51, height_in: 5.20}
+    reference_pdf: gallery/capability_audit/original/15_pca_biplot.pdf
+  - id: "16"
+    name: mantel_correlation
+    authoritative_source: references/mantel.md
+    researcher_request: Render the supplied Pearson matrix and Mantel r and p links for four source groups using the current canonical Mantel grammar and long environmental labels.
+    available_data: {format: json, keys: [correlation_matrix, labels, sources, mantel_links]}
+    source_fixture: fixtures.case_16
+    expected_anatomy: [correlation_half_matrix, target_nodes, source_nodes, links, pearson_colorbar, mantel_legends]
+    positioning_relations: [target_rail, source_rail, anchor, containment, non_overlap]
+    publication_geometry: {width_in: 7.48, height_in: 5.80}
+    reference_pdf: gallery/capability_audit/original/16_mantel_correlation.pdf
+  - id: "17"
+    name: classifier_dashboard
+    authoritative_source: https://scikit-learn.org/stable/auto_examples/miscellaneous/plot_display_object_visualization.html
+    researcher_request: Compose supplied ROC, precision-recall, DET, and confusion-matrix results for two models in a 2 by 2 classifier dashboard with shared model identity and a matrix colorbar.
+    available_data: {format: json, keys: [models, roc, precision_recall, det, confusion_matrix]}
+    source_fixture: fixtures.case_17
+    expected_anatomy: [roc_axes, precision_recall_axes, det_axes, confusion_matrix_axes, global_legend, colorbar]
+    positioning_relations: [equal_size, alignment, shared_legend, containment]
+    publication_geometry: {width_in: 7.48, height_in: 6.20}
+    reference_pdf: gallery/capability_audit/original/17_classifier_dashboard.pdf
+  - id: "18"
+    name: regression_diagnostics
+    authoritative_source: https://www.statsmodels.org/stable/diagnostic.html
+    researcher_request: Compose supplied regression diagnostics as residuals versus fitted, Q-Q, scale-location, and residuals versus leverage panels with references and selected observation labels.
+    available_data: {format: json, keys: [fitted, residual, standardized_residual, theoretical_quantile, sample_quantile, leverage, cooks_distance, selected_labels]}
+    source_fixture: fixtures.case_18
+    expected_anatomy: [residual_panel, qq_panel, scale_location_panel, leverage_panel, references, movable_labels]
+    positioning_relations: [equal_size, alignment, anchor, non_overlap, containment]
+    publication_geometry: {width_in: 7.48, height_in: 6.20}
+    reference_pdf: gallery/capability_audit/original/18_regression_diagnostics.pdf
+  - id: "19"
+    name: learning_scalability
+    authoritative_source: https://scikit-learn.org/stable/auto_examples/model_selection/plot_learning_curve.html
+    researcher_request: Plot supplied learning and scalability results in six coordinated panels for two models, including training and validation bands, fit time, score time, and fit-time versus validation score.
+    available_data: {format: json, keys: [training_sizes, train_scores, validation_scores, fit_times, score_times, models]}
+    source_fixture: fixtures.case_19
+    expected_anatomy: [six_panel_grid, learning_curves, uncertainty_bands, timing_curves, performance_timing, global_legend]
+    positioning_relations: [equal_size, shared_axis, alignment, containment]
+    publication_geometry: {width_in: 7.48, height_in: 7.00}
+    reference_pdf: gallery/capability_audit/original/19_learning_scalability.pdf
+  - id: "20"
+    name: manhattan_qq
+    authoritative_source: https://github.com/stephenturner/qqman
+    researcher_request: Render supplied GWAS p-values as a 22-chromosome Manhattan plot with alternating chromosome encoding, two thresholds, selected labels, and an adjacent Q-Q panel with identity line.
+    available_data: {format: csv, columns: [chromosome, base_pair, p_value, variant_id, selected]}
+    source_fixture: fixtures.case_20
+    expected_anatomy: [manhattan_axes, chromosome_groups, threshold_lines, selected_labels, qq_axes, identity_reference]
+    positioning_relations: [shared_ordering, anchor, non_overlap, containment]
+    publication_geometry: {width_in: 7.48, height_in: 5.20}
+    reference_pdf: gallery/capability_audit/original/20_manhattan_qq.pdf

@@ -31,7 +31,7 @@ from axiomfig.style import axiom_colormap, palette_color
 from axiomfig.typography import discover_fonts
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT_ROOT = ROOT / "gallery" / "layout_benchmark"
+OUTPUT_ROOT = ROOT / "tmp" / "layout-engine-round01-regeneration"
 BACKENDS = ("default", "kiwi", "adjusttext", "textalloc")
 ALL_BACKENDS = ("original", *BACKENDS)
 FILENAMES = (

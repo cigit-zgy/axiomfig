@@ -62,30 +62,36 @@ def test_committed_gallery_has_no_numbered_flat_or_orphan_artifacts() -> None:
     pdfs = {
         path.relative_to(gallery).with_suffix("").as_posix()
         for path in gallery.rglob("*.pdf")
-        if path.relative_to(gallery).parts[0] != "layout_benchmark"
+        if path.relative_to(gallery).parts[0] not in {"archive", "capability_audit"}
     }
     pngs = {
         path.relative_to(gallery).with_suffix("").as_posix()
         for path in gallery.rglob("*.png")
-        if path.relative_to(gallery).parts[0] != "layout_benchmark"
+        if path.relative_to(gallery).parts[0] not in {"archive", "capability_audit"}
     }
 
     assert pdfs == pngs == expected
     assert not any(re.match(r"(?:^|/)\d+_", stem) for stem in pdfs)
 
 
-def test_gallery_build_preserves_layout_benchmark_namespace(tmp_path: Path) -> None:
+def test_gallery_build_preserves_evidence_namespaces(tmp_path: Path) -> None:
     from axiomfig.gallery import _prepare_gallery
 
     gallery = tmp_path / "gallery"
-    benchmark = gallery / "layout_benchmark" / "default"
-    benchmark.mkdir(parents=True)
-    artifact = benchmark / "01_clustered_heatmap.pdf"
-    artifact.write_bytes(b"benchmark evidence")
+    artifacts = []
+    for root in ("archive", "capability_audit"):
+        directory = gallery / root / "evidence"
+        directory.mkdir(parents=True)
+        artifact = directory / "example.pdf"
+        artifact.write_bytes(f"{root} evidence".encode())
+        artifacts.append(artifact)
 
     _prepare_gallery(gallery)
 
-    assert artifact.read_bytes() == b"benchmark evidence"
+    assert [artifact.read_text() for artifact in artifacts] == [
+        "archive evidence",
+        "capability_audit evidence",
+    ]
 
 
 @pytest.mark.e2e
