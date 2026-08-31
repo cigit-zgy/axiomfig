@@ -2,9 +2,20 @@
 
 ## Unreleased
 
+- added Scientific Figure Anatomy plus a compact Element Contract layer for non-default axes, marks,
+  ornaments, and annotations; each adjustment is classified as `AVAILABLE`, `INTERNAL_ONLY`,
+  `PLANNED`, or `NOT_SUPPORTED` without duplicating executable numeric defaults;
+- added generic low-level-request translation: plotting-library arguments, coordinates, and backend
+  wording are interpreted as proposed implementation details while the Agent preserves the visual
+  goal, scientific encoding, and deterministic defaults;
+- consolidated project documentation around a standard Skill architecture: short `SKILL.md`, routed
+  `references/`, compact deterministic `src/axiomfig/`, evidence-only tests/Gallery, and traceable
+  `reports/`; rewrote README to document the philosophy and layer ownership explicitly;
+- added an isolated element-adjustment A/B evaluation and executable verification of documented
+  public adjustment surfaces; development evidence shows lower reference fan-out and substantially
+  better public/runtime/planned boundary decisions without exposing low-level plotting controls;
 - Replaced the render-shaped Agent benchmark response with strict action-specific decisions for
   render, clarification, missing upstream results, and unsupported scope.
-
 - strengthened the five progressively disclosed template-knowledge topics with scientific routing,
   clarification, upstream-analysis, units, uncertainty, scale, and causality boundaries across all
   55 public templates;
