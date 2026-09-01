@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from functools import lru_cache
 from importlib.resources import files
@@ -81,7 +81,21 @@ def _validate_positive_style_conventions(value: Mapping[str, Any], prefix: str =
             _finite_number(selected, dotted, positive=True)
 
 
-def _validate_style(style: Mapping[str, Any]) -> None:
+def _required_mapping(container: Mapping[str, Any], key: str, prefix: str) -> Mapping[str, Any]:
+    value = container.get(key)
+    if not isinstance(value, Mapping):
+        raise ValueError(f"{prefix}.{key} must be a mapping")
+    return value
+
+
+def _required_sequence(container: Mapping[str, Any], key: str, prefix: str) -> tuple[Any, ...]:
+    value = container.get(key)
+    if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
+        raise ValueError(f"{prefix}.{key} must be a sequence")
+    return tuple(value)
+
+
+def _validate_style_values(style: Mapping[str, Any]) -> None:
     required = (
         "geometry",
         "typography",
@@ -100,6 +114,35 @@ def _validate_style(style: Mapping[str, Any]) -> None:
         if not isinstance(style.get(key), Mapping):
             raise ValueError(f"style.yaml is missing mapping: {key}")
     _validate_positive_style_conventions(style)
+
+    geometry_root = _required_mapping(style, "geometry", "style")
+    for name in geometry_root:
+        _required_mapping(geometry_root, str(name), "geometry")
+    typography = _required_mapping(style, "typography", "style")
+    _required_mapping(typography, "sizes_pt", "typography")
+    ticks = _required_mapping(style, "ticks", "style")
+    _required_mapping(ticks, "geometry", "ticks")
+    _required_mapping(ticks, "categorical", "ticks")
+    for surface in ("open", "filled"):
+        selected = _required_mapping(ticks, surface, "ticks")
+        for level in ("major", "minor"):
+            _required_mapping(selected, level, f"ticks.{surface}")
+    colorbar = _required_mapping(style, "colorbar", "style")
+    _required_mapping(colorbar, "vertical", "colorbar")
+    layout = _required_mapping(style, "layout", "style")
+    _required_mapping(layout, "multi_panel", "layout")
+    plots = _required_mapping(style, "plots", "style")
+    for name in (
+        "confidence_interval",
+        "line_marker",
+        "scatter",
+        "errorbar",
+        "boxplot",
+        "violin",
+        "bar",
+        "histogram",
+    ):
+        _required_mapping(plots, name, "plots")
 
     positive: list[tuple[Any, str]] = []
     for name, geometry in style["geometry"].items():
@@ -176,7 +219,9 @@ def _validate_style(style: Mapping[str, Any]) -> None:
     ):
         _finite_number(value, name, nonnegative=True)
     margin_mode = style["output"]["margin_mode"]
-    allowed_modes = tuple(style["output"]["allowed_margin_modes"])
+    allowed_modes = _required_sequence(style["output"], "allowed_margin_modes", "output")
+    if not all(isinstance(mode, str) for mode in allowed_modes):
+        raise ValueError("output.allowed_margin_modes must contain strings")
     if margin_mode not in allowed_modes or set(allowed_modes) != {"tight", "normal", "custom"}:
         raise ValueError("output margin mode must be tight, normal, or custom")
     for value, name in (
@@ -208,6 +253,13 @@ def _validate_style(style: Mapping[str, Any]) -> None:
     decimals = style["plots"]["bar"]["decimals"]
     if isinstance(decimals, bool) or not isinstance(decimals, int) or decimals < 0:
         raise ValueError("plots.bar.decimals must be a nonnegative integer")
+
+
+def _validate_style(style: Mapping[str, Any]) -> None:
+    try:
+        _validate_style_values(style)
+    except KeyError as exc:
+        raise ValueError(f"style.yaml is missing required field: {exc.args[0]}") from exc
 
 
 @lru_cache(maxsize=16)

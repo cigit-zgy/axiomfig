@@ -47,6 +47,42 @@ def test_packaged_style_contract_rejects_duplicate_keys(tmp_path: Path) -> None:
         load_contracts.cache_clear()
 
 
+@pytest.mark.parametrize(
+    "mutate",
+    (
+        lambda style: style["output"].__setitem__("allowed_margin_modes", None),
+        lambda style: style["geometry"].__setitem__("single-column", None),
+        lambda style: style["typography"].__setitem__("sizes_pt", None),
+        lambda style: style["ticks"]["open"].__setitem__("major", None),
+        lambda style: style["colorbar"].__setitem__("vertical", None),
+        lambda style: style["layout"].__setitem__("multi_panel", None),
+        lambda style: style["plots"].__setitem__("scatter", None),
+    ),
+)
+def test_style_contract_bounds_malformed_nested_containers(
+    mutate: Callable[[dict[str, object]], None],
+) -> None:
+    style = load_yaml(
+        (ROOT / "src/axiomfig/resources/styles/style.yaml").read_text(encoding="utf-8"),
+        source="style.yaml",
+    )
+    mutate(style)
+
+    with pytest.raises(ValueError, match="must be a mapping|must be a sequence"):
+        config._validate_style(style)
+
+
+def test_mantel_style_contract_contains_only_executable_defaults() -> None:
+    style = load_yaml(
+        (ROOT / "src/axiomfig/resources/styles/style.yaml").read_text(encoding="utf-8"),
+        source="style.yaml",
+    )
+    mantel = style["plots"]["mantel"]
+
+    assert "minimum_cell_side" not in mantel["matrix"]
+    assert "nonsignificant_mode" not in mantel["links"]
+
+
 def test_template_registry_rejects_duplicate_keys(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

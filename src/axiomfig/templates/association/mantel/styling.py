@@ -45,7 +45,6 @@ def _sequence(value: object, name: str) -> tuple[object, ...]:
 def _validate_mantel_contract(contract: Mapping[str, Any]) -> None:
     matrix = _mapping(contract.get("matrix"), "plots.mantel.matrix")
     for name in (
-        "minimum_cell_side",
         "maximum_cell_side",
         "source_label_gap_pt",
         "source_group_gap_pt",
@@ -54,10 +53,9 @@ def _validate_mantel_contract(contract: Mapping[str, Any]) -> None:
     ):
         _finite_number(matrix.get(name), f"plots.mantel.matrix.{name}", positive=True)
     _finite_number(matrix.get("target_rail_offset"), "plots.mantel.matrix.target_rail_offset")
-    minimum_side = float(matrix["minimum_cell_side"])
     maximum_side = float(matrix["maximum_cell_side"])
-    if minimum_side >= maximum_side or maximum_side > 1.0:
-        raise ValueError("Mantel cell sides must be ordered and no larger than one cell")
+    if maximum_side > 1.0:
+        raise ValueError("Mantel maximum cell side must be no larger than one cell")
 
     nodes = _mapping(contract.get("nodes"), "plots.mantel.nodes")
     for name in ("source_size_ratio", "target_size_ratio"):
@@ -138,8 +136,6 @@ def _validate_mantel_contract(contract: Mapping[str, Any]) -> None:
                 or not all(isinstance(token, str) and token for token in reference)
             ):
                 raise ValueError(f"Mantel {mode} P-value palette reference is invalid")
-    if links.get("nonsignificant_mode") not in {"hide", "fade", "show"}:
-        raise ValueError("plots.mantel.links.nonsignificant_mode must be hide, fade, or show")
 
 
 def mantel_plot_contract() -> Mapping[str, Any]:

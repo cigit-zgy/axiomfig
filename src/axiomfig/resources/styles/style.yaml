@@ -132,7 +132,6 @@ plots:
     interpolation: nearest
   mantel:
     matrix:
-      minimum_cell_side: 0.18
       maximum_cell_side: 0.86
       grid_edge_color: AxiomGrey
       cell_edge_color: [axiom_neutral, AxiomBlack]
@@ -176,6 +175,5 @@ plots:
             - [axiom_classic, AxiomGrey]
       significant_alpha: 0.90
       nonsignificant_alpha: 0.24
-      nonsignificant_mode: fade
 
 rendering: { pdf_fonttype: 42, ps_fonttype: 42, dpi: 300, transparent: false }
