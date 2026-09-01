@@ -105,6 +105,12 @@ def tick_lengths() -> tuple[float, float]:
     return float(geometry["major_length_pt"]), float(geometry["minor_length_pt"])
 
 
+def linear_minor_divisor(contracts: Contracts | None = None) -> int:
+    """Return the single configured subdivision count for linear-axis minor ticks."""
+    selected = contracts or load_contracts()
+    return int(selected.style["axes"]["nice_linear"]["minor_divisor"])
+
+
 def bar_width(series_count: int = 1) -> float:
     """Return the exact central bar width for a single or grouped series."""
     if isinstance(series_count, bool) or not isinstance(series_count, int) or series_count < 1:
@@ -200,7 +206,7 @@ def nice_linear_axis(data_min: float, data_max: float) -> NiceLinearAxis:
         )
 
     step, lower, upper, _count, _blank, _is_half = min(pool, key=rank)
-    return NiceLinearAxis(lower, upper, step, step / 2.0)
+    return NiceLinearAxis(lower, upper, step, step / linear_minor_divisor(_CONTRACTS))
 
 
 def apply_axis_contract(axis: Axes, surface: Literal["open", "filled"] = "open") -> None:
@@ -211,7 +217,7 @@ def apply_axis_contract(axis: Axes, surface: Literal["open", "filled"] = "open")
     major_length, minor_length = tick_lengths()
     for coordinate_axis in (axis.xaxis, axis.yaxis):
         if coordinate_axis.get_scale() == "linear":
-            coordinate_axis.set_minor_locator(AutoMinorLocator(2))
+            coordinate_axis.set_minor_locator(AutoMinorLocator(linear_minor_divisor(contracts)))
     axis.tick_params(
         axis="both",
         which="major",
@@ -235,7 +241,8 @@ def apply_axis_contract(axis: Axes, surface: Literal["open", "filled"] = "open")
 
 
 def apply_categorical_axis(axis: Axes, coordinate: Literal["x", "y"] = "x") -> None:
-    axis.tick_params(axis=coordinate, which="both", length=0.0)
+    length = float(load_contracts().style["ticks"]["categorical"]["length_pt"])
+    axis.tick_params(axis=coordinate, which="both", length=length)
 
 
 def apply_nice_linear_axis(
@@ -275,8 +282,13 @@ def _stroke_width(token: object) -> float:
         raise ValueError(f"unknown stroke token: {token}") from error
 
 
-def add_bar_value_labels(axis: Axes, containers: Iterable[BarContainer], decimals: int = 2) -> None:
-    if decimals < 0:
+def add_bar_value_labels(
+    axis: Axes, containers: Iterable[BarContainer], decimals: int | None = None
+) -> None:
+    selected_decimals = (
+        int(load_contracts().style["plots"]["bar"]["decimals"]) if decimals is None else decimals
+    )
+    if selected_decimals < 0:
         raise ValueError("decimals must be non-negative")
     selected = list(containers)
     _reserve_bar_label_headroom(axis, selected)
@@ -290,7 +302,7 @@ def add_bar_value_labels(axis: Axes, containers: Iterable[BarContainer], decimal
         values = np.asarray(container.datavalues, dtype=float)
         axis.bar_label(
             container,
-            labels=[f"{value:.{decimals}f}" for value in values],
+            labels=[f"{value:.{selected_decimals}f}" for value in values],
             padding=2.0,
         )
 

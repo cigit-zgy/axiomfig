@@ -101,6 +101,14 @@ def _nonempty_string(value: object, name: str) -> str:
     return value
 
 
+def _integer(value: object, name: str, *, positive: bool = False) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(f"{name} must be an integer")
+    if positive and value <= 0:
+        raise ValueError(f"{name} must be positive")
+    return value
+
+
 def _string_sequence(container: Mapping[str, Any], key: str, prefix: str) -> tuple[str, ...]:
     values = _required_sequence(container, key, prefix)
     if not values or not all(isinstance(value, str) and value for value in values):
@@ -133,7 +141,10 @@ def _validate_style_values(style: Mapping[str, Any]) -> None:
     for name in geometry_root:
         _required_mapping(geometry_root, str(name), "geometry")
     typography = _required_mapping(style, "typography", "style")
-    _required_mapping(typography, "sizes_pt", "typography")
+    sizes = _required_mapping(typography, "sizes_pt", "typography")
+    expected_sizes = {"base", "small", "label", "title"}
+    if set(sizes) != expected_sizes:
+        raise ValueError(f"typography.sizes_pt must contain exactly {sorted(expected_sizes)}")
     ticks = _required_mapping(style, "ticks", "style")
     _required_mapping(ticks, "geometry", "ticks")
     _required_mapping(ticks, "categorical", "ticks")
@@ -155,6 +166,7 @@ def _validate_style_values(style: Mapping[str, Any]) -> None:
         "confidence_interval",
         "line_marker",
         "scatter",
+        "distribution",
         "errorbar",
         "boxplot",
         "violin",
@@ -180,9 +192,11 @@ def _validate_style_values(style: Mapping[str, Any]) -> None:
         raise ValueError("axes.nice_linear.step_mantissas must not be empty")
     for index, value in enumerate(step_mantissas):
         _finite_number(value, f"axes.nice_linear.step_mantissas[{index}]", positive=True)
-    _finite_number(
+    minor_divisor = _integer(
         nice_linear.get("minor_divisor"), "axes.nice_linear.minor_divisor", positive=True
     )
+    if minor_divisor < 2:
+        raise ValueError("axes.nice_linear.minor_divisor must be at least two")
     _finite_number(
         nice_linear.get("whole_step_blank_fraction"),
         "axes.nice_linear.whole_step_blank_fraction",
@@ -208,6 +222,11 @@ def _validate_style_values(style: Mapping[str, Any]) -> None:
     )
     if reference_style not in line_styles:
         raise ValueError("series.reference_line_style must be present in series.line_styles")
+    for surface in ("open", "filled"):
+        for level in ("major", "minor"):
+            direction = style["ticks"][surface][level].get("direction")
+            if direction not in {"in", "out", "inout"}:
+                raise ValueError(f"ticks.{surface}.{level}.direction is invalid")
 
     positive: list[tuple[Any, str]] = []
     for name, geometry in style["geometry"].items():
@@ -221,17 +240,8 @@ def _validate_style_values(style: Mapping[str, Any]) -> None:
     positive.extend(
         (style["stroke"][name], f"stroke.{name}") for name in ("main_stroke_pt", "fill_edge_pt")
     )
-    for surface in ("open", "filled"):
-        for level in ("major", "minor"):
-            token = style["ticks"][surface][level]["length_token"]
-            if token not in {"major", "minor"}:
-                raise ValueError(f"ticks.{surface}.{level}.length_token is invalid")
     positive.extend(
         (
-            (
-                style["ticks"]["geometry"]["minor_to_major_inward_ratio"],
-                "ticks.geometry.minor_to_major_inward_ratio",
-            ),
             (style["ticks"]["geometry"]["minor_length_pt"], "ticks.geometry.minor_length_pt"),
             (style["ticks"]["geometry"]["major_length_pt"], "ticks.geometry.major_length_pt"),
             (style["legend"]["handlelength"], "legend.handlelength"),
@@ -241,6 +251,10 @@ def _validate_style_values(style: Mapping[str, Any]) -> None:
             (style["panel"]["font_size_pt"], "panel.font_size_pt"),
             (style["plots"]["line_marker"]["marker_size_pt"], "plots.line_marker.marker_size_pt"),
             (style["plots"]["scatter"]["marker_size_pt2"], "plots.scatter.marker_size_pt2"),
+            (
+                style["plots"]["distribution"]["raw_point_size_pt2"],
+                "plots.distribution.raw_point_size_pt2",
+            ),
             (style["plots"]["errorbar"]["marker_size_pt"], "plots.errorbar.marker_size_pt"),
             (style["plots"]["errorbar"]["cap_size_pt"], "plots.errorbar.cap_size_pt"),
             (style["plots"]["boxplot"]["width"], "plots.boxplot.width"),
@@ -254,7 +268,6 @@ def _validate_style_values(style: Mapping[str, Any]) -> None:
                 style["colorbar"]["vertical"]["length_fraction"],
                 "colorbar.vertical.length_fraction",
             ),
-            (style["rendering"]["dpi"], "rendering.dpi"),
         )
     )
     for value, name in positive:
@@ -289,14 +302,16 @@ def _validate_style_values(style: Mapping[str, Any]) -> None:
         raise ValueError("output.allowed_margin_modes must contain strings")
     if margin_mode not in allowed_modes or set(allowed_modes) != {"tight", "normal", "custom"}:
         raise ValueError("output margin mode must be tight, normal, or custom")
+    if not isinstance(style["legend"].get("frame"), bool):
+        raise ValueError("legend.frame must be boolean")
+    _nonempty_string(style["panel"].get("format"), "panel.format")
+    _nonempty_string(style["panel"].get("font_weight"), "panel.font_weight")
     for value, name in (
         (style["panel"]["left_offset_pt"], "panel.left_offset_pt"),
         (style["panel"]["top_offset_pt"], "panel.top_offset_pt"),
     ):
         _finite_number(value, name)
     vertical_colorbar = style["colorbar"]["vertical"]
-    if vertical_colorbar["alignment"] != "center":
-        raise ValueError("colorbar.vertical.alignment must be center")
     if vertical_colorbar["tick_side"] != "right":
         raise ValueError("colorbar.vertical.tick_side must be right")
     if vertical_colorbar["label_side"] != "right":
@@ -318,6 +333,19 @@ def _validate_style_values(style: Mapping[str, Any]) -> None:
     decimals = style["plots"]["bar"]["decimals"]
     if isinstance(decimals, bool) or not isinstance(decimals, int) or decimals < 0:
         raise ValueError("plots.bar.decimals must be a nonnegative integer")
+    _integer(
+        style["plots"]["distribution"].get("ecdf_max_markers"),
+        "plots.distribution.ecdf_max_markers",
+        positive=True,
+    )
+    _nonempty_string(style["plots"]["heatmap"].get("interpolation"), "plots.heatmap.interpolation")
+    rendering = style["rendering"]
+    for name in ("pdf_fonttype", "ps_fonttype"):
+        if _integer(rendering.get(name), f"rendering.{name}") not in {3, 42}:
+            raise ValueError(f"rendering.{name} must be 3 or 42")
+    _integer(rendering.get("dpi"), "rendering.dpi", positive=True)
+    if not isinstance(rendering.get("transparent"), bool):
+        raise ValueError("rendering.transparent must be boolean")
 
 
 def _validate_style(style: Mapping[str, Any]) -> None:
@@ -332,15 +360,20 @@ def _validate_fonts(fonts: Mapping[str, Any]) -> None:
     families = _required_mapping(fonts, "families", "fonts")
     _nonempty_string(fonts.get("bundle_subdir"), "fonts.bundle_subdir")
     _string_sequence(fonts, "search_roots", "fonts")
-    default = _nonempty_string(fonts.get("default"), "fonts.default")
-    if default not in modes:
-        raise ValueError("fonts.default must name a typography mode")
 
     referenced: set[str] = set()
+    text_families: set[str] = set()
     for mode_name, _value in modes.items():
         mode = _required_mapping(modes, str(mode_name), "fonts.modes")
+        if set(mode) != {"text", "math", "mono"}:
+            raise ValueError(
+                f"fonts.modes.{mode_name} must contain exactly text, math, and mono roles"
+            )
         for role in ("text", "math", "mono"):
-            referenced.add(_nonempty_string(mode.get(role), f"fonts.modes.{mode_name}.{role}"))
+            family_name = _nonempty_string(mode.get(role), f"fonts.modes.{mode_name}.{role}")
+            referenced.add(family_name)
+            if role == "text":
+                text_families.add(family_name)
     for family_name, _value in families.items():
         family = _required_mapping(families, str(family_name), "fonts.families")
         _nonempty_string(family.get("family"), f"fonts.families.{family_name}.family")
@@ -356,6 +389,15 @@ def _validate_fonts(fonts: Mapping[str, Any]) -> None:
     missing = referenced - set(families)
     if missing:
         raise ValueError(f"font modes reference unknown families: {sorted(missing)}")
+    for family_name in text_families:
+        filenames = _required_mapping(
+            _required_mapping(families, family_name, "fonts.families"),
+            "filenames",
+            f"fonts.families.{family_name}",
+        )
+        required_variants = {"regular", "bold", "italic", "bold_italic"}
+        if not required_variants <= set(filenames):
+            raise ValueError(f"text font {family_name} must provide {sorted(required_variants)}")
 
 
 def _validate_colors(colors: Mapping[str, Any]) -> None:

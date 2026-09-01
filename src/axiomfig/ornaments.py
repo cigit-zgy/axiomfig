@@ -14,7 +14,7 @@ from matplotlib.transforms import ScaledTranslation
 
 from axiomfig.config import load_contracts
 from axiomfig.layout import figure_renderer, get_figure_layout, register_figure_ornament
-from axiomfig.style import MAIN_STROKE_PT, tick_lengths
+from axiomfig.style import MAIN_STROKE_PT, linear_minor_divisor, tick_lengths
 
 PANEL_LABEL_GID = "axiomfig-panel-label"
 
@@ -32,7 +32,7 @@ def apply_colorbar_contract(colorbar: Colorbar) -> None:
         label_side = cast(Literal["left", "right"], contract["label_side"])
         axis.yaxis.set_ticks_position(tick_side)
         axis.yaxis.set_label_position(label_side)
-        axis.yaxis.set_minor_locator(AutoMinorLocator(2))
+        axis.yaxis.set_minor_locator(AutoMinorLocator(linear_minor_divisor()))
         axis.tick_params(
             axis="y",
             which="major",
@@ -56,7 +56,7 @@ def apply_colorbar_contract(colorbar: Colorbar) -> None:
     else:
         from matplotlib.ticker import AutoMinorLocator
 
-        axis.xaxis.set_minor_locator(AutoMinorLocator(2))
+        axis.xaxis.set_minor_locator(AutoMinorLocator(linear_minor_divisor()))
         axis.tick_params(
             axis="x",
             which="major",

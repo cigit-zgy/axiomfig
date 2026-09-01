@@ -74,21 +74,43 @@ def test_visual_stroke_tokens_are_distinct_and_positive() -> None:
     assert get_token(contracts, "style.stroke.fill_edge_pt") == 0.6
 
 
-def test_tick_geometry_is_centralized_and_phi_derived() -> None:
+def test_tick_geometry_is_centralized() -> None:
     from axiomfig.config import load_contracts
 
     ticks = load_contracts(STYLE_ROOT).style["ticks"]
-    phi = float(ticks["geometry"]["minor_to_major_inward_ratio"])
     minor = float(ticks["geometry"]["minor_length_pt"])
     major = float(ticks["geometry"]["major_length_pt"])
 
-    assert phi == pytest.approx(0.6180339887)
     assert minor == pytest.approx(1.236 * 1.5)
-    assert major / 2.0 == pytest.approx(minor / phi)
-    assert ticks["open"]["major"]["length_token"] == "major"
-    assert ticks["filled"]["major"]["length_token"] == "major"
-    assert ticks["open"]["minor"]["length_token"] == "minor"
-    assert ticks["filled"]["minor"]["length_token"] == "minor"
+    assert major > minor
+
+
+def test_linear_minor_divisor_drives_axis_calculation_and_locator(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import matplotlib.pyplot as plt
+
+    from axiomfig import style
+    from axiomfig.config import Contracts, load_contracts
+    from axiomfig.structured_io import load_yaml
+
+    packaged = load_contracts(STYLE_ROOT)
+    custom_style = load_yaml(
+        (STYLE_ROOT / "style.yaml").read_text(encoding="utf-8"), source="style.yaml"
+    )
+    custom_style["axes"]["nice_linear"]["minor_divisor"] = 3
+    custom = Contracts(style=custom_style, fonts=packaged.fonts, colors=packaged.colors)
+    monkeypatch.setattr(style, "_CONTRACTS", custom)
+    monkeypatch.setattr(style, "load_contracts", lambda: custom)
+
+    axis_contract = style.nice_linear_axis(0.2, 4.8)
+    assert axis_contract.major_step / axis_contract.minor_step == pytest.approx(3.0)
+
+    figure, axis = plt.subplots()
+    style.apply_axis_contract(axis)
+    assert axis.xaxis.get_minor_locator().ndivs == 3
+    assert axis.yaxis.get_minor_locator().ndivs == 3
+    plt.close(figure)
 
 
 def test_bar_width_and_redundant_series_cycle_are_central_tokens() -> None:

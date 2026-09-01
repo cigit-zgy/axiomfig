@@ -47,7 +47,7 @@ The runtime derives open, filled, and Colorbar tick lengths from the shared tick
 `style.yaml`. A Colorbar converts the central `inout` major contract to its outward-only equivalent;
 it does not own a second independent length token.
 
-`AutoMinorLocator(2)` yields one minor tick per major interval. Log axes keep their mathematical locators and do not use the deterministic linear-axis rule.
+The configured linear minor-tick divisor yields deterministic subdivisions between major ticks. Log axes keep their mathematical locators and do not use the linear-axis rule.
 
 ## Nice linear axes
 

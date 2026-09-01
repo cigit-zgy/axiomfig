@@ -84,6 +84,32 @@ def test_mantel_style_contract_contains_only_executable_defaults() -> None:
     assert "nonsignificant_mode" not in mantel["links"]
 
 
+def test_packaged_contracts_contain_no_known_dead_visual_defaults() -> None:
+    style = load_yaml(
+        (ROOT / "src/axiomfig/resources/styles/style.yaml").read_text(encoding="utf-8"),
+        source="style.yaml",
+    )
+    fonts = load_yaml(
+        (ROOT / "src/axiomfig/resources/styles/fonts.yaml").read_text(encoding="utf-8"),
+        source="fonts.yaml",
+    )
+
+    assert "default" not in style["typography"]
+    assert "panel" not in style["typography"]["sizes_pt"]
+    assert "top_tick_labels" not in style["axes"]
+    assert "right_tick_labels" not in style["axes"]
+    assert "single_series" not in style["legend"]
+    assert "location" not in style["legend"]
+    assert "prefer_single_row" not in style["legend"]
+    assert "default" not in fonts
+    assert "minor_to_major_inward_ratio" not in style["ticks"]["geometry"]
+    assert all("length_token" not in policy for policy in style["ticks"]["open"].values())
+    assert all("length_token" not in policy for policy in style["ticks"]["filled"].values())
+    assert "alignment" not in style["colorbar"]["vertical"]
+    assert "line" not in style["plots"]
+    assert "value_labels" not in style["plots"]["bar"]
+
+
 @pytest.mark.parametrize(
     ("filename", "mutate"),
     (
@@ -95,6 +121,13 @@ def test_mantel_style_contract_contains_only_executable_defaults() -> None:
         ("style.yaml", lambda document: document["axes"].__setitem__("nice_linear", None)),
         ("style.yaml", lambda document: document["layout"].__setitem__("single_panel", None)),
         ("style.yaml", lambda document: document["plots"].__setitem__("heatmap", None)),
+        ("style.yaml", lambda document: document["typography"]["sizes_pt"].pop("base")),
+        ("style.yaml", lambda document: document["rendering"].__setitem__("pdf_fonttype", None)),
+        ("fonts.yaml", lambda document: document["modes"]["sans"].__setitem__("extra", "x")),
+        (
+            "fonts.yaml",
+            lambda document: document["families"]["latin-modern-sans"]["filenames"].pop("bold"),
+        ),
     ),
 )
 def test_all_executable_resource_containers_fail_closed(
@@ -112,7 +145,7 @@ def test_all_executable_resource_containers_fail_closed(
 
     load_contracts.cache_clear()
     try:
-        with pytest.raises(ValueError, match="mapping"):
+        with pytest.raises(ValueError):
             load_contracts(target)
     finally:
         load_contracts.cache_clear()

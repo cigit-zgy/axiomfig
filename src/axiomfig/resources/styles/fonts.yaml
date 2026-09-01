@@ -1,5 +1,4 @@
 version: 1
-default: sans
 bundle_subdir: resources/fonts
 
 modes:

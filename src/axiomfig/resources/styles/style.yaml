@@ -6,36 +6,30 @@ geometry:
   double-column: { width_mm: 190.0, aspect: 1.3333333333333333 }
 
 typography:
-  default: sans
-  sizes_pt: { base: 8.0, small: 7.0, label: 8.0, title: 9.0, panel: 11.0 }
+  sizes_pt: { base: 8.0, small: 7.0, label: 8.0, title: 9.0 }
 
 stroke: { main_stroke_pt: 0.8, fill_edge_pt: 0.6 }
 
 ticks:
   geometry:
-    minor_to_major_inward_ratio: 0.6180339887
     minor_length_pt: 1.854
     major_length_pt: 5.9996700308
   open:
-    major: { direction: inout, length_token: major }
-    minor: { direction: in, length_token: minor }
+    major: { direction: inout }
+    minor: { direction: in }
   filled:
-    major: { direction: out, length_token: major }
-    minor: { direction: out, length_token: minor }
+    major: { direction: out }
+    minor: { direction: out }
   categorical: { length_pt: 0.0 }
 
 axes:
   nice_linear:
     target_major_ticks: [5, 7]
     step_mantissas: [1.0, 2.0, 2.5, 5.0]
-    minor_divisor: 2.0
+    minor_divisor: 2
     whole_step_blank_fraction: 0.25
-  top_tick_labels: false
-  right_tick_labels: false
 
 legend:
-  single_series: none
-  location: outside-top-right
   top_gap_pt: 0.4666666667
   handlelength: 1.0
   columnspacing: 1.0
@@ -44,14 +38,12 @@ legend:
   borderpad: 0.0
   borderaxespad: 0.0
   frame: false
-  prefer_single_row: true
 
 colorbar:
   vertical:
     width_pt: 9.0
     gap_pt: 6.0
     length_fraction: 0.72
-    alignment: center
     tick_side: right
     label_side: right
 
@@ -82,7 +74,6 @@ series:
   reference_line_style: dashdot
 
 plots:
-  line: { linewidth_token: main_stroke }
   line_marker:
     marker: o
     marker_size_pt: 5.2
@@ -112,7 +103,6 @@ plots:
     edge_width_token: fill_edge
     single_width: 0.60
     group_width: 0.76
-    value_labels: true
     decimals: 2
   boxplot:
     alpha: 0.72
