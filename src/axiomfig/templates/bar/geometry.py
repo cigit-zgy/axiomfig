@@ -5,6 +5,20 @@ import numpy as np
 _LINEAR_LIMIT_PADDING_FRACTION = 0.14
 
 
+def error_endpoints(magnitude: np.ndarray, error: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Return lower/upper endpoints for symmetric or row-wise asymmetric errors."""
+    values = np.asarray(magnitude, dtype=float)
+    errors = np.asarray(error, dtype=float)
+    with np.errstate(over="ignore", invalid="ignore"):
+        if errors.ndim == 1:
+            lower = values - errors
+            upper = values + errors
+        else:
+            lower = values - errors[:, 0]
+            upper = values + errors[:, 1]
+    return lower, upper
+
+
 def linear_limits(*arrays: np.ndarray) -> tuple[float, float]:
     """Return finite padded bounds for Bar value geometry."""
     values = np.concatenate([np.asarray(array, dtype=float).ravel() for array in arrays])
@@ -21,4 +35,4 @@ def linear_limits(*arrays: np.ndarray) -> tuple[float, float]:
     return limits
 
 
-__all__ = ["linear_limits"]
+__all__ = ["error_endpoints", "linear_limits"]

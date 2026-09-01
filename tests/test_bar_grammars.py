@@ -3,6 +3,7 @@ from __future__ import annotations
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
+from matplotlib.collections import LineCollection
 
 
 def _patch_geometry(figure: object) -> list[tuple[float, float, float, float]]:
@@ -582,6 +583,60 @@ def test_public_bar_rejects_nonfinite_error_extent() -> None:
             {"category": ["A"], "value": [1e308], "error": [1e308]},
             semantics={"uncertainty_type": "SE"},
         )
+
+
+@pytest.mark.parametrize("orientation", ["vertical", "horizontal"])
+@pytest.mark.parametrize(
+    ("template", "data", "expected_lower", "expected_upper"),
+    [
+        (
+            "bar.simple",
+            {"category": ["A"], "value": [1.0], "error": [100.0]},
+            -99.0,
+            101.0,
+        ),
+        (
+            "bar.grouped",
+            {
+                "category": ["A", "A"],
+                "group": ["G1", "G2"],
+                "value": [1.0, 2.0],
+                "error": [[10.0, 20.0], [40.0, 50.0]],
+            },
+            -38.0,
+            52.0,
+        ),
+    ],
+)
+def test_bar_uncertainty_artists_are_contained_by_value_axis(
+    orientation: str,
+    template: str,
+    data: dict[str, object],
+    expected_lower: float,
+    expected_upper: float,
+) -> None:
+    figure = _build_public_bar(
+        template,
+        data,
+        semantics={"orientation": orientation, "uncertainty_type": "SE"},
+    )
+    try:
+        axis = figure.axes[0]  # type: ignore[attr-defined]
+        segments = [
+            segment
+            for collection in axis.collections
+            if isinstance(collection, LineCollection)
+            for segment in collection.get_segments()
+        ]
+        coordinate = 1 if orientation == "vertical" else 0
+        segment_values = np.concatenate([segment[:, coordinate] for segment in segments])
+        limits = axis.get_ylim() if orientation == "vertical" else axis.get_xlim()
+        assert segment_values.min() == pytest.approx(expected_lower)
+        assert segment_values.max() == pytest.approx(expected_upper)
+        assert limits[0] <= expected_lower
+        assert limits[1] >= expected_upper
+    finally:
+        plt.close(figure)  # type: ignore[arg-type]
 
 
 def test_waterfall_reconciliation_uses_absolute_only_tolerance() -> None:

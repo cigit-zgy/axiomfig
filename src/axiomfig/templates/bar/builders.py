@@ -19,7 +19,7 @@ from axiomfig.style import (
     bar_width,
 )
 from axiomfig.templates.bar.adapter import PROPORTION_ABSOLUTE_TOLERANCE
-from axiomfig.templates.bar.geometry import linear_limits
+from axiomfig.templates.bar.geometry import error_endpoints, linear_limits
 
 
 def _orientation(value: object | None, *, default: str = "vertical") -> str:
@@ -190,6 +190,12 @@ def build_simple(
             raise ValueError("uncertainty_type is required with bar errors")
     else:
         raise ValueError("bar requires category and value together")
+    if errors is None:
+        bounds = linear_limits(values)
+    else:
+        raw_error = np.asarray(error, dtype=float)
+        lower_error, upper_error = error_endpoints(values, raw_error)
+        bounds = linear_limits(values, lower_error, upper_error)
     selected_orientation = _orientation(orientation)
     positions = np.arange(len(labels))
     figure, axis = plt.subplots()
@@ -210,7 +216,7 @@ def build_simple(
         ylabel=ylabel,
         value_suffix=suffix,
     )
-    _categorical_axes(axis, labels, selected_orientation, *linear_limits(values))
+    _categorical_axes(axis, labels, selected_orientation, *bounds)
     _finish_bars(axis, [container], value_labels)
     return figure
 
@@ -255,6 +261,13 @@ def build_grouped(
             raise ValueError("uncertainty_type is required with grouped bar errors")
     else:
         raise ValueError("grouped bar requires category, value, and group together")
+    if errors is None:
+        bounds = linear_limits(values)
+    else:
+        raw_values = np.asarray(value, dtype=float)
+        raw_error = np.asarray(error, dtype=float)
+        lower_error, upper_error = error_endpoints(raw_values, raw_error)
+        bounds = linear_limits(raw_values, lower_error, upper_error)
     selected_orientation = _orientation(orientation)
     positions = np.arange(len(labels))
     width = bar_width(len(groups))
@@ -282,7 +295,7 @@ def build_grouped(
         ylabel=ylabel,
         value_suffix=suffix,
     )
-    _categorical_axes(axis, labels, selected_orientation, *linear_limits(values))
+    _categorical_axes(axis, labels, selected_orientation, *bounds)
     _finish_bars(axis, containers, value_labels)
     request_legend(axis)
     return figure
