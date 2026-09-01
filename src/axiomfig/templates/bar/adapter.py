@@ -12,7 +12,7 @@ from axiomfig.templates._adapter import (
     optional_text,
     text,
 )
-from axiomfig.templates.bar.geometry import error_endpoints, linear_limits
+from axiomfig.templates.bar.geometry import error_limits, linear_limits
 
 _CATEGORY_VALUE_VARIANTS = {
     "simple",
@@ -38,8 +38,7 @@ def _require_finite_derived(*arrays: np.ndarray) -> None:
 
 
 def _validate_error_geometry(magnitude: np.ndarray, error: np.ndarray) -> None:
-    lower, upper = error_endpoints(magnitude, error)
-    _require_finite_derived(magnitude, lower, upper)
+    error_limits(magnitude, error)
 
 
 def _validate_cumulative_geometry(

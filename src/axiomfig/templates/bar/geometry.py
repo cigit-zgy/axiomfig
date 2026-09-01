@@ -19,6 +19,16 @@ def error_endpoints(magnitude: np.ndarray, error: np.ndarray) -> tuple[np.ndarra
     return lower, upper
 
 
+def error_limits(magnitude: np.ndarray, error: np.ndarray) -> tuple[float, float]:
+    """Return value-padded bounds expanded only as needed to contain error endpoints."""
+    values = np.asarray(magnitude, dtype=float)
+    lower_error, upper_error = error_endpoints(values, error)
+    if not np.all(np.isfinite(lower_error)) or not np.all(np.isfinite(upper_error)):
+        raise ValueError("bar values must produce finite derived geometry")
+    lower, upper = linear_limits(values)
+    return min(lower, float(lower_error.min())), max(upper, float(upper_error.max()))
+
+
 def linear_limits(*arrays: np.ndarray) -> tuple[float, float]:
     """Return finite padded bounds for Bar value geometry."""
     values = np.concatenate([np.asarray(array, dtype=float).ravel() for array in arrays])
@@ -35,4 +45,4 @@ def linear_limits(*arrays: np.ndarray) -> tuple[float, float]:
     return limits
 
 
-__all__ = ["error_endpoints", "linear_limits"]
+__all__ = ["error_endpoints", "error_limits", "linear_limits"]

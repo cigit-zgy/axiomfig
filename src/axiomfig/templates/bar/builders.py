@@ -19,7 +19,7 @@ from axiomfig.style import (
     bar_width,
 )
 from axiomfig.templates.bar.adapter import PROPORTION_ABSOLUTE_TOLERANCE
-from axiomfig.templates.bar.geometry import error_endpoints, linear_limits
+from axiomfig.templates.bar.geometry import error_limits, linear_limits
 
 
 def _orientation(value: object | None, *, default: str = "vertical") -> str:
@@ -194,8 +194,7 @@ def build_simple(
         bounds = linear_limits(values)
     else:
         raw_error = np.asarray(error, dtype=float)
-        lower_error, upper_error = error_endpoints(values, raw_error)
-        bounds = linear_limits(values, lower_error, upper_error)
+        bounds = error_limits(values, raw_error)
     selected_orientation = _orientation(orientation)
     positions = np.arange(len(labels))
     figure, axis = plt.subplots()
@@ -266,8 +265,7 @@ def build_grouped(
     else:
         raw_values = np.asarray(value, dtype=float)
         raw_error = np.asarray(error, dtype=float)
-        lower_error, upper_error = error_endpoints(raw_values, raw_error)
-        bounds = linear_limits(raw_values, lower_error, upper_error)
+        bounds = error_limits(raw_values, raw_error)
     selected_orientation = _orientation(orientation)
     positions = np.arange(len(labels))
     width = bar_width(len(groups))
