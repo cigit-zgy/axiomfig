@@ -9,10 +9,11 @@ from importlib.resources.abc import Traversable
 from pathlib import Path
 from string import Formatter
 from types import MappingProxyType
-from typing import Any
+from typing import Any, cast
 
 import matplotlib as mpl
 from cycler import cycler
+from matplotlib.markers import MarkerStyle
 
 from axiomfig.structured_io import load_yaml
 
@@ -240,6 +241,13 @@ def _validate_style_values(style: Mapping[str, Any]) -> None:
 
     line_styles = _string_sequence(series, "line_styles", "series")
     markers = _string_sequence(series, "markers", "series")
+    for index, marker in enumerate(markers):
+        try:
+            marker_path = MarkerStyle(marker).get_path()
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"series.markers[{index}] must be a valid visible marker") from exc
+        if len(cast(Any, marker_path.vertices)) == 0:
+            raise ValueError(f"series.markers[{index}] must be a valid visible marker")
     dash_pattern = _required_sequence(series, "long_dash_pattern", "series")
     if len(dash_pattern) != 2:
         raise ValueError("series.long_dash_pattern must contain two values")
@@ -265,7 +273,11 @@ def _validate_style_values(style: Mapping[str, Any]) -> None:
     for plot_name in edged_plots:
         contract = plots[plot_name]
         edge_color = _nonempty_string(contract.get("edge_color"), f"plots.{plot_name}.edge_color")
-        if edge_color.casefold() == "none" or not mpl.colors.is_color_like(edge_color):
+        try:
+            edge_alpha = mpl.colors.to_rgba(edge_color)[3]
+        except ValueError as exc:
+            raise ValueError(f"plots.{plot_name}.edge_color must be an opaque color") from exc
+        if edge_alpha != 1.0:
             raise ValueError(f"plots.{plot_name}.edge_color must be an opaque color")
         edge_width_token = _nonempty_string(
             contract.get("edge_width_token"), f"plots.{plot_name}.edge_width_token"

@@ -422,6 +422,71 @@ def test_scatter_consumer_rejects_silently_transparent_edge(
         load_contracts.cache_clear()
 
 
+def test_line_marker_consumer_rejects_coordinated_hidden_marker(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def hide_markers(style: dict[str, object]) -> None:
+        style["series"]["markers"][0] = "None"
+        style["plots"]["line_marker"]["marker"] = "None"
+        style["plots"]["errorbar"]["marker"] = "None"
+
+    target = _mutated_style_root(tmp_path, hide_markers)
+    monkeypatch.setattr(style_module, "load_contracts", lambda: load_contracts(target))
+
+    try:
+        with pytest.raises(ValueError, match="series.markers.*visible marker"):
+            style_module.line_marker_kwargs()
+    finally:
+        load_contracts.cache_clear()
+
+
+@pytest.mark.parametrize("edge_color", ("#00000000", "#00000080"))
+def test_scatter_consumer_rejects_alpha_bearing_edge_color(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, edge_color: str
+) -> None:
+    target = _mutated_style_root(
+        tmp_path,
+        lambda style: style["plots"]["scatter"].__setitem__("edge_color", edge_color),
+    )
+    monkeypatch.setattr(style_module, "load_contracts", lambda: load_contracts(target))
+    figure, axis = plt.subplots()
+    collection = axis.scatter([0.0], [0.0])
+    try:
+        with pytest.raises(ValueError, match="plots.scatter.edge_color.*opaque"):
+            style_module.apply_scatter_contract(collection)
+    finally:
+        plt.close(figure)
+        load_contracts.cache_clear()
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    (
+        lambda fields: fields.__setitem__("required", [None]),
+        lambda fields: fields.__setitem__("optional", None),
+        lambda fields: fields.__setitem__("legacy_aliases", {"source": None}),
+        lambda fields: fields.__setitem__("legacy_aliases", {"unknown": "legacy"}),
+    ),
+)
+def test_nested_link_field_contract_fails_closed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    mutate: Callable[[dict[str, object]], None],
+) -> None:
+    source = ROOT / "src/axiomfig/templates/association/contract.yaml"
+    family = tmp_path / "association"
+    family.mkdir()
+    document = yaml.safe_load(source.read_text(encoding="utf-8"))
+    mutate(document["variants"]["mantel"]["link_fields"])
+    (family / "contract.yaml").write_text(
+        yaml.safe_dump(document, sort_keys=False), encoding="utf-8"
+    )
+    monkeypatch.setattr(registry, "files", lambda _package: tmp_path)
+
+    with pytest.raises(ValueError, match="link_fields"):
+        registry.load_family_contract("association")
+
+
 def test_json_rows_must_have_one_consistent_schema(tmp_path: Path) -> None:
     path = tmp_path / "data.json"
     path.write_text('[{"x": 1, "y": 2}, {"x": 3}]', encoding="utf-8")

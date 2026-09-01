@@ -23,6 +23,7 @@ from axiomfig.templates.association.mantel.composition import (
     SignificanceOverlay,
     normalize_composition,
 )
+from axiomfig.templates.registry import load_family_contract
 
 
 @dataclass(frozen=True)
@@ -90,33 +91,44 @@ def _labels(value: object) -> tuple[str, ...]:
     return labels
 
 
+def _link_field_schema() -> tuple[tuple[str, ...], tuple[str, ...], dict[str, str]]:
+    fields = load_family_contract("association")["variants"]["mantel"]["link_fields"]
+    return tuple(fields["required"]), tuple(fields["optional"]), dict(fields["legacy_aliases"])
+
+
 def _links(value: object, labels: tuple[str, ...]) -> tuple[MantelLink, ...]:
     if isinstance(value, (str, bytes)) or not isinstance(value, Sequence) or not value:
         raise ValueError("links must be a non-empty sequence of mappings")
     known = set(labels)
     seen: set[tuple[str, str]] = set()
     normalized: list[MantelLink] = []
+    required_fields, optional_fields, legacy_aliases = _link_field_schema()
+    canonical = set(required_fields)
+    optional = set(optional_fields)
+    legacy = (canonical - set(legacy_aliases)) | set(legacy_aliases.values())
+    allowed = canonical | legacy | optional
     for index, item in enumerate(value):
         if not isinstance(item, Mapping):
             raise ValueError(f"links[{index}] must be a mapping")
         keys = set(item)
-        canonical = {"source", "target", "mantel_r", "p_value"}
-        legacy = {"source_group", "target_label", "mantel_r", "p_value"}
-        optional = {"label", "metadata"}
-        if not (canonical <= keys or legacy <= keys) or keys - (canonical | legacy | optional):
+        if not (canonical <= keys or legacy <= keys) or keys - allowed:
             raise ValueError(f"links[{index}] must contain source, target, mantel_r, and p_value")
-        if canonical <= keys and ({"source_group", "target_label"} & keys):
+        if set(legacy_aliases) & keys and set(legacy_aliases.values()) & keys:
             raise ValueError(f"links[{index}] must not mix canonical and legacy endpoint fields")
-        source_key, target_key = (
-            ("source", "target") if canonical <= keys else ("source_group", "target_label")
+        selected_keys = (
+            {name: name for name in required_fields}
+            if canonical <= keys
+            else {name: legacy_aliases.get(name, name) for name in required_fields}
         )
+        source_key = selected_keys["source"]
+        target_key = selected_keys["target"]
         source = _text(item[source_key], f"links[{index}].{source_key}")
         target = _text(item[target_key], f"links[{index}].{target_key}")
         if target not in known:
             raise ValueError(f"links[{index}] references unknown target: {target!r}")
         try:
-            mantel_r = float(item["mantel_r"])
-            p_value = float(item["p_value"])
+            mantel_r = float(item[selected_keys["mantel_r"]])
+            p_value = float(item[selected_keys["p_value"]])
         except (TypeError, ValueError) as exc:
             raise ValueError(f"links[{index}] mantel_r and p_value must be numeric") from exc
         if not np.isfinite(mantel_r) or not -1.0 <= mantel_r <= 1.0:

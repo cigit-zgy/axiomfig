@@ -26,7 +26,10 @@ variants:
       - link_width_mode
       - p_value_mode
       - show_nonsignificant
-    link_fields: [source, target, mantel_r, p_value]
+    link_fields:
+      required: [source, target, mantel_r, p_value]
+      optional: [label, metadata]
+      legacy_aliases: { source: source_group, target: target_label }
     advanced_reference: references/mantel.md
   correlation_network:
     input_mode: precomputed

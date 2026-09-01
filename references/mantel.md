@@ -19,8 +19,9 @@ mantel_r: -0.42
 p_value: 0.018
 ```
 
-Optional `label` and `metadata` fields are preserved. Legacy `source_group` and `target_label` keys
-remain accepted and normalize to `source` and `target`.
+The association family contract is the executable owner of required, optional, and legacy link
+field names. Its optional `label` and `metadata` fields are preserved; its legacy endpoint aliases
+normalize to canonical `source` and `target`.
 
 Mantel r is accepted on `[-1, 1]`. Stroke width encodes `abs(r)` because strength is a magnitude;
 the signed value remains attached to the rendered link. The canonical width mode uses the

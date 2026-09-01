@@ -8,6 +8,7 @@ import pytest
 from matplotlib.patches import Circle, Ellipse, Rectangle, Wedge
 
 from axiomfig.templates import adapt_template_data, build_template
+from axiomfig.templates.association.mantel import data as mantel_data_module
 from axiomfig.templates.association.mantel.builder import canonical_mantel_values
 from axiomfig.templates.association.mantel.data import (
     CI_MODES,
@@ -261,6 +262,41 @@ def test_adapter_accepts_legacy_link_aliases_without_dropping_metadata() -> None
             "metadata": {"permutations": 999},
         },
     )
+
+
+def test_adapter_derives_legacy_link_aliases_from_family_contract(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    contract = {
+        "variants": {
+            "mantel": {
+                "link_fields": {
+                    "required": ["source", "target", "mantel_r", "p_value"],
+                    "optional": ["label", "metadata"],
+                    "legacy_aliases": {"source": "origin", "target": "destination"},
+                }
+            }
+        }
+    }
+    monkeypatch.setattr(mantel_data_module, "load_family_contract", lambda _family: contract)
+
+    adapted = mantel_data_module.normalized_public_values(
+        {
+            "correlation_matrix": [[1.0, 0.2], [0.2, 1.0]],
+            "labels": ["A", "B"],
+            "links": [
+                {
+                    "origin": "Surface",
+                    "destination": "A",
+                    "mantel_r": 0.4,
+                    "p_value": 0.02,
+                }
+            ],
+        }
+    )
+
+    assert adapted["links"][0]["source"] == "Surface"
+    assert adapted["links"][0]["target"] == "A"
 
 
 def test_diagonal_show_hide_missing_values_clusters_and_coefficients() -> None:
