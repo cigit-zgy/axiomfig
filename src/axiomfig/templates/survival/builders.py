@@ -12,6 +12,8 @@ from axiomfig.style import (
     series_style,
 )
 
+Curve = tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray | None, np.ndarray | None, str]
+
 
 def build_kaplan_meier(
     time: object | None = None,
@@ -22,6 +24,7 @@ def build_kaplan_meier(
     upper_ci: object | None = None,
     censor_time: object | None = None,
 ) -> Figure:
+    curves: tuple[Curve, ...]
     if time is None and survival_probability is None and censoring is None and group is None:
         time_values = np.array([0, 3, 6, 9, 12, 15, 18, 21, 24], dtype=float)
         curves = (
@@ -71,7 +74,7 @@ def build_kaplan_meier(
             raise ValueError("survival group must match time data")
         labels = tuple(dict.fromkeys(str(item) for item in group_values))
         group_text = group_values.astype(str)
-        selected_curves = []
+        selected_curves: list[Curve] = []
         for label in labels:
             mask = group_text == label
             order = np.argsort(time_values[mask])

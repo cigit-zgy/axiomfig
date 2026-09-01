@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections import defaultdict
 from dataclasses import dataclass
 from itertools import combinations
+from typing import Any, cast
 
 import numpy as np
 from matplotlib.transforms import Bbox
@@ -61,7 +62,7 @@ def _quadratic(vertices: np.ndarray, t: float) -> np.ndarray:
 
 
 def _route_samples(link: object, count: int = 49) -> np.ndarray:
-    vertices = np.asarray(link.get_path().vertices, dtype=float)  # type: ignore[attr-defined]
+    vertices = np.asarray(cast(Any, link).get_path().vertices, dtype=float)
     values = np.linspace(0.02, 0.98, max(9, count))
     data = np.asarray([_quadratic(vertices, float(value)) for value in values])
     return link.get_transform().transform(data)  # type: ignore[attr-defined]
@@ -110,7 +111,7 @@ def _source_rail_distance_pt(figure: object) -> float:
 def _route_separation_pt(figure: object, links: list[object]) -> float:
     grouped: dict[str, list[np.ndarray]] = defaultdict(list)
     for link in links:
-        vertices = np.asarray(link.get_path().vertices, dtype=float)  # type: ignore[attr-defined]
+        vertices = np.asarray(cast(Any, link).get_path().vertices, dtype=float)
         midpoint = _quadratic(vertices, 0.5)
         grouped[str(link._axiomfig_source)].append(  # type: ignore[attr-defined]
             link.get_transform().transform(midpoint)  # type: ignore[attr-defined]

@@ -417,16 +417,18 @@ def outer_panel_bbox(axis: Axes) -> Bbox:
         if panel is None:
             raise ValueError("axes is not owned by the registered figure layout")
         return panel.bbox()
-    try:
-        spec = axis.get_subplotspec().get_topmost_subplotspec()
-    except AttributeError:
+    subplot_spec = axis.get_subplotspec()
+    if subplot_spec is None:
         return axis.get_position()
+    spec = subplot_spec.get_topmost_subplotspec()
     return spec.get_position(axis.figure)
 
 
 def _axis_overhang_pt(axis: Axes, renderer: object) -> tuple[float, float, float, float]:
     tight = axis.get_tightbbox(renderer, bbox_extra_artists=[])
     bbox = axis.bbox
+    if tight is None:
+        return 0.0, 0.0, 0.0, 0.0
     scale = 72.0 / axis.figure.dpi
     return (
         max(0.0, bbox.x0 - tight.x0) * scale,

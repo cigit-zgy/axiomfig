@@ -13,8 +13,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
-import yaml
-
+from axiomfig.structured_io import load_yaml
 from tests.evaluation.blind_agent import prepare_sanitized_workspace
 from tests.evaluation.element_adjustment.scoring import parse_adjustment_decision
 from tests.evaluation.read_broker import ProgressiveReadBroker
@@ -124,7 +123,7 @@ def _parse_turn(payload: str) -> dict[str, Any]:
 
 
 def _load_cases(path: Path) -> list[dict[str, Any]]:
-    document = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+    document = load_yaml(Path(path).read_text(encoding="utf-8"), source=str(path))
     cases = document.get("cases") if isinstance(document, Mapping) else None
     if not isinstance(cases, list) or not cases:
         raise ValueError("benchmark cases must be a non-empty list")

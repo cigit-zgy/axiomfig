@@ -19,6 +19,7 @@ from axiomfig.config import build_rcparams, load_contracts
 from axiomfig.gallery import GALLERY_SPECS
 from axiomfig.intent import build_intent_figure, parse_figure_intent
 from axiomfig.rendering import render_figure
+from axiomfig.structured_io import load_yaml
 from axiomfig.templates import build_template
 from axiomfig.templates.registry import load_template_registry, public_template_specs
 from axiomfig.typography import discover_fonts
@@ -104,7 +105,7 @@ def _knowledge_path() -> Path:
 
 
 def _yaml_mapping(path: Path) -> dict[str, Any]:
-    document = yaml.safe_load(path.read_text(encoding="utf-8"))
+    document = load_yaml(path.read_text(encoding="utf-8"), source=str(path))
     if not isinstance(document, dict):
         raise ValueError(f"{path} must contain a YAML mapping")
     if document.get("version") != 1:

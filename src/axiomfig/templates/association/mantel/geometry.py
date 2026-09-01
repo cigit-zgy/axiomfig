@@ -369,9 +369,8 @@ def solve_source_rail(
         }
         corner = "upper-right" if matrix_type == "lower" else "lower-left"
         label_direction = -normal if mirrored else normal
-        label_offset = tuple(
-            float(value) for value in label_direction * (marker_radius + label_gap)
-        )
+        label_offset_values = label_direction * (marker_radius + label_gap)
+        label_offset = (float(label_offset_values[0]), float(label_offset_values[1]))
         alignment = ("right", "top") if mirrored else ("left", "bottom")
         intervals = {
             source: (center + interval[0], center + interval[1])

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
 import matplotlib as mpl
 import numpy as np
@@ -133,7 +133,10 @@ def _confidence_interval(
     edge_upper = cmap(norm(upper))
     estimate_color = cmap(norm(estimate))
     matrix_contract = mantel_plot_contract()["matrix"]
+    if not isinstance(matrix_contract, Mapping):
+        raise ValueError("Mantel matrix style contract must be a mapping")
     cell_side = float(matrix_contract["maximum_cell_side"])
+    artist: Rectangle | Circle
     if overlay.mode == "square":
         outer = cell_side * math.sqrt(max(abs(lower), abs(upper)))
         artist = Rectangle(
@@ -211,9 +214,9 @@ def _confidence_interval(
         )
     )
     artist.set_gid("axiomfig-mantel-confidence-interval")
-    artist._axiomfig_ci_mode = overlay.mode
-    artist._axiomfig_row = row
-    artist._axiomfig_column = column
+    artist.__dict__["_axiomfig_ci_mode"] = overlay.mode
+    artist.__dict__["_axiomfig_row"] = row
+    artist.__dict__["_axiomfig_column"] = column
     return artist
 
 

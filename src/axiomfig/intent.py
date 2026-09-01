@@ -10,10 +10,10 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Any
 
-import yaml
 from matplotlib.figure import Figure
 
 from axiomfig.config import load_contracts
+from axiomfig.structured_io import StructuredDataError, load_yaml
 from axiomfig.templates import TEMPLATE_ADAPTERS, adapt_template_data, build_template
 from axiomfig.templates.registry import load_family_contract, load_template_registry
 
@@ -128,8 +128,18 @@ def parse_figure_intent(document: Mapping[str, Any]) -> FigureIntent:
 
 def load_figure_intent(path: Path) -> FigureIntent:
     path = Path(path).expanduser().resolve()
-    text = path.read_text(encoding="utf-8")
-    document = json.loads(text) if path.suffix.lower() == ".json" else yaml.safe_load(text)
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        raise FigureIntentError(f"cannot read Figure Intent: {path}") from exc
+    try:
+        document = (
+            json.loads(text)
+            if path.suffix.lower() == ".json"
+            else load_yaml(text, source=str(path))
+        )
+    except (json.JSONDecodeError, StructuredDataError) as exc:
+        raise FigureIntentError(f"cannot parse Figure Intent: {exc}") from exc
     if not isinstance(document, Mapping):
         raise FigureIntentError("Figure Intent root must be a mapping")
     return parse_figure_intent(document)
@@ -145,17 +155,45 @@ def _coerce_csv_value(value: str) -> object:
 def load_dataset(path: Path) -> Mapping[str, object]:
     path = Path(path).expanduser().resolve()
     if path.suffix.lower() == ".csv":
-        with path.open(encoding="utf-8", newline="") as stream:
-            rows = list(csv.DictReader(stream))
-        if not rows or not rows[0]:
+        try:
+            with path.open(encoding="utf-8", newline="") as stream:
+                reader = csv.DictReader(stream)
+                rows = list(reader)
+        except (OSError, UnicodeError, csv.Error) as exc:
+            raise FigureIntentError(f"cannot read dataset: {path}") from exc
+        fieldnames = reader.fieldnames
+        if not fieldnames or not rows:
             raise FigureIntentError("CSV dataset must contain a header and at least one row")
-        return {key: tuple(_coerce_csv_value(row[key]) for row in rows) for key in rows[0]}
+        if any(not isinstance(name, str) or not name for name in fieldnames):
+            raise FigureIntentError("CSV column names must be non-empty strings")
+        if len(fieldnames) != len(set(fieldnames)):
+            raise FigureIntentError("duplicate CSV column names are not allowed")
+        if any(
+            None in row
+            or set(row) != set(fieldnames)
+            or any(value is None for value in row.values())
+            for row in rows
+        ):
+            raise FigureIntentError("CSV rows must contain the same number of fields")
+        return {key: tuple(_coerce_csv_value(row[key]) for row in rows) for key in fieldnames}
     if path.suffix.lower() == ".json":
-        value = json.loads(path.read_text(encoding="utf-8"))
+        try:
+            value = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError) as exc:
+            raise FigureIntentError(f"cannot read dataset: {path}") from exc
+        except json.JSONDecodeError as exc:
+            raise FigureIntentError(f"cannot parse dataset: {exc}") from exc
         if isinstance(value, Mapping):
+            if not all(isinstance(key, str) for key in value):
+                raise FigureIntentError("JSON dataset object keys must be strings")
             return dict(value)
         if isinstance(value, Sequence) and value and all(isinstance(row, Mapping) for row in value):
             keys = tuple(value[0])
+            if not all(isinstance(key, str) for key in keys) or any(
+                set(row) != set(keys) or not all(isinstance(key, str) for key in row)
+                for row in value
+            ):
+                raise FigureIntentError("JSON object rows must have the same string keys")
             return {key: tuple(row[key] for row in value) for key in keys}
         raise FigureIntentError("JSON dataset must be an object or a non-empty array of objects")
     raise FigureIntentError("dataset must use .csv or .json")
@@ -182,5 +220,6 @@ def build_intent_figure(
     try:
         adapted = adapt_template_data(intent.template_id, kwargs)
         return build_template(intent.template_id, **adapted)
-    except ValueError as exc:
-        raise FigureIntentError(str(exc)) from exc
+    except (AssertionError, IndexError, KeyError, TypeError, ValueError) as exc:
+        detail = str(exc) or f"invalid data for template {intent.template_id!r}"
+        raise FigureIntentError(detail) from exc

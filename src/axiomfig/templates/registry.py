@@ -5,11 +5,13 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from importlib.resources import files
+from importlib.resources.abc import Traversable
 from types import MappingProxyType
 from typing import Any
 
-import yaml
 from matplotlib.figure import Figure
+
+from axiomfig.structured_io import load_yaml
 
 
 @dataclass(frozen=True)
@@ -24,9 +26,9 @@ class TemplateSpec:
         return f"{self.family}/{self.variant}"
 
 
-def _read_yaml(resource: object) -> dict[str, Any]:
-    text = resource.read_text(encoding="utf-8")  # type: ignore[attr-defined]
-    value = yaml.safe_load(text)
+def _read_yaml(resource: Traversable) -> dict[str, Any]:
+    text = resource.read_text(encoding="utf-8")
+    value = load_yaml(text, source=resource.name)
     if not isinstance(value, dict):
         raise ValueError("template YAML root must be a mapping")
     return value

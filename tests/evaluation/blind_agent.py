@@ -11,9 +11,8 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
-import yaml
-
 from axiomfig.intent import FigureIntentError, parse_figure_intent
+from axiomfig.structured_io import load_yaml
 from axiomfig.templates.registry import load_family_contract, load_template_registry
 from tests.evaluation.agent_protocol import VALID_ACTIONS, VALID_INPUT_MODES
 from tests.evaluation.read_broker import CORE_FILES, GLOBS, ProgressiveReadBroker
@@ -318,7 +317,10 @@ def scoring_record(case_id: str, decision: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _load_selected_cases(path: Path, case_ids: Sequence[str]) -> list[dict[str, Any]]:
-    document = _mapping(yaml.safe_load(Path(path).read_text(encoding="utf-8")), "benchmark")
+    document = _mapping(
+        load_yaml(Path(path).read_text(encoding="utf-8"), source=str(path)),
+        "benchmark",
+    )
     raw_cases = document.get("cases")
     if not isinstance(raw_cases, list):
         raise ValueError("benchmark.cases must be a list")
@@ -574,7 +576,10 @@ def _main() -> None:
     args = parser.parse_args()
     command = args.agent_command[1:] if args.agent_command[:1] == ["--"] else args.agent_command
     if args.all_cases:
-        document = _mapping(yaml.safe_load(args.cases.read_text(encoding="utf-8")), "benchmark")
+        document = _mapping(
+            load_yaml(args.cases.read_text(encoding="utf-8"), source=str(args.cases)),
+            "benchmark",
+        )
         raw_cases = document.get("cases")
         if not isinstance(raw_cases, list):
             parser.error("benchmark.cases must be a list")

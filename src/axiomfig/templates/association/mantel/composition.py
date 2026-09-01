@@ -180,6 +180,7 @@ def normalize_composition(values: Mapping[str, object], *, size: int) -> MantelC
     )
 
     number_format = _choice(values, "coefficient_format", "decimal")
+    glyphs: tuple[GlyphSpec, ...]
     if matrix_type == "mixed":
         glyphs = (
             GlyphSpec(

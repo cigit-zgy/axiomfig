@@ -114,7 +114,10 @@ def build_bland_altman(
         axis_limits = ((0.0, 22.0), (-2.5, 3.0))
         selected_center = float(difference_values.mean())
         spread = 1.96 * float(difference_values.std(ddof=1))
-        selected_limits = (selected_center - spread, selected_center + spread)
+        selected_limits: tuple[float, float] | None = (
+            selected_center - spread,
+            selected_center + spread,
+        )
     elif mean is not None and difference is not None:
         mean_values = np.asarray(mean, dtype=float)
         difference_values = np.asarray(difference, dtype=float)
@@ -126,7 +129,10 @@ def build_bland_altman(
         elif all(item is not None for item in (agreement_type, center, limits)):
             agreement = str(agreement_type)
             selected_center = float(center)
-            selected_limits = tuple(float(item) for item in limits)  # type: ignore[arg-type]
+            limit_values = np.asarray(limits, dtype=float)
+            if limit_values.shape != (2,):
+                raise ValueError("Bland-Altman limits must contain exactly two values")
+            selected_limits = (float(limit_values[0]), float(limit_values[1]))
         else:
             raise ValueError("agreement_type, center, and limits must be supplied together")
     else:
@@ -188,7 +194,7 @@ def build_roc(
         false_positive = np.tile(np.linspace(0.0, 1.0, 80), 2)
         true_positive = np.concatenate((false_positive[:80] ** 0.30, false_positive[80:] ** 0.48))
         groups: object = np.repeat(["Hybrid", "Baseline"], 80)
-        auc_values = np.array([0.91, 0.84])
+        auc_values: np.ndarray | None = np.array([0.91, 0.84])
     elif false_positive_rate is not None and true_positive_rate is not None:
         false_positive = np.asarray(false_positive_rate, dtype=float)
         true_positive = np.asarray(true_positive_rate, dtype=float)
@@ -238,7 +244,7 @@ def build_precision_recall(
             )
         )
         groups: object = np.repeat(["Hybrid", "Baseline"], 80)
-        selected_baseline = 0.50
+        selected_baseline: float | None = 0.50
     elif recall is not None and precision is not None:
         recall_values = np.asarray(recall, dtype=float)
         precision_values = np.asarray(precision, dtype=float)
@@ -278,7 +284,7 @@ def build_learning_curve(
             )
         )
         groups: object = np.repeat(["Training RMSE", "Validation RMSE"], 20)
-        selected_target = 0.10
+        selected_target: float | None = 0.10
         selected_name = "RMSE (mg/L)"
     elif iteration is not None and metric is not None and series is not None:
         epochs = np.asarray(iteration, dtype=float)

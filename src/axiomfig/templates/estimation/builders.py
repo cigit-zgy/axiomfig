@@ -47,7 +47,7 @@ def build_forest(
         errors: np.ndarray = np.array([0.07, 0.09, 0.08, 0.11])
         uncertainty_label = "95% CI"
         limits = (0.25, 1.0)
-        selected_reference = 0.5
+        selected_reference: float | None = 0.5
     elif label is not None and estimate is not None and interval is not None and uncertainty_type:
         labels = [str(item) for item in label]  # type: ignore[union-attr]
         estimates = np.asarray(estimate, dtype=float)
@@ -179,7 +179,7 @@ def build_coefficient(
         supplied = np.array([0.08, 0.10, 0.09, 0.08, 0.07, 0.08, 0.08, 0.09])
         models = np.repeat(np.asarray(["Mechanistic", "Hybrid"], dtype=object), 4)
         uncertainty = "95% CI"
-        selected_reference = 0.0
+        selected_reference: float | None = 0.0
     elif all(item is not None for item in (term, estimate, interval, uncertainty_type)):
         terms = np.asarray(term, dtype=object)
         estimates = np.asarray(estimate, dtype=float)

@@ -8,9 +8,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-import yaml
-
 from axiomfig.intent import FORBIDDEN_VISUAL_FIELDS
+from axiomfig.structured_io import load_yaml
 from axiomfig.templates.registry import (
     load_family_contract,
     load_template_registry,
@@ -72,7 +71,10 @@ def _normalize_template(value: object, case_id: str) -> str | None:
 def validate_agent_protocol_cases(path: Path) -> AgentProtocolBenchmarkResult:
     """Validate benchmark coverage without claiming an executed LLM evaluation."""
 
-    document = _mapping(yaml.safe_load(Path(path).read_text(encoding="utf-8")), "benchmark")
+    document = _mapping(
+        load_yaml(Path(path).read_text(encoding="utf-8"), source=str(path)),
+        "benchmark",
+    )
     if document.get("version") != 1:
         raise ValueError("unsupported Agent protocol benchmark version")
     raw_cases = document.get("cases")

@@ -9,9 +9,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-import yaml
-
 from axiomfig.intent import FORBIDDEN_VISUAL_FIELDS, FigureIntentError, parse_figure_intent
+from axiomfig.structured_io import load_yaml
 from axiomfig.templates.registry import load_family_contract, load_template_registry
 from tests.evaluation.blind_agent import parse_agent_decision
 
@@ -123,7 +122,10 @@ def _has_forbidden_visual_field(value: object) -> bool:
 
 
 def _load_cases(path: Path) -> list[dict[str, Any]]:
-    document = _mapping(yaml.safe_load(path.read_text(encoding="utf-8")), "benchmark")
+    document = _mapping(
+        load_yaml(path.read_text(encoding="utf-8"), source=str(path)),
+        "benchmark",
+    )
     raw_cases = document.get("cases")
     if not isinstance(raw_cases, list):
         raise ValueError("benchmark.cases must be a list")

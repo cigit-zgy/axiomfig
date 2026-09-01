@@ -4,7 +4,6 @@ import os
 import shutil
 import subprocess
 import sys
-import sysconfig
 import zipfile
 from pathlib import Path
 
@@ -113,12 +112,11 @@ def test_clean_wheel_installs_resources_and_canonical_template_taxonomy(
 
     _run([sys.executable, "-m", "venv", str(environment)], cwd=outside)
     python = environment / "bin/python"
-    _run([str(python), "-m", "pip", "install", "--no-deps", str(wheel)], cwd=outside)
+    _run([str(python), "-m", "pip", "install", str(wheel)], cwd=outside)
     env = {
         key: value for key, value in os.environ.items() if key not in {"PYTHONPATH", "PYTHONHOME"}
     }
     env["PYTHONNOUSERSITE"] = "1"
-    env["PYTHONPATH"] = sysconfig.get_path("purelib")
     _run(
         [
             str(python),
@@ -137,9 +135,54 @@ def test_clean_wheel_installs_resources_and_canonical_template_taxonomy(
                 "root = files('axiomfig').joinpath('resources'); "
                 "assert root.joinpath('fonts', 'XCharter-Roman.otf').is_file(); "
                 "assert root.joinpath('fonts', 'licenses', 'OFL-1.1.txt').is_file(); "
-                "assert root.joinpath('latex', 'axiomfig.sty').is_file()"
+                "assert root.joinpath('latex', 'axiomfig.sty').is_file(); "
+                "from importlib.metadata import version; "
+                "assert version('axiomfig') == '1.1.0'"
             ),
         ],
+        cwd=outside,
+        env=env,
+    )
+    intent = outside / "intent.yaml"
+    data = outside / "data.csv"
+    shutil.copy2(ROOT / "examples/parity/intent.yaml", intent)
+    shutil.copy2(ROOT / "examples/parity/data.csv", data)
+    artifacts = outside / "artifacts"
+    artifacts.mkdir()
+    _run(
+        [
+            str(environment / "bin/axiomfig-intent"),
+            str(intent),
+            "--data",
+            str(data),
+            "--output",
+            str(artifacts / "intent-parity"),
+        ],
+        cwd=outside,
+        env=env,
+    )
+    _run(
+        [
+            str(environment / "bin/axiomfig-render"),
+            "scatter/parity",
+            "--output",
+            str(artifacts / "canonical-parity"),
+        ],
+        cwd=outside,
+        env=env,
+    )
+    assert all(
+        (artifacts / f"{stem}.{suffix}").is_file()
+        for stem in ("intent-parity", "canonical-parity")
+        for suffix in ("pdf", "png")
+    )
+    _run(
+        [str(environment / "bin/axiomfig-validate"), str(artifacts)],
+        cwd=outside,
+        env=env,
+    )
+    _run(
+        [str(environment / "bin/axiomfig-gallery"), "--help"],
         cwd=outside,
         env=env,
     )

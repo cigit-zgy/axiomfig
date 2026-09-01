@@ -74,7 +74,7 @@ def build_multi(
                 0.86 * (1.0 - np.exp(-values_x / 4.8)),
             )
         )
-        labels = ("Hybrid model", "Mechanistic model", "Neural ODE")
+        labels: tuple[str, ...] = ("Hybrid model", "Mechanistic model", "Neural ODE")
         limits = ((0.0, 12.0), (0.0, 1.0))
     elif x is not None and series_values is not None and series_labels is not None:
         values_x = np.asarray(x, dtype=float)

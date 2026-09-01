@@ -52,9 +52,10 @@ def _artist_bbox(artist: Artist, renderer: object) -> Bbox | None:
 def _panel_content_boxes(panel: PanelFootprint, renderer: object) -> list[Bbox]:
     axes = [panel.primary_axes, *panel.auxiliary_axes]
     boxes = [
-        axis.get_tightbbox(renderer, bbox_extra_artists=[])
+        bbox
         for axis in axes
         if axis is not None and axis.get_visible()
+        if (bbox := axis.get_tightbbox(renderer, bbox_extra_artists=[])) is not None
     ]
     boxes.extend(
         bbox for artist in panel.artists if (bbox := _artist_bbox(artist, renderer)) is not None

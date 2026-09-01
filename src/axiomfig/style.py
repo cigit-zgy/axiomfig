@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import math
 from collections.abc import Iterable, Mapping
+from contextlib import AbstractContextManager
 from dataclasses import dataclass
 from typing import Literal
 
 import matplotlib as mpl
+import numpy as np
 from matplotlib import colors as mcolors
 from matplotlib.axes import Axes
 from matplotlib.collections import PathCollection
@@ -124,6 +126,7 @@ def mantel_p_style(p_value: float, *, mode: str = "canonical") -> dict[str, obje
     color = palette_color(str(color_name), palette_name=str(palette_name))
     significant = index < len(breaks)
     alpha_key = "significant_alpha" if significant else "nonsignificant_alpha"
+    labels: tuple[str, ...]
     if mode == "canonical":
         labels = ("p<0.01", "0.01<=p<0.05", "p>=0.05")
     else:
@@ -347,9 +350,10 @@ def add_bar_value_labels(axis: Axes, containers: Iterable[BarContainer], decimal
             patch.set_facecolor(_face_rgba(patch.get_facecolor(), float(contract["alpha"])))
             patch.set_edgecolor(mcolors.to_rgba(str(contract["edge_color"]), 1.0))
             patch.set_linewidth(_stroke_width(contract["edge_width_token"]))
+        values = np.asarray(container.datavalues, dtype=float)
         axis.bar_label(
             container,
-            labels=[f"{value:.{decimals}f}" for value in container.datavalues],
+            labels=[f"{value:.{decimals}f}" for value in values],
             padding=2.0,
         )
 
@@ -506,7 +510,7 @@ def histogram_kwargs() -> dict[str, object]:
 
 def apply_contract_context(
     *, geometry: str = "single-column", typography: str = "sans"
-) -> mpl.rc_context:
+) -> AbstractContextManager[None]:
     return mpl.rc_context(
         rc=build_rcparams(load_contracts(), geometry=geometry, typography=typography)
     )

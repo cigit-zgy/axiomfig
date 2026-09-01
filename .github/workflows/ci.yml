@@ -33,6 +33,11 @@ jobs:
         run: |
           ruff check .
           ruff format --check .
+          mypy src/axiomfig
+      - name: Enforce architecture and dependency contracts
+        run: |
+          python -m pytest -q tests/test_architecture_contracts.py tests/test_repository_hygiene.py
+          python -m pip_audit .
       - name: Validate Agent Skill
         run: |
           python scripts/validate_skill.py

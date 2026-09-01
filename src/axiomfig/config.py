@@ -11,7 +11,8 @@ from types import MappingProxyType
 from typing import Any
 
 import matplotlib as mpl
-import yaml
+
+from axiomfig.structured_io import load_yaml
 
 CONFIG_FILENAMES = ("style.yaml", "fonts.yaml", "colors.yaml")
 
@@ -43,7 +44,7 @@ def _resolve_root(config_root: Path | None) -> Traversable:
 
 
 def _load_mapping(path: Traversable) -> Mapping[str, Any]:
-    loaded = yaml.safe_load(path.read_text(encoding="utf-8"))
+    loaded = load_yaml(path.read_text(encoding="utf-8"), source=path.name)
     if not isinstance(loaded, dict):
         raise ValueError(f"{path.name} must contain a YAML mapping")
     if loaded.get("version") != 1:

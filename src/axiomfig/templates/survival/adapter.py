@@ -39,6 +39,6 @@ def adapt(variant: str, supplied: dict[str, object]) -> dict[str, object]:
         raise ValueError("survival confidence bounds must contain the curve")
     if "censor_time" in values:
         values["censor_time"] = numeric_1d(values["censor_time"], "censor_time")
-        if "group" in values and len(set(values["group"])) > 1:
+        if "group" in values and len(set(np.asarray(values["group"], dtype=object).tolist())) > 1:
             raise ValueError("censor_time without group labels only supports one survival series")
     return values

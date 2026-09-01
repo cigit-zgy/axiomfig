@@ -89,12 +89,12 @@ def build_sankey(
         value_values = np.asarray((0.12, 0.06, 0.08, 0.06, 0.04, 0.07))
         left_labels = ["Influent", "Recycle", "Carbon"]
         right_labels = ["Biomass", "Effluent"]
-        left = (
+        left: tuple[tuple[float, float, float, str], ...] = (
             (0.10, 0.68, 0.18, "Influent"),
             (0.10, 0.39, 0.14, "Recycle"),
             (0.10, 0.15, 0.11, "Carbon"),
         )
-        right = (
+        right: tuple[tuple[float, float, float, str], ...] = (
             (0.82, 0.56, 0.24, "Biomass"),
             (0.82, 0.20, 0.19, "Effluent"),
         )

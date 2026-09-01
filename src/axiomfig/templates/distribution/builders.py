@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Iterable
+from typing import Any, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -76,7 +78,8 @@ def build_histogram(
     )
     apply_axis_contract(axis, surface="open")
     apply_nice_linear_axis(axis, *limits, coordinate="x")
-    apply_nice_linear_axis(axis, 0.0, max(float(counts.max()) * 1.12, 1.0), coordinate="y")
+    maximum_count = float(np.asarray(counts, dtype=float).max())
+    apply_nice_linear_axis(axis, 0.0, max(maximum_count * 1.12, 1.0), coordinate="y")
     return figure
 
 
@@ -142,6 +145,7 @@ def build_ecdf(
     xlabel: object | None = None,
     ylabel: object | None = None,
 ) -> Figure:
+    series: list[tuple[np.ndarray, str | None]]
     if value is None:
         rng = np.random.default_rng(97)
         series = [
@@ -226,7 +230,7 @@ def build_violin(
     figure, axis = plt.subplots()
     parts = axis.violinplot(samples, showmedians=True, showextrema=True)
     colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
-    for body, color in zip(parts["bodies"], colors, strict=False):
+    for body, color in zip(cast(Iterable[Any], parts["bodies"]), colors, strict=False):
         body.set_facecolor(color)
     apply_violin_contract(parts)
     _distribution_axis(axis, samples, labels)
@@ -252,7 +256,7 @@ def build_box_violin(
     violin_contract = load_contracts().style["plots"]["violin"]
     box_contract = load_contracts().style["plots"]["boxplot"]
     violins = axis.violinplot(samples, showextrema=False, widths=float(violin_contract["width"]))
-    for body, color in zip(violins["bodies"], colors, strict=False):
+    for body, color in zip(cast(Iterable[Any], violins["bodies"]), colors, strict=False):
         body.set_facecolor(color)
     apply_violin_contract(violins, combined=True)
     boxes = axis.boxplot(
@@ -317,13 +321,19 @@ def build_raincloud(
     figure, axis = plt.subplots()
     colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
     violin_contract = load_contracts().style["plots"]["violin"]
+    positions = tuple(range(1, len(samples) + 1))
     violins = axis.violinplot(
         samples,
-        positions=[1, 2, 3],
+        positions=positions,
         showextrema=False,
         widths=float(violin_contract["width"]),
     )
-    for position, body, color in zip((1, 2, 3), violins["bodies"], colors, strict=False):
+    for position, body, color in zip(
+        positions,
+        cast(Iterable[Any], violins["bodies"]),
+        colors,
+        strict=False,
+    ):
         body.set_facecolor(color)
         vertices = body.get_paths()[0].vertices
         vertices[:, 0] = np.minimum(vertices[:, 0], float(position))

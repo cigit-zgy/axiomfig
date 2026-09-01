@@ -201,7 +201,7 @@ def normalized_public_values(values: Mapping[str, object]) -> dict[str, object]:
     if data.lower_ci is not None:
         normalized["lower_ci"] = data.lower_ci
         normalized["upper_ci"] = data.upper_ci
-    normalized_values = {
+    normalized_values: dict[str, object] = {
         "matrix_type": composition.matrix.matrix_type,
         "matrix_region": (
             "lower_left" if composition.matrix.matrix_type == "lower" else "upper_right"

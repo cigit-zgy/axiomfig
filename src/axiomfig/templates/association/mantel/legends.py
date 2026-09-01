@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 import matplotlib as mpl
@@ -39,6 +40,8 @@ class OrnamentRenderResult:
 def render_colorbar(axis: Axes, colorbar_axis: Axes) -> Colorbar:
     """Render the Pearson key through Matplotlib Colorbar and the shared tick contract."""
     matrix_contract = mantel_plot_contract()["matrix"]
+    if not isinstance(matrix_contract, Mapping):
+        raise ValueError("Mantel matrix style contract must be a mapping")
     cmap = axiom_colormap(str(matrix_contract["colormap"]))
     scalar = mpl.cm.ScalarMappable(norm=Normalize(vmin=-1.0, vmax=1.0), cmap=cmap)
     scalar.set_array([])

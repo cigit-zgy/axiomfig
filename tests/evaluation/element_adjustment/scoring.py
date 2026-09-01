@@ -10,7 +10,7 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
-import yaml
+from axiomfig.structured_io import load_yaml
 
 TOPICS = frozenset({"none", "axes", "marks", "ornaments", "annotations"})
 STATUSES = frozenset({"DEFAULT", "AVAILABLE", "INTERNAL_ONLY", "PLANNED", "NOT_SUPPORTED"})
@@ -135,7 +135,7 @@ def score_adjustment_predictions(
 ) -> dict[str, Any]:
     """Score decisions and disclosure cost without collapsing metrics into one number."""
 
-    document = yaml.safe_load(Path(cases_path).read_text(encoding="utf-8"))
+    document = load_yaml(Path(cases_path).read_text(encoding="utf-8"), source=str(cases_path))
     cases = document.get("cases") if isinstance(document, Mapping) else None
     if not isinstance(cases, list):
         raise ValueError("cases document must contain a list")

@@ -171,17 +171,21 @@ def build_gallery(
                 )
         technical = gallery / "technical" / "latex"
         latex_results = build_latex_gallery(technical, work_root=work_root / "technical" / "latex")
-        for result in latex_results:
-            entry = validate_pair(result.pdf, result.png, tectonic_log=result.log)
-            results.append(result)
+        for latex_result in latex_results:
+            entry = validate_pair(
+                latex_result.pdf,
+                latex_result.png,
+                tectonic_log=latex_result.log,
+            )
+            results.append(latex_result)
             manifest["figures"].append(  # type: ignore[union-attr]
                 {
                     "mode": "technical/latex",
                     "template": "tectonic-native",
-                    "stem": result.pdf.stem,
+                    "stem": latex_result.pdf.stem,
                     "geometry": "standalone",
-                    "pdf_sha256": _sha256(result.pdf),
-                    "png_sha256": _sha256(result.png),
+                    "pdf_sha256": _sha256(latex_result.pdf),
+                    "png_sha256": _sha256(latex_result.png),
                     "font_rows": list(entry.fonts),
                 }
             )

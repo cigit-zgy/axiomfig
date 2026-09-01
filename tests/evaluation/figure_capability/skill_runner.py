@@ -7,6 +7,7 @@ from pathlib import Path
 
 import yaml
 
+from axiomfig.structured_io import load_yaml
 from tests.evaluation.blind_agent import run_progressive_cases
 
 
@@ -22,7 +23,7 @@ def main() -> None:
     command = args.agent_command[1:] if args.agent_command[:1] == ["--"] else args.agent_command
     case_ids = [f"{index:02d}" for index in range(1, 21)]
     manifest_path = Path(__file__).with_name("cases.yaml")
-    document = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
+    document = load_yaml(manifest_path.read_text(encoding="utf-8"), source=str(manifest_path))
     projected = {
         "version": document["version"],
         "cases": [

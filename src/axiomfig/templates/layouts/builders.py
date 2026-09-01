@@ -93,7 +93,6 @@ def _build_grid(rows: int, columns: int, *, heatmap: bool) -> Figure:
             axis, _ = add_panel_axes(layout, index)
         axes.append(axis)
 
-    builders = (_line_panel, _bar_panel, _scatter_panel, _residual_panel)
     for index, axis in enumerate(axes):
         if heatmap and index == panel_count - 1:
             image = add_heatmap(axis, annotate=panel_count <= 4)
@@ -101,11 +100,15 @@ def _build_grid(rows: int, columns: int, *, heatmap: bool) -> Figure:
             colorbar = figure.colorbar(image, cax=colorbar_axis, label="Correlation (-)")
             apply_colorbar_contract(colorbar)
         else:
-            builder = builders[index % len(builders)]
-            if builder in {_scatter_panel, _residual_panel}:
-                builder(axis, 109 + index)
+            builder_index = index % 4
+            if builder_index == 2:
+                _scatter_panel(axis, 109 + index)
+            elif builder_index == 3:
+                _residual_panel(axis, 109 + index)
+            elif builder_index == 0:
+                _line_panel(axis)
             else:
-                builder(axis)
+                _bar_panel(axis)
     return figure
 
 

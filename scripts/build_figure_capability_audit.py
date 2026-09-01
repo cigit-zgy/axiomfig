@@ -22,7 +22,6 @@ from typing import Any
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-import yaml
 from matplotlib.colors import Normalize
 from matplotlib.lines import Line2D
 from matplotlib.patches import Ellipse, Patch, Rectangle
@@ -32,6 +31,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from axiomfig.config import build_rcparams, load_contracts  # noqa: E402
+from axiomfig.structured_io import load_yaml  # noqa: E402
 from axiomfig.style import axiom_colormap, palette_color, semantic_colormap  # noqa: E402
 from axiomfig.typography import discover_fonts  # noqa: E402
 from scripts import build_layout_benchmark as round01  # noqa: E402
@@ -55,7 +55,9 @@ NATIVE_BUILDERS: dict[str, Callable[[], mpl.figure.Figure]] = {}
 
 
 def _cases() -> list[dict[str, Any]]:
-    document = yaml.safe_load(CASES_PATH.read_text(encoding="utf-8"))
+    document = load_yaml(CASES_PATH.read_text(encoding="utf-8"), source=str(CASES_PATH))
+    if not isinstance(document, dict):
+        raise ValueError("figure capability cases must be a mapping")
     return list(document["cases"])
 
 

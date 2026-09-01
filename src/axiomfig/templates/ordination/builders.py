@@ -200,7 +200,7 @@ def build_pcoa(
 ) -> Figure:
     figure, axis = plt.subplots()
     if coordinates is None and explained_variance is None and distance_metric is None:
-        groups = _coordinates(167)
+        groups: tuple[np.ndarray, ...] = _coordinates(167)
         values = np.vstack(groups)
         _scatter_groups(axis, groups)
         variance = (39.7, 18.6)

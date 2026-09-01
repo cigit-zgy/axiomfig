@@ -18,9 +18,13 @@ def adapt(variant: str, supplied: dict[str, object]) -> dict[str, object]:
         if np.any(arrays["adjusted_p_value"] <= 0) or np.any(arrays["adjusted_p_value"] > 1):
             raise ValueError("adjusted_p_value must lie in (0, 1]")
         values.update(arrays)
-        for role in ("significance_threshold", "effect_threshold"):
-            values[role] = scalar(values[role], role)
-        if not 0 < values["significance_threshold"] < 1 or values["effect_threshold"] <= 0:
+        significance_threshold = scalar(values["significance_threshold"], "significance_threshold")
+        effect_threshold = scalar(values["effect_threshold"], "effect_threshold")
+        values.update(
+            significance_threshold=significance_threshold,
+            effect_threshold=effect_threshold,
+        )
+        if not 0 < significance_threshold < 1 or effect_threshold <= 0:
             raise ValueError("volcano thresholds must be scientifically valid")
         if "feature_label" in values:
             labels = labels_1d(values["feature_label"], "feature_label")

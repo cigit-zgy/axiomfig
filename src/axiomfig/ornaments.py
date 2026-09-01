@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from typing import cast
 
 from matplotlib.axes import Axes
 from matplotlib.colorbar import Colorbar
@@ -208,15 +209,16 @@ def request_legend(axis: Axes) -> Legend | None:
 
 
 def add_panel_labels(target: Figure | Iterable[Axes]) -> None:
+    figure: Figure | None
     if isinstance(target, Figure):
         figure = target
         layout = get_figure_layout(figure)
         if layout is None or not layout.panel_labels:
             return
-        axes = [panel.primary_axes for panel in layout.panels]
+        axes = [panel.primary_axes for panel in layout.panels if panel.primary_axes is not None]
     else:
-        axes = list(target)
-        figure = axes[0].figure if axes else None
+        axes = [axis for axis in target if axis is not None]
+        figure = cast(Figure, axes[0].figure) if axes else None
         layout = get_figure_layout(figure) if figure is not None else None
     if figure is None:
         return
@@ -278,8 +280,8 @@ def finalize_ornaments(figure: Figure) -> None:
     add_panel_labels(figure)
     figure.canvas.draw()
     for axis in layout.legend_requests:
-        legend = _place_legend(axis)
-        if legend is not None:
-            layout.legends.append(legend)
-            register_figure_ornament(figure, legend)
+        placed_legend = _place_legend(axis)
+        if placed_legend is not None:
+            layout.legends.append(placed_legend)
+            register_figure_ornament(figure, placed_legend)
     figure.canvas.draw()

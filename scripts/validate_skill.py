@@ -4,7 +4,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-import yaml
+from axiomfig.structured_io import load_yaml
 
 
 def validate_skill(path: Path) -> None:
@@ -15,7 +15,7 @@ def validate_skill(path: Path) -> None:
         frontmatter, body = source[4:].split("\n---\n", maxsplit=1)
     except ValueError as exc:
         raise ValueError("SKILL.md frontmatter must end with ---") from exc
-    metadata = yaml.safe_load(frontmatter)
+    metadata = load_yaml(frontmatter, source=f"{path}:frontmatter")
     if not isinstance(metadata, dict) or set(metadata) != {"name", "description"}:
         raise ValueError("SKILL.md frontmatter requires only name and description")
     name = metadata["name"]

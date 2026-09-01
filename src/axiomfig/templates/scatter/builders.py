@@ -131,7 +131,7 @@ def build_regression(
         values_y = np.clip(2.1 + 0.74 * values_x + rng.normal(0.0, 1.15, values_x.size), 0.8, 19.0)
         fitted_values = np.polyval(np.polyfit(values_x, values_y, 1), values_x)
         limits = ((0.0, 20.0), (0.0, 20.0))
-        annotation = r"$R^2 = 0.94$"
+        annotation: str | None = r"$R^2 = 0.94$"
     elif x is not None and y is not None and fitted is not None:
         values_x = np.asarray(x, dtype=float)
         values_y = np.asarray(y, dtype=float)
@@ -165,7 +165,7 @@ def build_parity(
         rng = np.random.default_rng(43)
         observed_values = np.linspace(2.0, 28.0, 42)
         predicted_values = observed_values + rng.normal(0.0, 1.35, observed_values.size)
-        limits = (0.0, 30.0)
+        limits: tuple[float, float] = (0.0, 30.0)
     elif observed is not None and predicted is not None:
         observed_values = np.asarray(observed, dtype=float)
         predicted_values = np.asarray(predicted, dtype=float)
@@ -180,11 +180,13 @@ def build_parity(
         lower = min(float(observed_values.min()), float(predicted_values.min()))
         upper = max(float(observed_values.max()), float(predicted_values.max()))
         padding = max((upper - lower) * 0.04, 0.1)
-        limits = (
-            (lower - padding, upper + padding)
-            if identity_limits is None
-            else tuple(float(item) for item in identity_limits)
-        )
+        if identity_limits is None:
+            limits = (lower - padding, upper + padding)
+        else:
+            limit_values = np.asarray(identity_limits, dtype=float)
+            if limit_values.shape != (2,):
+                raise ValueError("identity_limits must contain exactly two values")
+            limits = (float(limit_values[0]), float(limit_values[1]))
     else:
         raise ValueError("parity requires observed and predicted together")
     figure, axis = plt.subplots()
@@ -277,10 +279,11 @@ def build_hexbin(
     layout = create_panel_grid(figure, 1, 1, panel_labels=False)
     axis, colorbar_axis = add_panel_axes(layout, 0, colorbar=True)
     assert colorbar_axis is not None
+    selected_gridsize = 18 if gridsize is None else int(gridsize)  # type: ignore[call-overload]
     collection = axis.hexbin(
         values_x,
         values_y,
-        gridsize=18 if gridsize is None else int(gridsize),
+        gridsize=selected_gridsize,
         mincnt=1,
         cmap=semantic_colormap("sequential"),
     )
