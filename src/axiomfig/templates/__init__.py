@@ -8,7 +8,12 @@ from matplotlib.figure import Figure
 
 from axiomfig.layout import apply_single_panel_layout, get_figure_layout, solve_panel_layout
 from axiomfig.ornaments import finalize_ornaments
-from axiomfig.templates.association import BUILDERS as ASSOCIATION_BUILDERS
+from axiomfig.templates.association import (
+    BUILDERS as ASSOCIATION_BUILDERS,
+)
+from axiomfig.templates.association import (
+    GALLERY_CASES as ASSOCIATION_GALLERY_CASES,
+)
 from axiomfig.templates.association.adapter import adapt as adapt_association
 from axiomfig.templates.bar import BUILDERS as BAR_BUILDERS
 from axiomfig.templates.bar.adapter import adapt as adapt_bar
@@ -81,6 +86,7 @@ _FAMILY_ADAPTERS = MappingProxyType(
 TEMPLATE_ADAPTERS = MappingProxyType(
     {spec.template_id: _FAMILY_ADAPTERS[spec.family] for spec in public_template_specs()}
 )
+TEMPLATE_GALLERY_CASES = MappingProxyType(dict(ASSOCIATION_GALLERY_CASES))
 
 
 def adapt_template_data(template_id: str, values: dict[str, Any]) -> dict[str, object]:
@@ -133,6 +139,7 @@ def build_template(name: str, **kwargs: Any) -> Figure:
 __all__ = [
     "TEMPLATE_ADAPTERS",
     "TEMPLATE_BUILDERS",
+    "TEMPLATE_GALLERY_CASES",
     "adapt_template_data",
     "build_template",
     "get_template_builder",

@@ -160,6 +160,9 @@ plots:
       curve_curvature: 0.18
       strength_breaks: [0.25, 0.50]
       widths_pt: [0.8, 1.4, 2.2]
+      legend:
+        nonsignificant_alpha: 0.52
+        linewidth_ratio: 1.8
       p_value_modes:
         canonical:
           breaks: [0.01, 0.05]

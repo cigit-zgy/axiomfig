@@ -4,7 +4,7 @@ import hashlib
 import json
 import os
 import shutil
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
@@ -16,12 +16,7 @@ import matplotlib.pyplot as plt
 from axiomfig.config import build_rcparams, load_contracts
 from axiomfig.latex import LatexGalleryResult, build_latex_gallery
 from axiomfig.rendering import RenderResult, render_figure
-from axiomfig.templates import build_template
-from axiomfig.templates.association.mantel.gallery_cases import (
-    MANTEL_GALLERY_CASE_IDS,
-    MANTEL_GALLERY_GEOMETRIES,
-    mantel_gallery_values,
-)
+from axiomfig.templates import TEMPLATE_GALLERY_CASES, build_template
 from axiomfig.templates.registry import public_template_specs
 from axiomfig.typography import discover_fonts
 from axiomfig.validation import validate_pair
@@ -37,6 +32,7 @@ class GallerySpec:
     geometry: str
     output_id: str
     example_id: str | None = None
+    values: Callable[[], dict[str, object]] | None = None
 
     @property
     def family(self) -> str:
@@ -46,15 +42,17 @@ class GallerySpec:
 def _gallery_specs() -> tuple[GallerySpec, ...]:
     specs: list[GallerySpec] = []
     for spec in public_template_specs():
-        if spec.template_id == "association/mantel":
+        cases = TEMPLATE_GALLERY_CASES.get(spec.template_id)
+        if cases is not None:
             specs.extend(
                 GallerySpec(
                     spec.template_id,
-                    MANTEL_GALLERY_GEOMETRIES[case_id],
-                    f"association/mantel_{case_id}",
-                    case_id,
+                    case.geometry,
+                    case.output_id,
+                    case.example_id,
+                    case.values,
                 )
-                for case_id in MANTEL_GALLERY_CASE_IDS
+                for case in cases
             )
         else:
             specs.append(GallerySpec(spec.template_id, spec.geometry, spec.template_id))
@@ -132,11 +130,7 @@ def build_gallery(
             for spec in GALLERY_SPECS:
                 params = build_rcparams(contracts, geometry=spec.geometry, typography=mode)
                 with mpl.rc_context(rc=params):
-                    values = (
-                        mantel_gallery_values(spec.example_id)
-                        if spec.example_id is not None
-                        else {}
-                    )
+                    values = spec.values() if spec.values is not None else {}
                     figure = build_template(spec.template_id, **values)
                     figure.set_size_inches(
                         cast(tuple[float, float], params["figure.figsize"]), forward=False

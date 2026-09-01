@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+from functools import partial
+
 import numpy as np
 
 from axiomfig.templates.association.mantel.builder import canonical_mantel_values
+from axiomfig.templates.gallery_support import TemplateGalleryCase
 
 MANTEL_GALLERY_CASE_IDS = (
     "canonical",
@@ -164,8 +167,20 @@ def mantel_gallery_values(case_id: str) -> dict[str, object]:
     raise ValueError(f"unknown formal Mantel Gallery case: {case_id}")
 
 
+MANTEL_GALLERY_CASES = tuple(
+    TemplateGalleryCase(
+        example_id=case_id,
+        geometry=MANTEL_GALLERY_GEOMETRIES[case_id],
+        output_id=f"association/mantel_{case_id}",
+        values=partial(mantel_gallery_values, case_id),
+    )
+    for case_id in MANTEL_GALLERY_CASE_IDS
+)
+
+
 __all__ = [
     "MANTEL_GALLERY_CASE_IDS",
+    "MANTEL_GALLERY_CASES",
     "MANTEL_GALLERY_GEOMETRIES",
     "mantel_gallery_values",
 ]

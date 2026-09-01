@@ -21,9 +21,12 @@ from axiomfig.style import (
 )
 from axiomfig.templates.association.mantel.geometry import MantelGeometry
 from axiomfig.templates.association.mantel.styling import (
+    mantel_legend_visuals,
     mantel_link_width,
+    mantel_p_legend_bins,
     mantel_p_style,
     mantel_plot_contract,
+    mantel_strength_legend_bins,
     mantel_visual_color,
 )
 
@@ -67,27 +70,21 @@ def _legend_handles(p_value_mode: str) -> tuple[list[Line2D], list[Line2D]]:
             linewidth=mantel_link_width(value),
             label=label,
         )
-        for value, label in ((0.1, "< 0.25"), (0.35, "0.25-0.50"), (0.65, ">= 0.50"))
+        for value, label in mantel_strength_legend_bins()
     ]
-    bins = (
-        ((0.005, "< 0.01"), (0.025, "0.01-0.05"), (0.10, ">= 0.05"))
-        if p_value_mode == "canonical"
-        else (
-            (0.0005, "< 0.001"),
-            (0.005, "0.001-0.01"),
-            (0.025, "0.01-0.05"),
-            (0.10, ">= 0.05"),
-        )
-    )
+    bins = mantel_p_legend_bins(p_value_mode)
+    legend_visuals = mantel_legend_visuals()
     p_values = [
         Line2D(
             [],
             [],
             color=str(mantel_p_style(value, mode=p_value_mode)["color"]),
             alpha=(
-                float(mantel_p_style(value, mode=p_value_mode)["alpha"]) if value < 0.05 else 0.52
+                float(mantel_p_style(value, mode=p_value_mode)["alpha"])
+                if bool(mantel_p_style(value, mode=p_value_mode)["significant"])
+                else float(legend_visuals["nonsignificant_alpha"])
             ),
-            linewidth=MAIN_STROKE_PT * 1.8,
+            linewidth=MAIN_STROKE_PT * float(legend_visuals["linewidth_ratio"]),
             label=label,
         )
         for value, label in bins

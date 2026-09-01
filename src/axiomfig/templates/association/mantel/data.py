@@ -9,6 +9,7 @@ import numpy as np
 
 from axiomfig.templates.association.mantel.composition import (
     CI_MODES,
+    DEFAULT_SIGNIFICANCE_THRESHOLDS,
     GLYPH_METHODS,
     HCLUST_METHODS,
     LINK_WIDTH_MODES,
@@ -246,7 +247,7 @@ def normalized_public_values(values: Mapping[str, object]) -> dict[str, object]:
         coefficients=coefficient is not None,
         significance_mode=(significance.mode if significance is not None else "none"),
         significance_thresholds=(
-            significance.thresholds if significance is not None else (0.05, 0.01, 0.001)
+            significance.thresholds if significance is not None else DEFAULT_SIGNIFICANCE_THRESHOLDS
         ),
         ci_mode=(confidence_interval.mode if confidence_interval is not None else "none"),
     )

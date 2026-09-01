@@ -10,16 +10,7 @@ from axiomfig.templates.registry import public_template_specs, validate_registry
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = ROOT / "src/axiomfig"
-RUNTIME_CORE = (
-    "config.py",
-    "style.py",
-    "layout.py",
-    "ornaments.py",
-    "typography.py",
-    "rendering.py",
-    "validation.py",
-    "latex.py",
-)
+RUNTIME_CORE = tuple(path.name for path in PACKAGE.glob("*.py") if path.name != "__init__.py")
 PUBLIC_FAMILIES = {spec.family for spec in public_template_specs()}
 
 

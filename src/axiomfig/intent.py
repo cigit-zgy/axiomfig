@@ -219,7 +219,7 @@ def build_intent_figure(
     kwargs = {**_resolve_data(intent, dataset), **dict(intent.semantics)}
     try:
         adapted = adapt_template_data(intent.template_id, kwargs)
-        return build_template(intent.template_id, **adapted)
-    except (AssertionError, IndexError, KeyError, OverflowError, TypeError, ValueError) as exc:
+    except (IndexError, KeyError, OverflowError, TypeError, ValueError) as exc:
         detail = str(exc) or f"invalid data for template {intent.template_id!r}"
         raise FigureIntentError(detail) from exc
+    return build_template(intent.template_id, **adapted)

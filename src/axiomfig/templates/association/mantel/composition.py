@@ -29,6 +29,7 @@ CI_MODES = ("none", "square", "circle", "rect")
 NONSIGNIFICANT_MODES = ("hide", "fade", "show")
 LINK_WIDTH_MODES = ("binned", "continuous")
 P_VALUE_MODES = ("canonical", "detailed")
+DEFAULT_SIGNIFICANCE_THRESHOLDS = (0.05, 0.01, 0.001)
 
 _CHOICES = {
     "matrix_method": GLYPH_METHODS,
@@ -70,7 +71,7 @@ class CoefficientOverlay:
 @dataclass(frozen=True)
 class SignificanceOverlay:
     mode: Literal["mark", "p_value", "blank", "label_sig"]
-    thresholds: tuple[float, ...] = (0.05, 0.01, 0.001)
+    thresholds: tuple[float, ...] = DEFAULT_SIGNIFICANCE_THRESHOLDS
 
 
 @dataclass(frozen=True)
@@ -220,7 +221,9 @@ def normalize_composition(values: Mapping[str, object], *, size: int) -> MantelC
         overlays.append(CoefficientOverlay(number_format=number_format))  # type: ignore[arg-type]
     significance_mode = _choice(values, "significance_mode", "none")
     if significance_mode != "none":
-        thresholds = _thresholds(values.get("significance_thresholds", (0.05, 0.01, 0.001)))
+        thresholds = _thresholds(
+            values.get("significance_thresholds", DEFAULT_SIGNIFICANCE_THRESHOLDS)
+        )
         overlays.append(
             SignificanceOverlay(mode=significance_mode, thresholds=thresholds)  # type: ignore[arg-type]
         )

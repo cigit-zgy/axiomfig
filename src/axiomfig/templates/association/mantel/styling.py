@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Mapping
+from itertools import pairwise
 from typing import Any
 
 from axiomfig.config import load_contracts
@@ -56,6 +57,18 @@ def _validate_mantel_contract(contract: Mapping[str, Any]) -> None:
         alpha = _finite_number(links.get(name), f"plots.mantel.links.{name}")
         if not 0.0 <= alpha <= 1.0:
             raise ValueError(f"plots.mantel.links.{name} must be between 0 and 1")
+    legend = _mapping(links.get("legend"), "plots.mantel.links.legend")
+    legend_alpha = _finite_number(
+        legend.get("nonsignificant_alpha"),
+        "plots.mantel.links.legend.nonsignificant_alpha",
+    )
+    if not 0.0 <= legend_alpha <= 1.0:
+        raise ValueError("Mantel legend nonsignificant alpha must be between 0 and 1")
+    _finite_number(
+        legend.get("linewidth_ratio"),
+        "plots.mantel.links.legend.linewidth_ratio",
+        positive=True,
+    )
 
     strength_breaks = tuple(float(value) for value in links.get("strength_breaks", ()))
     widths = tuple(links.get("widths_pt", ()))
@@ -114,6 +127,45 @@ def mantel_link_width(mantel_r: float) -> float:
     return widths[index]
 
 
+def _legend_samples(breaks: tuple[float, ...]) -> tuple[float, ...]:
+    edges = (0.0, *breaks, 1.0)
+    return tuple((lower + upper) / 2.0 for lower, upper in pairwise(edges))
+
+
+def mantel_strength_legend_bins() -> tuple[tuple[float, str], ...]:
+    """Return strength legend samples and labels from the executable break contract."""
+    links = _mapping(mantel_plot_contract().get("links"), "plots.mantel.links")
+    breaks = tuple(float(value) for value in links["strength_breaks"])
+    labels = (
+        f"< {breaks[0]:.2f}",
+        *(f"{lower:.2f}-{upper:.2f}" for lower, upper in pairwise(breaks)),
+        f">= {breaks[-1]:.2f}",
+    )
+    return tuple(zip(_legend_samples(breaks), labels, strict=True))
+
+
+def mantel_p_legend_bins(mode: str) -> tuple[tuple[float, str], ...]:
+    """Return P-value legend samples and labels from the selected break contract."""
+    links = _mapping(mantel_plot_contract().get("links"), "plots.mantel.links")
+    modes = _mapping(links.get("p_value_modes"), "plots.mantel.links.p_value_modes")
+    if mode not in modes:
+        raise ValueError(f"unknown Mantel P-value mode: {mode!r}")
+    selected = _mapping(modes[mode], f"plots.mantel.links.p_value_modes.{mode}")
+    breaks = tuple(float(value) for value in selected["breaks"])
+    labels = (
+        f"< {breaks[0]:g}",
+        *(f"{lower:g}-{upper:g}" for lower, upper in pairwise(breaks)),
+        f">= {breaks[-1]:g}",
+    )
+    return tuple(zip(_legend_samples(breaks), labels, strict=True))
+
+
+def mantel_legend_visuals() -> Mapping[str, Any]:
+    """Return the family-owned visual contract for Mantel legend handles."""
+    links = _mapping(mantel_plot_contract().get("links"), "plots.mantel.links")
+    return _mapping(links.get("legend"), "plots.mantel.links.legend")
+
+
 def mantel_p_style(p_value: float, *, mode: str = "canonical") -> dict[str, Any]:
     """Map precomputed P to the canonical color and opacity tokens."""
     if not math.isfinite(p_value) or not 0.0 <= p_value <= 1.0:
@@ -133,9 +185,9 @@ def mantel_p_style(p_value: float, *, mode: str = "canonical") -> dict[str, Any]
     significant = index < len(breaks)
     alpha_key = "significant_alpha" if significant else "nonsignificant_alpha"
     labels = (
-        ("p<0.01", "0.01<=p<0.05", "p>=0.05")
-        if mode == "canonical"
-        else ("p<0.001", "0.001<=p<0.01", "0.01<=p<0.05", "p>=0.05")
+        f"p<{breaks[0]:g}",
+        *(f"{lower:g}<=p<{upper:g}" for lower, upper in pairwise(breaks)),
+        f"p>={breaks[-1]:g}",
     )
     return {
         "color": color,

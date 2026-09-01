@@ -139,3 +139,20 @@ def test_json_representable_huge_numbers_are_bounded_domain_errors() -> None:
             intent,
             {"time": [0, 1], "value": [1, 10**10000]},
         )
+
+
+def test_builder_programmer_assertions_are_not_masked(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Only public-input normalization errors belong to the bounded wrapper."""
+    intent = parse_figure_intent(
+        {
+            "template": "line.single",
+            "data": {"x": "x", "y": "y"},
+        }
+    )
+
+    def broken_builder(_template_id: str, **_values: object) -> object:
+        raise AssertionError("internal builder invariant")
+
+    monkeypatch.setattr("axiomfig.intent.build_template", broken_builder)
+    with pytest.raises(AssertionError, match="internal builder invariant"):
+        build_intent_figure(intent, {"x": [1, 2], "y": [3, 4]})

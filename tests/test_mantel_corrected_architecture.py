@@ -154,6 +154,39 @@ def test_canonical_defaults_use_circle_and_three_bin_p_value_grammar() -> None:
     assert mantel_p_style(0.0005, mode="detailed")["bin"] == "p<0.001"
 
 
+def test_mantel_legend_bins_follow_the_executable_style_contract(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Legend samples and labels must not maintain a parallel bin table."""
+    from axiomfig.templates.association.mantel import legends, styling
+
+    contract = styling.mantel_plot_contract()
+    custom = {
+        **contract,
+        "links": {
+            **contract["links"],
+            "strength_breaks": [0.2, 0.6],
+            "p_value_modes": {
+                **contract["links"]["p_value_modes"],
+                "canonical": {
+                    **contract["links"]["p_value_modes"]["canonical"],
+                    "breaks": [0.02, 0.08],
+                },
+            },
+        },
+    }
+    monkeypatch.setattr(styling, "mantel_plot_contract", lambda: custom)
+
+    strength, p_values = legends._legend_handles("canonical")
+
+    assert [handle.get_label() for handle in strength] == [
+        "< 0.20",
+        "0.20-0.60",
+        ">= 0.60",
+    ]
+    assert [handle.get_label() for handle in p_values] == ["< 0.02", "0.02-0.08", ">= 0.08"]
+
+
 def test_matrix_region_is_semantic_alias_and_cannot_conflict_with_matrix_type() -> None:
     lower = normalize_composition({"matrix_region": "lower_left"}, size=5)
     upper = normalize_composition({"matrix_region": "upper_right"}, size=5)

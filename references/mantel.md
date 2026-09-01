@@ -23,9 +23,9 @@ Optional `label` and `metadata` fields are preserved. Legacy `source_group` and 
 remain accepted and normalize to `source` and `target`.
 
 Mantel r is accepted on `[-1, 1]`. Stroke width encodes `abs(r)` because strength is a magnitude;
-the signed value remains attached to the rendered link. The canonical width mode uses bins at 0.25
-and 0.50. Correlation p values, `lower_ci`, and `upper_ci` must be supplied as precomputed symmetric
-matrices matching the correlation matrix.
+the signed value remains attached to the rendered link. The canonical width mode uses the
+family-owned executable bin contract. Correlation p values, `lower_ci`, and `upper_ci` must be
+supplied as precomputed symmetric matrices matching the correlation matrix.
 
 ## Advanced semantics
 
@@ -65,7 +65,7 @@ Supported high-level semantics are:
 | `coefficients` | boolean coefficient overlay |
 | `coefficient_format` | `decimal`, `percent` |
 | `significance_mode` | `none`, `mark`, `p_value`, `blank`, `label_sig` |
-| `significance_thresholds` | explicit decreasing thresholds; default `[0.05, 0.01, 0.001]` |
+| `significance_thresholds` | explicit decreasing thresholds; the family grammar owns the default |
 | `ci_mode` | `none`, `square`, `circle`, `rect` |
 | `link_width_mode` | `binned`, `continuous` |
 | `p_value_mode` | `canonical` (three bins), `detailed` (four bins) |
@@ -142,15 +142,13 @@ may reorder its own data.
   curvature and targets at or after it use positive curvature; for odd target counts the centre is
   assigned to the second half. Geometry never depends on previously rendered routes, candidate
   lanes, crossing scores, or stochastic layout.
-- Source and target nodes reuse the shared scatter marker contract: source marker area is 1.35 times
-  the base scatter area, target marker area is the base area, faces use scatter alpha, and edges use
-  the shared black fill-edge stroke. Source fills follow deterministic series colors; target fills
-  use one neutral Axiom color.
-- Pearson color is constructed from `AxiomRed -> AxiomWhite -> AxiomBlue`. Canonical Mantel p-value
-  bins are `<0.01` (`AxiomOrange`), `0.01-0.05` (`AxiomGreen`), and `>=0.05` (faint `AxiomGrey`).
-  Detailed mode retains `<0.001`, `0.001-0.01`, `0.01-0.05`, and `>=0.05` using `AxiomOrange`,
-  `AxiomGreen`, `AxiomPurple`, and `AxiomGrey`. All tokens originate in
-  `resources/styles/colors.yaml`, and every active mode shows all of its bins in the legend.
+- Source and target nodes reuse the shared scatter marker contract: the source marker uses the
+  family-owned area ratio, the target marker uses the base area, faces use scatter alpha, and edges
+  use the shared black fill-edge stroke. Source fills follow deterministic series colors; target
+  fills use one neutral Axiom color.
+- Pearson color uses the Axiom diverging palette. Canonical and detailed Mantel p-value modes use
+  their family-owned ordered threshold/color mappings. All tokens originate in
+  `resources/styles/colors.yaml`, and every active mode shows every executable bin in the legend.
 - The Pearson key is a true Matplotlib colorbar on a registered Auxiliary Axes. Mantel strength and
   p-value legends are measured before their side-by-side or stacked placement is selected. Pearson
   r uses the global Primary Visual Area and vertical Colorbar contracts in

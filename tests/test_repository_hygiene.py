@@ -143,6 +143,32 @@ def test_contract_markdown_does_not_duplicate_physical_runtime_defaults() -> Non
     assert violations == {}
 
 
+def test_mantel_reference_does_not_duplicate_yaml_owned_visual_bins() -> None:
+    """Keep unitless Mantel visual defaults in the executable family contract."""
+    style = load_yaml(
+        (ROOT / "src/axiomfig/resources/styles/style.yaml").read_text(encoding="utf-8"),
+        source="style.yaml",
+    )
+    mantel = style["plots"]["mantel"]
+    owned_values = {
+        float(mantel["nodes"]["source_size_ratio"]),
+        *(float(value) for value in mantel["links"]["strength_breaks"]),
+        *(
+            float(value)
+            for mode in mantel["links"]["p_value_modes"].values()
+            for value in mode["breaks"]
+        ),
+    }
+    text = (ROOT / "references/mantel.md").read_text(encoding="utf-8")
+    duplicated = {
+        value
+        for value in owned_values
+        if re.search(rf"(?<![\d.]){re.escape(format(value, 'g'))}(?![\d.])", text)
+    }
+
+    assert duplicated == set()
+
+
 def test_public_tree_contains_no_private_key_or_live_token_shapes() -> None:
     patterns = (
         re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),

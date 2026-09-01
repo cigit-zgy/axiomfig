@@ -4,7 +4,8 @@
 
 - added executable architecture, Mypy, strict structured-input, property/adversarial, all-template
   structural-repeatability, dependency-audit, and isolated-installation release gates; malformed
-  public inputs now fail with bounded AxiomFig errors and duplicate YAML keys fail closed;
+  public inputs now fail with bounded AxiomFig errors, programmer assertions remain visible,
+  duplicate YAML keys fail closed, and formal Gallery variants remain family-owned;
 - added Scientific Figure Anatomy plus a compact Element Contract layer for non-default axes, marks,
   ornaments, and annotations; each adjustment is classified as `AVAILABLE`, `INTERNAL_ONLY`,
   `PLANNED`, or `NOT_SUPPORTED` without duplicating executable numeric defaults;
