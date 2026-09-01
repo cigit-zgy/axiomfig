@@ -220,6 +220,6 @@ def build_intent_figure(
     try:
         adapted = adapt_template_data(intent.template_id, kwargs)
         return build_template(intent.template_id, **adapted)
-    except (AssertionError, IndexError, KeyError, TypeError, ValueError) as exc:
+    except (AssertionError, IndexError, KeyError, OverflowError, TypeError, ValueError) as exc:
         detail = str(exc) or f"invalid data for template {intent.template_id!r}"
         raise FigureIntentError(detail) from exc

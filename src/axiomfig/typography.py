@@ -183,7 +183,7 @@ def add_language_text(
     text: str,
     language: str,
     mode: str = "sans",
-    **kwargs: object,
+    **kwargs: Any,
 ) -> None:
     """Add text with the font contract for an explicit language role."""
     axis.text(x, y, text, fontproperties=font_for_language(language, mode=mode), **kwargs)

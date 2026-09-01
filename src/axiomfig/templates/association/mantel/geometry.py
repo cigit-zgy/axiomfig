@@ -12,12 +12,14 @@ from dataclasses import dataclass
 
 import matplotlib as mpl
 import numpy as np
+from matplotlib.backend_bases import RendererBase
 from matplotlib.figure import Figure
 from matplotlib.font_manager import FontProperties
 from matplotlib.text import Text
 
 from axiomfig.config import load_contracts
-from axiomfig.style import FILL_EDGE_PT, mantel_plot_contract
+from axiomfig.style import FILL_EDGE_PT
+from axiomfig.templates.association.mantel.styling import mantel_plot_contract
 
 
 @dataclass(frozen=True)
@@ -149,7 +151,7 @@ def source_label_size() -> float:
 
 
 def _maximum_text_extent(
-    renderer: object,
+    renderer: RendererBase,
     values: tuple[str, ...],
     properties: FontProperties,
     *,
@@ -158,7 +160,7 @@ def _maximum_text_extent(
     if not values:
         return 0.0, 0.0
     dimensions = [
-        renderer.get_text_width_height_descent(value, properties, ismath=False)[:2]  # type: ignore[attr-defined]
+        renderer.get_text_width_height_descent(value, properties, ismath=False)[:2]
         for value in values
     ]
     scale = 72.0 / dpi
@@ -170,7 +172,7 @@ def _maximum_text_extent(
 
 def measure_text_extents(
     figure: Figure,
-    renderer: object,
+    renderer: RendererBase,
     labels: tuple[str, ...],
     source_groups: tuple[str, ...],
 ) -> TextExtents:

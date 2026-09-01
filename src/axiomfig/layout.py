@@ -4,11 +4,12 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
-from matplotlib.figure import Figure
+from matplotlib.backend_bases import RendererBase
+from matplotlib.figure import Figure, SubFigure
 from matplotlib.font_manager import FontProperties
 from matplotlib.gridspec import GridSpec, SubplotSpec
 from matplotlib.transforms import Bbox
@@ -23,6 +24,11 @@ _LAYOUT_KEY = "_axiomfig_figure_layout"
 
 class LayoutConstraintError(ValueError):
     """Raised when physical panel constraints cannot be satisfied."""
+
+
+def figure_renderer(figure: Figure | SubFigure) -> RendererBase:
+    """Return the renderer exposed dynamically by Matplotlib's concrete canvas."""
+    return cast(Any, figure.canvas).get_renderer()
 
 
 @dataclass(frozen=True)
@@ -128,7 +134,7 @@ def apply_output_margin(figure: Figure) -> None:
     for _ in range(8):
         refresh_panel_labels(figure)
         figure.canvas.draw()
-        renderer = figure.canvas.get_renderer()
+        renderer = figure_renderer(figure)
         legends = [
             legend
             for axis in figure.axes
@@ -163,8 +169,9 @@ def apply_output_margin(figure: Figure) -> None:
     refresh_panel_labels(figure)
 
 
-def _figure_size_pt(figure: Figure) -> tuple[float, float]:
-    return figure.get_figwidth() * 72.0, figure.get_figheight() * 72.0
+def _figure_size_pt(figure: Figure | SubFigure) -> tuple[float, float]:
+    figure_like = cast(Any, figure)
+    return figure_like.get_figwidth() * 72.0, figure_like.get_figheight() * 72.0
 
 
 def _physical_grid_parameters(
@@ -219,7 +226,7 @@ def create_panel_grid(
     return layout
 
 
-def get_figure_layout(figure: Figure) -> FigureLayout | None:
+def get_figure_layout(figure: Figure | SubFigure) -> FigureLayout | None:
     value = figure.__dict__.get(_LAYOUT_KEY)
     return value if isinstance(value, FigureLayout) else None
 
@@ -421,10 +428,10 @@ def outer_panel_bbox(axis: Axes) -> Bbox:
     if subplot_spec is None:
         return axis.get_position()
     spec = subplot_spec.get_topmost_subplotspec()
-    return spec.get_position(axis.figure)
+    return spec.get_position(cast(Figure, axis.figure))
 
 
-def _axis_overhang_pt(axis: Axes, renderer: object) -> tuple[float, float, float, float]:
+def _axis_overhang_pt(axis: Axes, renderer: RendererBase) -> tuple[float, float, float, float]:
     tight = axis.get_tightbbox(renderer, bbox_extra_artists=[])
     bbox = axis.bbox
     if tight is None:
@@ -438,13 +445,13 @@ def _axis_overhang_pt(axis: Axes, renderer: object) -> tuple[float, float, float
     )
 
 
-def _panel_label_height_pt(figure: Figure, renderer: object, count: int) -> float:
+def _panel_label_height_pt(figure: Figure, renderer: RendererBase, count: int) -> float:
     contract = load_contracts().style["panel"]
     properties = FontProperties(
         size=float(contract["font_size_pt"]), weight=str(contract["font_weight"])
     )
     heights = [
-        renderer.get_text_width_height_descent(  # type: ignore[attr-defined]
+        renderer.get_text_width_height_descent(
             str(contract["format"]).format(letter=chr(ord("a") + index)),
             properties,
             ismath=False,
@@ -510,7 +517,7 @@ def solve_panel_layout(figure: Figure) -> None:
                 )
             )
     figure.canvas.draw()
-    renderer = figure.canvas.get_renderer()
+    renderer = figure_renderer(figure)
     padding = float(style["layout"]["multi_panel"]["containment_padding_pt"])
     ordinary = [panel for panel in layout.panels if not panel.auxiliary_axes]
     ordinary_overhangs = [
@@ -598,7 +605,7 @@ def solve_panel_layout(figure: Figure) -> None:
 
     # A compact final Colorbar can select different tick text than the initial probe.
     # One bounded renderer correction makes the right strip match that actual bbox.
-    renderer = figure.canvas.get_renderer()
+    renderer = figure_renderer(figure)
     for panel in layout.panels:
         if not panel.auxiliary_axes:
             continue

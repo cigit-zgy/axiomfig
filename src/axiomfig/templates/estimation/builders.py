@@ -13,6 +13,7 @@ from axiomfig.style import (
     reference_line_kwargs,
     series_style,
 )
+from axiomfig.templates._adapter import scalar
 
 
 def _errors(
@@ -49,7 +50,7 @@ def build_forest(
         limits = (0.25, 1.0)
         selected_reference: float | None = 0.5
     elif label is not None and estimate is not None and interval is not None and uncertainty_type:
-        labels = [str(item) for item in label]  # type: ignore[union-attr]
+        labels = [str(item) for item in np.asarray(label, dtype=object).ravel()]
         estimates = np.asarray(estimate, dtype=float)
         supplied = np.asarray(interval, dtype=float)
         if estimates.ndim != 1 or estimates.size != len(labels) or estimates.size < 1:
@@ -58,7 +59,7 @@ def build_forest(
         uncertainty_label = str(uncertainty_type)
         padding = max(float(upper.max() - lower.min()) * 0.05, 0.05)
         limits = (float(lower.min()) - padding, float(upper.max()) + padding)
-        selected_reference = None if reference is None else float(reference)
+        selected_reference = None if reference is None else scalar(reference, "reference")
     else:
         raise ValueError("forest requires label, estimate, interval, and uncertainty_type together")
     positions = np.arange(len(labels))
@@ -190,7 +191,7 @@ def build_coefficient(
             else np.asarray(model, dtype=object)
         )
         uncertainty = str(uncertainty_type)
-        selected_reference = None if reference is None else float(reference)
+        selected_reference = None if reference is None else scalar(reference, "reference")
     else:
         raise ValueError("coefficient requires term, estimate, interval, and uncertainty_type")
     return _grouped_interval(

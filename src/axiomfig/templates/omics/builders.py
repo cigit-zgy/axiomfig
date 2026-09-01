@@ -15,6 +15,7 @@ from axiomfig.style import (
     reference_line_kwargs,
     semantic_colormap,
 )
+from axiomfig.templates._adapter import scalar
 
 
 def build_volcano(
@@ -47,11 +48,17 @@ def build_volcano(
             raise ValueError("volcano effect_size and adjusted_p_value must be equal-length data")
         if np.any(adjusted_p <= 0.0) or np.any(adjusted_p > 1.0):
             raise ValueError("adjusted p-values must lie in (0, 1]")
-        p_threshold = float(significance_threshold)
-        change_threshold = 1.0 if effect_threshold is None else float(effect_threshold)
+        p_threshold = scalar(significance_threshold, "significance_threshold")
+        change_threshold = (
+            1.0 if effect_threshold is None else scalar(effect_threshold, "effect_threshold")
+        )
         if not 0.0 < p_threshold < 1.0 or change_threshold <= 0.0:
             raise ValueError("volcano thresholds must be scientifically valid")
-        labels = None if feature_label is None else [str(item) for item in feature_label]  # type: ignore[union-attr]
+        labels = (
+            None
+            if feature_label is None
+            else [str(item) for item in np.asarray(feature_label, dtype=object).ravel()]
+        )
         if labels is not None and len(labels) != effect_values.size:
             raise ValueError("volcano feature labels must match data length")
         score_limit = max(float((-np.log10(adjusted_p)).max()) * 1.08, 1.0)

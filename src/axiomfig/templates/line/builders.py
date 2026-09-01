@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Literal, cast
+
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.figure import Figure
@@ -79,7 +81,7 @@ def build_multi(
     elif x is not None and series_values is not None and series_labels is not None:
         values_x = np.asarray(x, dtype=float)
         values = np.asarray(series_values, dtype=float)
-        labels = tuple(str(item) for item in series_labels)  # type: ignore[union-attr]
+        labels = tuple(str(item) for item in np.asarray(series_labels, dtype=object).ravel())
         limits = _limits(values_x, values.ravel())
     else:
         raise ValueError("multi line requires x, series_values, and series_labels together")
@@ -215,7 +217,14 @@ def build_step(
     else:
         raise ValueError("step requires x and y together")
     figure, axis = plt.subplots()
-    axis.step(values_x, response, where="post" if where is None else str(where))
+    selected_where = "post" if where is None else str(where)
+    if selected_where not in {"pre", "post", "mid"}:
+        raise ValueError("step where must be pre, post, or mid")
+    axis.step(
+        values_x,
+        response,
+        where=cast(Literal["pre", "post", "mid"], selected_where),
+    )
     axis.set(
         xlabel="Sampling interval" if xlabel is None else str(xlabel),
         ylabel="Cumulative response (-)" if ylabel is None else str(ylabel),
@@ -234,13 +243,13 @@ def build_area(
     if x is None and y is None:
         values_x = np.linspace(0.0, 12.0, 81)
         response = 0.15 + 0.72 * (1.0 - np.exp(-values_x / 3.8))
-        selected_baseline: object = 0.0
+        selected_baseline = np.asarray(0.0, dtype=float)
         limits = ((0.0, 12.0), (0.0, 1.0))
     elif x is not None and y is not None:
         values_x = np.asarray(x, dtype=float)
         response = np.asarray(y, dtype=float)
-        selected_baseline = 0.0 if baseline is None else baseline
-        base_values = np.broadcast_to(np.asarray(selected_baseline, dtype=float), response.shape)
+        selected_baseline = np.asarray(0.0 if baseline is None else baseline, dtype=float)
+        base_values = np.broadcast_to(selected_baseline, response.shape)
         limits = _limits(values_x, np.concatenate((response, base_values)))
     else:
         raise ValueError("area requires x and y together")

@@ -12,7 +12,7 @@ from matplotlib.path import Path
 from matplotlib.transforms import Bbox
 
 from axiomfig.config import build_rcparams, load_contracts
-from axiomfig.style import axiom_colormap, mantel_p_style, palette_color
+from axiomfig.style import axiom_colormap, palette_color
 from axiomfig.templates import build_template
 from axiomfig.templates.association.mantel.composition import (
     ClusterOutlineOverlay,
@@ -28,6 +28,7 @@ from axiomfig.templates.association.mantel.geometry import (
     solve_geometry,
 )
 from axiomfig.templates.association.mantel.matrix import select_matrix_cells
+from axiomfig.templates.association.mantel.styling import mantel_p_style
 from axiomfig.typography import discover_fonts
 from axiomfig.validation import validate_figure_anatomy
 

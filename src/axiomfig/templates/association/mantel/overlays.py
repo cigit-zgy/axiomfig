@@ -14,8 +14,6 @@ from matplotlib.patches import Circle, Rectangle
 from axiomfig.style import (
     FILL_EDGE_PT,
     MAIN_STROKE_PT,
-    mantel_plot_contract,
-    mantel_visual_color,
 )
 from axiomfig.templates.association.mantel.composition import (
     ClusterOutlineOverlay,
@@ -26,11 +24,13 @@ from axiomfig.templates.association.mantel.composition import (
 )
 from axiomfig.templates.association.mantel.data import MantelData
 from axiomfig.templates.association.mantel.geometry import MantelGeometry, cell_center
+from axiomfig.templates.association.mantel.matrix import MatrixCell
+from axiomfig.templates.association.mantel.styling import mantel_plot_contract, mantel_visual_color
 
 
 def visible_glyph_cells(
     data: MantelData,
-    cells: Sequence[object],
+    cells: Sequence[MatrixCell],
     overlays: Sequence[StatisticalOverlay],
 ) -> set[tuple[int, int]]:
     """Apply overlay visibility policies before any glyph primitive is rendered."""
@@ -87,7 +87,7 @@ def _significance(
         zorder=4,
     )
     artist.set_gid("axiomfig-mantel-significance")
-    artist._axiomfig_significance_mode = overlay.mode
+    artist.__dict__["_axiomfig_significance_mode"] = overlay.mode
     return artist
 
 
@@ -255,7 +255,7 @@ def _cluster_outlines(
 def render_statistical_layers(
     axis: Axes,
     data: MantelData,
-    cells: Sequence[object],
+    cells: Sequence[MatrixCell],
     overlays: Sequence[StatisticalOverlay],
     geometry: MantelGeometry,
     *,

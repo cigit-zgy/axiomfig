@@ -9,18 +9,23 @@ import matplotlib as mpl
 from matplotlib.axes import Axes
 from matplotlib.colorbar import Colorbar
 from matplotlib.colors import Normalize
+from matplotlib.legend import Legend
 from matplotlib.lines import Line2D
+from matplotlib.transforms import Transform
 
+from axiomfig.layout import figure_renderer
 from axiomfig.ornaments import apply_colorbar_contract
 from axiomfig.style import (
     MAIN_STROKE_PT,
     axiom_colormap,
+)
+from axiomfig.templates.association.mantel.geometry import MantelGeometry
+from axiomfig.templates.association.mantel.styling import (
     mantel_link_width,
     mantel_p_style,
     mantel_plot_contract,
     mantel_visual_color,
 )
-from axiomfig.templates.association.mantel.geometry import MantelGeometry
 
 
 @dataclass(frozen=True)
@@ -34,7 +39,7 @@ class LegendExtents:
 @dataclass(frozen=True)
 class OrnamentRenderResult:
     colorbar: Colorbar
-    legends: tuple[object, ...]
+    legends: tuple[Legend, ...]
 
 
 def render_colorbar(axis: Axes, colorbar_axis: Axes) -> Colorbar:
@@ -95,9 +100,9 @@ def _create_link_legends(
     *,
     strength_anchor: tuple[float, float],
     p_anchor: tuple[float, float],
-    transform: object,
+    transform: Transform,
     p_value_mode: str,
-) -> tuple[object, object]:
+) -> tuple[Legend, Legend]:
     strength_handles, p_handles = _legend_handles(p_value_mode)
     common = {
         "frameon": False,
@@ -143,7 +148,7 @@ def measure_link_legends(axis: Axes, p_value_mode: str = "canonical") -> LegendE
         p_value_mode=p_value_mode,
     )
     axis.figure.canvas.draw()
-    renderer = axis.figure.canvas.get_renderer()
+    renderer = figure_renderer(axis.figure)
     strength_bbox = strength.get_window_extent(renderer)
     p_bbox = p_legend.get_window_extent(renderer)
     scale = 72.0 / axis.figure.dpi
@@ -163,7 +168,7 @@ def render_link_legends(
     geometry: MantelGeometry,
     *,
     p_value_mode: str,
-) -> tuple[object, object]:
+) -> tuple[Legend, Legend]:
     return _create_link_legends(
         axis,
         strength_anchor=geometry.strength_legend_anchor,

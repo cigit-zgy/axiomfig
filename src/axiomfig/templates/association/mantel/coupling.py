@@ -10,10 +10,14 @@ from matplotlib.axes import Axes
 from matplotlib.patches import PathPatch
 from matplotlib.path import Path
 
-from axiomfig.style import mantel_link_width, mantel_p_style, mantel_plot_contract
 from axiomfig.templates.association.mantel.composition import CouplingSpec
 from axiomfig.templates.association.mantel.data import MantelLink
 from axiomfig.templates.association.mantel.geometry import MantelGeometry
+from axiomfig.templates.association.mantel.styling import (
+    mantel_link_width,
+    mantel_p_style,
+    mantel_plot_contract,
+)
 
 
 def _link_width(value: float, mode: str) -> float:
@@ -125,22 +129,26 @@ def render_coupling_layer(
                 zorder=4,
             )
             artist.set_gid("axiomfig-mantel-link")
-            artist._axiomfig_source = link.source
-            artist._axiomfig_target = link.target
-            artist._axiomfig_source_group = link.source
-            artist._axiomfig_target_label = link.target
-            artist._axiomfig_mantel_r = link.mantel_r
-            artist._axiomfig_p_value = link.p_value
-            artist._axiomfig_label = link.label
-            artist._axiomfig_metadata = dict(link.metadata)
-            artist._axiomfig_route_model = "source-target-quadratic"
-            artist._axiomfig_curvature = curvature
-            artist._axiomfig_curvature_sign = sign
-            artist._axiomfig_route_signature = (
-                link.source,
-                link.target,
-                *(round(value, 6) for vertex in vertices for value in vertex),
-            )
+            metadata = {
+                "_axiomfig_source": link.source,
+                "_axiomfig_target": link.target,
+                "_axiomfig_source_group": link.source,
+                "_axiomfig_target_label": link.target,
+                "_axiomfig_mantel_r": link.mantel_r,
+                "_axiomfig_p_value": link.p_value,
+                "_axiomfig_label": link.label,
+                "_axiomfig_metadata": dict(link.metadata),
+                "_axiomfig_route_model": "source-target-quadratic",
+                "_axiomfig_curvature": curvature,
+                "_axiomfig_curvature_sign": sign,
+                "_axiomfig_route_signature": (
+                    link.source,
+                    link.target,
+                    *(round(value, 6) for vertex in vertices for value in vertex),
+                ),
+            }
+            for name, value in metadata.items():
+                setattr(artist, name, value)
             axis.add_patch(artist)
             rendered.append(artist)
     return tuple(rendered)

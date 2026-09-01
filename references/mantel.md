@@ -163,15 +163,16 @@ may reorder its own data.
 `TargetRail` is the matrix diagonal and `SourceRail` is one parallel line in the complementary
 coupling triangle. SourceNodes remain collinear and preserve deterministic scientific source order.
 Every source label is placed on the same outward normal side of SourceRail. Its visual gap is the
-physical distance from the circular marker edge to the nearest visible text edge, fixed at `1.5 pt`;
-it is not a node-centre offset.
+physical distance from the circular marker edge to the nearest visible text edge, using the
+family-owned `source_label_gap_pt` token; it is not a node-centre offset.
 
 Each SourceNode and its renderer-measured label bbox form one `SourceGroupFootprint`. The solver
-projects those footprints onto the SourceRail tangent and packs adjacent groups with `4 pt` visible
+projects those footprints onto the SourceRail tangent and packs adjacent groups with the
+family-owned `source_group_gap_pt` visible
 clearance. The resulting rail uses the shortest feasible content-derived span: short labels reduce
 the span and longer labels expand it only as required. The complete packed rail is then translated
-along the coupling-region outward normal until a source footprint activates the `3 pt` boundary
-padding of the Primary Visual Square. This maximizes distance from TargetRail and gives the shared
+along the coupling-region outward normal until a source footprint activates the family-owned
+`source_boundary_padding_pt` of the Primary Visual Square. This maximizes distance from TargetRail and gives the shared
 quadratic curves their usable physical length without a link-length option.
 
 All measurements use the selected font renderer, physical marker area, and point-space conversion.

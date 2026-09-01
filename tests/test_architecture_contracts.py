@@ -59,6 +59,17 @@ def test_generic_runtime_does_not_import_concrete_template_families() -> None:
     assert violations == {}
 
 
+def test_generic_runtime_does_not_own_mantel_family_logic() -> None:
+    """Keep the concrete Mantel contract and helpers inside its family package."""
+    violations = {
+        name
+        for name in ("config.py", "style.py")
+        if "mantel" in (PACKAGE / name).read_text(encoding="utf-8").lower()
+    }
+
+    assert violations == set()
+
+
 def test_public_scientific_families_do_not_import_each_other() -> None:
     """Catch one family reusing another family's private adapter or builder."""
     violations: list[tuple[str, str]] = []

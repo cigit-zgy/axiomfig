@@ -124,6 +124,25 @@ def test_core_public_markdown_has_no_broken_local_links() -> None:
     assert broken == []
 
 
+def test_contract_markdown_does_not_duplicate_physical_runtime_defaults() -> None:
+    """Keep executable visual numbers in YAML rather than parallel prose sources."""
+    paths = (
+        ROOT / "references/style-contract.md",
+        ROOT / "references/layout-contract.md",
+        ROOT / "references/mantel.md",
+    )
+    numeric_physical_unit = re.compile(r"\b\d+(?:\.\d+)?\s*(?:pt²?|mm|px)\b")
+    violations = {
+        path.relative_to(ROOT).as_posix(): numeric_physical_unit.findall(
+            path.read_text(encoding="utf-8")
+        )
+        for path in paths
+        if numeric_physical_unit.search(path.read_text(encoding="utf-8"))
+    }
+
+    assert violations == {}
+
+
 def test_public_tree_contains_no_private_key_or_live_token_shapes() -> None:
     patterns = (
         re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),

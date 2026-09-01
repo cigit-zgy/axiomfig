@@ -23,17 +23,15 @@ palettes are project-defined.
 
 ## Geometry and physical typography
 
-| Geometry | Width | Default height | Aspect |
-|---|---:|---:|---:|
-| `single-column` | 90 mm | 67.5 mm | 4:3 |
-| `onehalf-column` | 140 mm | 105 mm | 4:3 |
-| `double-column` | 190 mm | 142.5 mm | 4:3 |
-
-Font sizes are physical points and do not scale with figure width.
+The named geometry presets and all of their physical dimensions and aspect ratios are defined only
+in `style.yaml`. Font sizes use physical units and do not scale with figure width.
 
 ## Strokes and filled artists
 
-`main_stroke = 0.8 pt` applies to spines, normal data lines, major ticks, error bars, and reference lines. `fill_edge = 0.6 pt` applies to black edges of every filled bar, violin body, filled scatter marker, and other filled patch. Fill alpha is encoded only in face RGBA; edge RGBA is always opaque. Artist-wide alpha is forbidden because it also makes the edge translucent.
+The shared `main_stroke` token applies to spines, normal data lines, major ticks, error bars, and
+reference lines. The `fill_edge` token applies to black edges of every filled bar, violin body,
+filled scatter marker, and other filled patch. Fill alpha is encoded only in face RGBA; edge RGBA is
+always opaque. Artist-wide alpha is forbidden because it also makes the edge translucent.
 
 Use color, alpha, linestyle, or fill for hierarchy. A template may not create a second baseline stroke width.
 
@@ -45,28 +43,31 @@ Use color, alpha, linestyle, or fill for hierarchy. A template may not create a 
 | filled surface (`bar`, `heatmap`, `image`) | `out` | `out` | exactly one minor between numeric majors |
 | categorical | none | none | labels remain |
 
-Raster measurement confirms that Matplotlib divides an `inout` tick approximately equally across the spine. Round 04 lengthens the previous `1.236 pt` minor by 1.5 to `1.854 pt`. With φ = `0.6180339887`, the required major inward projection is `1.854 / φ`, approximately `3 pt`, so the central Matplotlib `inout` major parameter is `2 × 1.854 / φ = 5.9996700308 pt`. Filled numeric axes reuse that total with outward direction. A colorbar deletes the inward half and therefore derives its outward major as `5.9996700308 / 2 pt`; its minor remains `1.854 pt`. No second colorbar length token exists.
+The runtime derives open, filled, and Colorbar tick lengths from the shared tick tokens in
+`style.yaml`. A Colorbar converts the central `inout` major contract to its outward-only equivalent;
+it does not own a second independent length token.
 
 `AutoMinorLocator(2)` yields one minor tick per major interval. Log axes keep their mathematical locators and do not use the deterministic linear-axis rule.
 
 ## Nice linear axes
 
-`nice_linear_axis()` targets 5–7 major ticks and chooses only `1`, `2`, `2.5`, or `5 × 10^n`. After choosing major step `Δ`, it sets minor step `Δ/2`. Limits normally snap to integer multiples of `Δ`; when whole-step expansion creates unnecessary blank space beyond the configured threshold, half-step endpoints are allowed. Ordinary linear scientific axes must not retain visually arbitrary start or end values.
+`nice_linear_axis()` uses the YAML-owned bounded tick target and approved step sequence. After
+choosing major step `Δ`, it derives the minor step and snaps limits according to the configured
+endpoint policy. Ordinary linear scientific axes must not retain visually arbitrary endpoints.
 
 ## Plot defaults
 
-- Line markers and errorbar markers: `5.2 pt`, black `0.6 pt` edge; errorbar caps are `2.5 pt`.
-- Confidence intervals: face alpha `0.22`, opaque black `0.6 pt` edge.
-- Scatter: opaque black `0.6 pt` edge, face alpha `0.55`, marker area `36 pt²`.
-- Dense raw distribution observations (strip and raincloud): the shared scatter
-  face/edge contract with a smaller `20 pt²` marker area. ECDF markers are
-  sampled deterministically to at most 12 per series so that the empirical
-  step remains the dominant artist.
+- Line markers and errorbar markers use their shared marker, edge, and cap tokens.
+- Confidence intervals use the shared translucent-face and opaque-edge contract.
+- Scatter uses the shared opaque-edge, face-alpha, and marker-area tokens.
+- Dense raw distribution observations reuse the scatter face/edge contract with their dedicated
+  marker-area token. ECDF sampling is bounded deterministically so the empirical step remains the
+  dominant artist.
 - Hexbin count is a continuous quantitative color encoding and therefore uses
   the global vertical Colorbar contract rather than an unlabelled palette.
-- Bar: opaque black `0.6 pt` edge, face alpha `0.82`, value labels enabled, two decimals, no category tick marks. Single-series width is exactly `0.60`; grouped total width is exactly `0.76`, divided by series count and independent of category count.
-- Box/violin: black `0.6 pt` edges, YAML-owned fill alpha/width, and no category tick marks.
-- Histogram: face alpha `0.72` with opaque black `0.6 pt` bin edges.
+- Bar uses the YAML-owned opaque-edge, face-alpha, value-label, and categorical-width contracts.
+- Box/violin use the shared edge contract and YAML-owned fill and width tokens.
+- Histogram uses its YAML-owned face alpha with the shared opaque bin-edge contract.
 - Heatmap/image: filled-surface tick directions; colorbar is separate support axes.
 
 ## Square matrix geometry
@@ -74,25 +75,24 @@ Raster measurement confirms that Matplotlib divides an `inout` tick approximatel
 A matrix whose two axes represent the same variables must render with equal physical width and
 height. Its cells must therefore have equal physical width and height, not merely equal data
 increments. `set_aspect("equal")` is an implementation aid rather than sufficient evidence:
-runtime validation measures the final renderer transform and rejects a primary visual square whose
-width and height differ by more than `0.5 px` or whose cell dimensions differ by more than
-`0.1 px`. Auxiliary axes and outer ornaments must not distort the square.
+runtime validation measures the final renderer transform against the YAML-owned square and cell
+tolerances. Auxiliary axes and outer ornaments must not distort the square.
 
 ## Colorbar contract
 
 A Colorbar is the continuous color scale (continuous color legend) for a scalar mapping; it is not
 a categorical legend. The global vertical Colorbar contract is stored only in `style.yaml`:
 
-- physical width: `9 pt`;
-- gap from its reference visual region: `6 pt`;
-- length: `0.72` times the reference square height;
+- physical width: the vertical Colorbar width token;
+- gap from its reference visual region: the vertical Colorbar gap token;
+- length: the vertical Colorbar length-fraction token applied to the reference square height;
 - alignment: vertically centered on the reference square;
 - position: outside-right;
 - major/minor ticks: the shared filled-axis tick contract;
 - tick labels and the concise scalar label: right side.
 
-The vertical Colorbar occupies a measured right Ornament Strip. Its reservation is the `6 pt` gap,
-`9 pt` bar, actual renderer-measured right tick/label overhang, and containment padding. Its compact
+The vertical Colorbar occupies a measured right Ornament Strip. Its reservation is the configured
+gap and width, actual renderer-measured right tick/label overhang, and containment padding. Its compact
 height does not reserve top or bottom space. The layout subsystem owns the Auxiliary Axes dimensions
 and placement and maximizes the remaining Primary Visual Area. A template supplies only the scalar
 mapping, tick values, label, and an optional data-space reference square. It must not set a local box
@@ -102,8 +102,16 @@ until a real production consumer requires it.
 
 ## Redundant series identity
 
-Multi-series graphics use one ordered central cycle that combines palette color, line style, and marker. The first four styles are solid/circle, dash-dot/square, dotted/triangle, and long-dash/diamond. The custom long-dash pattern is `6 pt on, 2 pt off`. Secondary and reference lines default to dash-dot. Templates call the shared helper by series index and do not replace these channels locally.
+Multi-series graphics use one ordered central cycle that combines palette color, line style, and
+marker. The exact sequence and custom dash pattern live only in `style.yaml`. Secondary and
+reference lines use the shared reference-line style. Templates call the shared helper by series
+index and do not replace these channels locally.
 
 ## Fixed-page output margins
 
-The default output mode is `tight` with `1.5 pt` physical padding. Ordinary single panels retain the centralized fixed-page margin solver. Registered panel grids reserve the output boundary in advance, perform one measurement/formula solve, and then run anatomy validation; they are never moved by the single-panel solver. `normal` leaves configured single-panel margins unchanged, and `custom` remains a validated configuration value. Templates must not implement crop, `bbox_inches`, or trial-and-error placement.
+The default output mode and physical padding live only in `style.yaml`. Ordinary single panels retain
+the centralized fixed-page margin solver. Registered panel grids reserve the output boundary in
+advance, perform one measurement/formula solve, and then run anatomy validation; they are never moved
+by the single-panel solver. `normal` leaves configured single-panel margins unchanged, and `custom`
+remains a validated configuration value. Templates must not implement crop, `bbox_inches`, or
+trial-and-error placement.

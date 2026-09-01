@@ -5,6 +5,7 @@ import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.colors import TwoSlopeNorm
 from matplotlib.figure import Figure
+from matplotlib.image import AxesImage
 
 from axiomfig.layout import add_panel_axes, create_panel_grid
 from axiomfig.ornaments import apply_colorbar_contract
@@ -13,6 +14,7 @@ from axiomfig.style import (
     apply_categorical_axis,
     semantic_colormap,
 )
+from axiomfig.templates._adapter import scalar
 
 CORRELATION = np.array(
     [
@@ -43,7 +45,7 @@ def add_matrix(
     center: float | None = None,
     fmt: str = ".2f",
     annotation_values: np.ndarray | None = None,
-) -> object:
+) -> AxesImage:
     selected_rows = labels if row_labels is None else row_labels
     selected_columns = labels if column_labels is None else column_labels
     if selected_rows is None or selected_columns is None:
@@ -94,7 +96,7 @@ def add_matrix(
     return image
 
 
-def add_heatmap(axis: Axes, *, annotate: bool = True) -> object:
+def add_heatmap(axis: Axes, *, annotate: bool = True) -> AxesImage:
     return add_matrix(
         axis,
         CORRELATION,
@@ -161,10 +163,13 @@ def build_basic(
         limits = (0.0, 1.0)
     elif all(item is not None for item in (matrix, row_labels, column_labels, color_semantics)):
         selected = np.asarray(matrix, dtype=float)
-        rows = [str(item) for item in row_labels]  # type: ignore[union-attr]
-        columns = [str(item) for item in column_labels]  # type: ignore[union-attr]
+        rows = [str(item) for item in np.asarray(row_labels, dtype=object).ravel()]
+        columns = [str(item) for item in np.asarray(column_labels, dtype=object).ravel()]
         semantics = str(color_semantics)
-        limits = (float(selected.min()), float(selected.max()))
+        limits = (
+            scalar(selected.min(), "matrix minimum"),
+            scalar(selected.max(), "matrix maximum"),
+        )
     else:
         raise ValueError(
             "basic heatmap requires matrix, row_labels, column_labels, and color_semantics"
@@ -177,7 +182,7 @@ def build_basic(
         vmin=limits[0],
         vmax=limits[1],
         color_semantics=semantics,
-        center=None if center is None else float(center),
+        center=None if center is None else scalar(center, "center"),
         annotate=annotations is not None,
         annotation_values=None if annotations is None else np.asarray(annotations, dtype=object),
     )
@@ -198,17 +203,19 @@ def build_correlation(
         selected_center = 0.0
     elif matrix is not None and labels is not None and center is not None:
         selected_matrix = np.asarray(matrix, dtype=float)
-        selected_labels = [str(item) for item in labels]  # type: ignore[union-attr]
+        selected_labels = [str(item) for item in np.asarray(labels, dtype=object).ravel()]
         if (
             selected_matrix.ndim != 2
             or selected_matrix.shape[0] != selected_matrix.shape[1]
             or selected_matrix.shape[0] != len(selected_labels)
         ):
             raise ValueError("correlation matrix must be square and match labels")
-        selected_center = float(center)
-        if float(selected_matrix.min()) < -1.0 or float(selected_matrix.max()) > 1.0:
+        selected_center = scalar(center, "center")
+        selected_minimum = scalar(selected_matrix.min(), "correlation minimum")
+        selected_maximum = scalar(selected_matrix.max(), "correlation maximum")
+        if selected_minimum < -1.0 or selected_maximum > 1.0:
             raise ValueError("correlation values must lie between -1 and 1")
-        if not float(selected_matrix.min()) < selected_center < float(selected_matrix.max()):
+        if not selected_minimum < selected_center < selected_maximum:
             raise ValueError("correlation center must lie inside the data range")
     else:
         raise ValueError("correlation heatmap requires matrix, labels, and center together")
@@ -252,8 +259,8 @@ def build_clustered(
         rows = np.asarray(row_order, dtype=int)
         columns = np.asarray(column_order, dtype=int)
         source = np.asarray(matrix, dtype=float)
-        source_rows = [str(item) for item in row_labels]  # type: ignore[union-attr]
-        source_columns = [str(item) for item in column_labels]  # type: ignore[union-attr]
+        source_rows = [str(item) for item in np.asarray(row_labels, dtype=object).ravel()]
+        source_columns = [str(item) for item in np.asarray(column_labels, dtype=object).ravel()]
         semantics = str(color_semantics)
     else:
         raise ValueError(
@@ -272,10 +279,10 @@ def build_clustered(
         row_labels=selected_rows,
         column_labels=selected_columns,
         colorbar_label=("Preordered similarity" if colorbar_label is None else str(colorbar_label)),
-        vmin=float(source.min()),
-        vmax=float(source.max()),
+        vmin=scalar(source.min(), "matrix minimum"),
+        vmax=scalar(source.max(), "matrix maximum"),
         color_semantics=semantics,
-        center=None if center is None else float(center),
+        center=None if center is None else scalar(center, "center"),
         annotation_values=selected_annotations,
     )
     figure.axes[0].set_title("Deterministic cluster order")
@@ -293,7 +300,7 @@ def build_confusion_matrix(
         labels = ["Low", "Medium", "High"]
     elif matrix is not None and class_labels is not None:
         selected = np.asarray(matrix, dtype=float)
-        labels = [str(item) for item in class_labels]  # type: ignore[union-attr]
+        labels = [str(item) for item in np.asarray(class_labels, dtype=object).ravel()]
     else:
         raise ValueError("confusion_matrix requires matrix and class_labels together")
     return _heatmap_figure(
@@ -337,8 +344,8 @@ def build_annotated(
         for item in (matrix, row_labels, column_labels, color_semantics, annotations)
     ):
         selected = np.asarray(matrix, dtype=float)
-        rows = [str(item) for item in row_labels]  # type: ignore[union-attr]
-        columns = [str(item) for item in column_labels]  # type: ignore[union-attr]
+        rows = [str(item) for item in np.asarray(row_labels, dtype=object).ravel()]
+        columns = [str(item) for item in np.asarray(column_labels, dtype=object).ravel()]
         annotation_values = np.asarray(annotations, dtype=object)
         semantics = str(color_semantics)
     else:
@@ -350,10 +357,10 @@ def build_annotated(
         colorbar_label=(
             "Normalized response (-)" if colorbar_label is None else str(colorbar_label)
         ),
-        vmin=float(selected.min()),
-        vmax=float(selected.max()),
+        vmin=scalar(selected.min(), "matrix minimum"),
+        vmax=scalar(selected.max(), "matrix maximum"),
         color_semantics=semantics,
-        center=None if center is None else float(center),
+        center=None if center is None else scalar(center, "center"),
         annotate=True,
         fmt=".2f" if annotation_format is None else str(annotation_format),
         annotation_values=annotation_values,

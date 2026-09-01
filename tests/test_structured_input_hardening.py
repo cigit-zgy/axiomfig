@@ -6,7 +6,13 @@ from pathlib import Path
 import pytest
 
 from axiomfig.config import load_contracts
-from axiomfig.intent import FigureIntentError, load_dataset, load_figure_intent
+from axiomfig.intent import (
+    FigureIntentError,
+    build_intent_figure,
+    load_dataset,
+    load_figure_intent,
+    parse_figure_intent,
+)
 from axiomfig.templates import registry
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -118,3 +124,18 @@ def test_invalid_dataset_unicode_is_a_bounded_domain_error(tmp_path: Path) -> No
 
     with pytest.raises(FigureIntentError, match="cannot read dataset"):
         load_dataset(path)
+
+
+def test_json_representable_huge_numbers_are_bounded_domain_errors() -> None:
+    intent = parse_figure_intent(
+        {
+            "template": "line.single",
+            "data": {"x": "time", "y": "value"},
+        }
+    )
+
+    with pytest.raises(FigureIntentError):
+        build_intent_figure(
+            intent,
+            {"time": [0, 1], "value": [1, 10**10000]},
+        )

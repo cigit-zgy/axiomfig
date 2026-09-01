@@ -18,6 +18,7 @@ from axiomfig.style import (
     reference_line_kwargs,
     series_style,
 )
+from axiomfig.templates._adapter import scalar
 
 
 def _open(axis: plt.Axes, xlim: tuple[float, float], ylim: tuple[float, float]) -> None:
@@ -128,7 +129,7 @@ def build_bland_altman(
             selected_limits = None
         elif all(item is not None for item in (agreement_type, center, limits)):
             agreement = str(agreement_type)
-            selected_center = float(center)
+            selected_center = scalar(center, "center")
             limit_values = np.asarray(limits, dtype=float)
             if limit_values.shape != (2,):
                 raise ValueError("Bland-Altman limits must contain exactly two values")
@@ -249,7 +250,7 @@ def build_precision_recall(
         recall_values = np.asarray(recall, dtype=float)
         precision_values = np.asarray(precision, dtype=float)
         groups = group
-        selected_baseline = None if baseline is None else float(baseline)
+        selected_baseline = None if baseline is None else scalar(baseline, "baseline")
     else:
         raise ValueError("precision_recall requires recall and precision")
     figure, axis = plt.subplots()
@@ -290,7 +291,7 @@ def build_learning_curve(
         epochs = np.asarray(iteration, dtype=float)
         metrics = np.asarray(metric, dtype=float)
         groups = series
-        selected_target = None if target is None else float(target)
+        selected_target = None if target is None else scalar(target, "target")
         selected_name = "Metric" if metric_name is None else str(metric_name)
     else:
         raise ValueError("learning_curve requires iteration, metric, and series")
@@ -369,7 +370,7 @@ def build_feature_importance(
         selected_type = "Permutation"
         errors = None
     elif feature is not None and importance is not None and importance_type is not None:
-        labels = [str(item) for item in feature]  # type: ignore[union-attr]
+        labels = [str(item) for item in np.asarray(feature, dtype=object).ravel()]
         values = np.asarray(importance, dtype=float)
         selected_type = str(importance_type)
         supplied = None if uncertainty is None else np.asarray(uncertainty, dtype=float)

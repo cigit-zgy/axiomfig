@@ -57,7 +57,7 @@ def build_vertical(
         labels = ["COD", "Nitrogen", "Phosphorus"]
         values = np.array([0.84, 0.76, 0.71])
     elif category is not None and value is not None:
-        labels = [str(item) for item in category]  # type: ignore[union-attr]
+        labels = [str(item) for item in np.asarray(category, dtype=object).ravel()]
         values = np.asarray(value, dtype=float)
         if values.ndim != 1 or len(labels) != values.size or values.size < 1:
             raise ValueError("bar category and value must be equal-length one-dimensional data")
@@ -83,7 +83,7 @@ def build_horizontal(
         labels = ["Mechanistic", "Neural ODE", "Hybrid ODE"]
         values = np.array([0.66, 0.78, 0.87])
     elif category is not None and value is not None:
-        labels = [str(item) for item in category]  # type: ignore[union-attr]
+        labels = [str(item) for item in np.asarray(category, dtype=object).ravel()]
         values = np.asarray(value, dtype=float)
     else:
         raise ValueError("horizontal bar requires category and value together")
@@ -245,7 +245,7 @@ def build_dot(
         labels = ["Mechanistic", "Neural ODE", "Hybrid ODE"]
         values = np.array([0.66, 0.78, 0.87])
     elif category is not None and value is not None:
-        labels = [str(item) for item in category]  # type: ignore[union-attr]
+        labels = [str(item) for item in np.asarray(category, dtype=object).ravel()]
         values = np.asarray(value, dtype=float)
     else:
         raise ValueError("dot bar requires category and value together")
@@ -261,7 +261,7 @@ def build_dot(
     apply_nice_linear_axis(axis, 0.0, max(float(values.max()) * 1.15, 0.1), coordinate="y")
     if value_labels is True:
         for position, selected in zip(positions, values, strict=True):
-            axis.text(position, selected, f"{selected:.2f}", ha="center", va="bottom")
+            axis.text(float(position), float(selected), f"{selected:.2f}", ha="center", va="bottom")
     return figure
 
 

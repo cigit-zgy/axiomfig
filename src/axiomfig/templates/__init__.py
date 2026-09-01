@@ -38,9 +38,7 @@ from axiomfig.templates.survival import BUILDERS as SURVIVAL_BUILDERS
 from axiomfig.templates.survival.adapter import adapt as adapt_survival
 
 
-def _qualified(
-    family: str, builders: Mapping[str, Callable[..., Figure]]
-) -> dict[str, Callable[..., Figure]]:
+def _qualified(family: str, builders: Mapping[str, Any]) -> dict[str, Callable[..., Figure]]:
     return {f"{family}/{variant}": builder for variant, builder in builders.items()}
 
 
@@ -126,7 +124,7 @@ def _apply_family_layout(figure: Figure) -> None:
     finalize_ornaments(figure)
 
 
-def build_template(name: str, **kwargs: object) -> Figure:
+def build_template(name: str, **kwargs: Any) -> Figure:
     figure = get_template_builder(name)(**kwargs)
     _apply_family_layout(figure)
     return figure

@@ -14,6 +14,7 @@ from axiomfig.style import (
     apply_scatter_contract,
     series_style,
 )
+from axiomfig.templates._adapter import scalar
 
 
 def _coordinates(seed: int) -> tuple[np.ndarray, np.ndarray]:
@@ -23,7 +24,7 @@ def _coordinates(seed: int) -> tuple[np.ndarray, np.ndarray]:
     return first, second
 
 
-def _scatter_groups(axis: plt.Axes, groups: tuple[np.ndarray, np.ndarray]) -> None:
+def _scatter_groups(axis: plt.Axes, groups: tuple[np.ndarray, ...]) -> None:
     labels = ("Reference", "Treatment")
     for index, (values, label) in enumerate(zip(groups, labels, strict=True)):
         style = series_style(index)
@@ -263,7 +264,7 @@ def build_nmds(
     elif coordinates is not None and stress is not None and distance_metric is not None:
         values = np.asarray(coordinates, dtype=float)
         _, legend = _plot_scores(axis, values, group, sample_labels)
-        stress_value = float(stress)
+        stress_value = scalar(stress, "stress")
         metric_label = str(distance_metric)
         limits = _score_limits(values)
     else:

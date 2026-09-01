@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from typing import Any, cast
 
 import numpy as np
 
@@ -59,8 +60,8 @@ def interval(value: object, name: str, count: int) -> np.ndarray:
 
 def scalar(value: object, name: str) -> float:
     try:
-        selected = float(value)
-    except (TypeError, ValueError) as exc:
+        selected = float(cast(Any, value))
+    except (OverflowError, TypeError, ValueError) as exc:
         raise ValueError(f"{name} must be a finite scalar") from exc
     if not np.isfinite(selected):
         raise ValueError(f"{name} must be a finite scalar")

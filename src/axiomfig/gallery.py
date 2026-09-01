@@ -8,6 +8,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, cast
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -123,7 +124,7 @@ def build_gallery(
     _prepare_gallery(gallery)
     contracts = load_contracts()
     results: list[RenderResult | LatexGalleryResult] = []
-    manifest: dict[str, object] = {"figures": []}
+    manifest: dict[str, Any] = {"figures": []}
 
     with _deterministic_pdf_environment():
         for mode in GALLERY_MODES:
@@ -137,7 +138,9 @@ def build_gallery(
                         else {}
                     )
                     figure = build_template(spec.template_id, **values)
-                    figure.set_size_inches(params["figure.figsize"], forward=False)
+                    figure.set_size_inches(
+                        cast(tuple[float, float], params["figure.figsize"]), forward=False
+                    )
                     result = render_figure(
                         figure,
                         gallery / mode / spec.output_id,
@@ -157,7 +160,7 @@ def build_gallery(
                     tectonic_log=result.log,
                 )
                 results.append(result)
-                manifest["figures"].append(  # type: ignore[union-attr]
+                manifest["figures"].append(
                     {
                         "mode": mode,
                         "template": spec.template_id,
@@ -178,7 +181,7 @@ def build_gallery(
                 tectonic_log=latex_result.log,
             )
             results.append(latex_result)
-            manifest["figures"].append(  # type: ignore[union-attr]
+            manifest["figures"].append(
                 {
                     "mode": "technical/latex",
                     "template": "tectonic-native",

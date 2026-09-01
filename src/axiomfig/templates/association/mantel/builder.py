@@ -5,23 +5,30 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Mapping
 from dataclasses import replace
+from typing import Literal, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.artist import Artist
+from matplotlib.collections import PathCollection
 from matplotlib.colors import Normalize
 from matplotlib.figure import Figure
+from matplotlib.text import Annotation
 
 from axiomfig.layout import (
     add_panel_axes,
     create_panel_grid,
+    figure_renderer,
     register_post_layout_callback,
     register_vertical_colorbar_layout,
     solve_panel_layout,
 )
-from axiomfig.style import axiom_colormap, mantel_plot_contract
+from axiomfig.style import axiom_colormap
+from axiomfig.templates.association.mantel.composition import MantelComposition
 from axiomfig.templates.association.mantel.coupling import render_coupling_layer
 from axiomfig.templates.association.mantel.data import MantelData, normalize_inputs
 from axiomfig.templates.association.mantel.geometry import (
+    MantelGeometry,
     MantelLayoutMeasurements,
     measure_text_extents,
     solve_geometry,
@@ -40,6 +47,7 @@ from axiomfig.templates.association.mantel.overlays import (
     render_statistical_layers,
     visible_glyph_cells,
 )
+from axiomfig.templates.association.mantel.styling import mantel_plot_contract
 
 _CANONICAL_LABELS = (
     "DO",
@@ -141,7 +149,7 @@ def _source_groups(data: MantelData) -> tuple[str, ...]:
     )
 
 
-def _artists(figure: Figure, gid: str) -> tuple[object, ...]:
+def _artists(figure: Figure, gid: str) -> tuple[Artist, ...]:
     return tuple(
         artist for axis in figure.axes for artist in axis.get_children() if artist.get_gid() == gid
     )
@@ -149,15 +157,16 @@ def _artists(figure: Figure, gid: str) -> tuple[object, ...]:
 
 def _reflow_mantel_after_layout(figure: Figure) -> None:
     """Reapply physical source packing after the final registered panel solve."""
-    geometry = figure._axiomfig_mantel_geometry
-    source_groups = figure._axiomfig_mantel_source_groups
+    geometry = cast(MantelGeometry, figure.__dict__["_axiomfig_mantel_geometry"])
+    source_groups = cast(tuple[str, ...], figure.__dict__["_axiomfig_mantel_source_groups"])
     if not source_groups:
         return
     axis = figure.axes[0]
     figure.canvas.draw()
-    renderer = figure.canvas.get_renderer()
+    renderer = figure_renderer(figure)
     labels = {
-        label._axiomfig_source: label for label in _artists(figure, "axiomfig-mantel-source-label")
+        cast(str, label.__dict__["_axiomfig_source"]): cast(Annotation, label)
+        for label in _artists(figure, "axiomfig-mantel-source-label")
     }
     scale = 72.0 / figure.dpi
     source_widths = tuple(
@@ -183,7 +192,8 @@ def _reflow_mantel_after_layout(figure: Figure) -> None:
     )
     updated = replace(geometry, source_rail=source_rail, cell_size_pt=cell_size_pt)
     source_nodes = {
-        node._axiomfig_source: node for node in _artists(figure, "axiomfig-mantel-source-node")
+        cast(str, node.__dict__["_axiomfig_source"]): cast(PathCollection, node)
+        for node in _artists(figure, "axiomfig-mantel-source-node")
     }
     for source in source_groups:
         center = updated.source_positions[source]
@@ -192,17 +202,22 @@ def _reflow_mantel_after_layout(figure: Figure) -> None:
         label.xy = center
         label.set_position(updated.source_rail.label_offsets_pt[source])
         horizontal, vertical = updated.source_rail.label_alignments[source]
-        label.set_horizontalalignment(horizontal)
-        label.set_verticalalignment(vertical)
+        label.set_horizontalalignment(cast(Literal["left", "center", "right"], horizontal))
+        label.set_verticalalignment(
+            cast(
+                Literal["bottom", "baseline", "center", "center_baseline", "top"],
+                vertical,
+            )
+        )
     for link in _artists(figure, "axiomfig-mantel-link"):
         link.remove()
     render_coupling_layer(
         axis,
-        figure._axiomfig_mantel_ordered_data.links,
-        figure._axiomfig_mantel_composition.coupling,
+        cast(MantelData, figure.__dict__["_axiomfig_mantel_ordered_data"]).links,
+        cast(MantelComposition, figure.__dict__["_axiomfig_mantel_composition"]).coupling,
         updated,
     )
-    figure._axiomfig_mantel_geometry = updated
+    figure.__dict__["_axiomfig_mantel_geometry"] = updated
 
 
 def build_mantel(
@@ -287,7 +302,7 @@ def build_mantel(
     colorbar = render_colorbar(axis, colorbar_axis)
     solve_panel_layout(figure)
     figure.canvas.draw()
-    renderer = figure.canvas.get_renderer()
+    renderer = figure_renderer(figure)
     text = measure_text_extents(figure, renderer, ordered.labels, source_groups)
     legends = measure_link_legends(axis, composition.coupling.p_value_mode)
     scale = 72.0 / figure.dpi
@@ -373,13 +388,18 @@ def build_mantel(
         colorbar=colorbar,
         p_value_mode=composition.coupling.p_value_mode,
     )
-    figure._axiomfig_mantel_composition = composition
-    figure._axiomfig_mantel_geometry = geometry
-    figure._axiomfig_mantel_ordered_data = ordered
-    figure._axiomfig_mantel_source_groups = source_groups
-    figure._axiomfig_primary_visual_square = (
+    figure.__dict__["_axiomfig_mantel_composition"] = composition
+    figure.__dict__["_axiomfig_mantel_geometry"] = geometry
+    figure.__dict__["_axiomfig_mantel_ordered_data"] = ordered
+    figure.__dict__["_axiomfig_mantel_source_groups"] = source_groups
+    figure.__dict__["_axiomfig_primary_visual_square"] = (
         axis,
-        (geometry.bounds.x0, geometry.bounds.y0, geometry.bounds.x1, geometry.bounds.y1),
+        (
+            geometry.bounds.x0,
+            geometry.bounds.y0,
+            geometry.bounds.x1,
+            geometry.bounds.y1,
+        ),
         geometry.bounds.size,
     )
     register_post_layout_callback(figure, _reflow_mantel_after_layout)

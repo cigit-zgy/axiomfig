@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+from typing import cast
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -34,7 +35,7 @@ def render_main(argv: list[str] | None = None) -> int:
     params = build_rcparams(load_contracts(), geometry=args.geometry, typography=args.typography)
     with mpl.rc_context(rc=params):
         figure = build_template(args.template)
-        figure.set_size_inches(params["figure.figsize"], forward=False)
+        figure.set_size_inches(cast(tuple[float, float], params["figure.figsize"]), forward=False)
         result = render_figure(
             figure,
             output,
@@ -69,7 +70,7 @@ def intent_main(argv: list[str] | None = None) -> int:
     )
     with mpl.rc_context(rc=params):
         figure = build_intent_figure(intent, dataset)
-        figure.set_size_inches(params["figure.figsize"], forward=False)
+        figure.set_size_inches(cast(tuple[float, float], params["figure.figsize"]), forward=False)
         result = render_figure(
             figure,
             output,

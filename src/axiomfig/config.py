@@ -11,6 +11,7 @@ from types import MappingProxyType
 from typing import Any
 
 import matplotlib as mpl
+from cycler import cycler
 
 from axiomfig.structured_io import load_yaml
 
@@ -67,6 +68,16 @@ def _finite_number(
     return result
 
 
+def _validate_positive_style_conventions(value: Mapping[str, Any], prefix: str = "") -> None:
+    """Validate reusable positive-token naming conventions without family knowledge."""
+    for name, selected in value.items():
+        dotted = f"{prefix}.{name}" if prefix else str(name)
+        if isinstance(selected, Mapping):
+            _validate_positive_style_conventions(selected, dotted)
+        elif str(name).endswith(("_size_ratio", "_curvature")):
+            _finite_number(selected, dotted, positive=True)
+
+
 def _validate_style(style: Mapping[str, Any]) -> None:
     required = (
         "geometry",
@@ -85,6 +96,7 @@ def _validate_style(style: Mapping[str, Any]) -> None:
     for key in required:
         if not isinstance(style.get(key), Mapping):
             raise ValueError(f"style.yaml is missing mapping: {key}")
+    _validate_positive_style_conventions(style)
 
     positive: list[tuple[Any, str]] = []
     for name, geometry in style["geometry"].items():
@@ -125,26 +137,6 @@ def _validate_style(style: Mapping[str, Any]) -> None:
             (style["plots"]["violin"]["width"], "plots.violin.width"),
             (style["plots"]["bar"]["single_width"], "plots.bar.single_width"),
             (style["plots"]["bar"]["group_width"], "plots.bar.group_width"),
-            (
-                style["plots"]["mantel"]["matrix"]["minimum_cell_side"],
-                "plots.mantel.matrix.minimum_cell_side",
-            ),
-            (
-                style["plots"]["mantel"]["matrix"]["maximum_cell_side"],
-                "plots.mantel.matrix.maximum_cell_side",
-            ),
-            (
-                style["plots"]["mantel"]["matrix"]["source_label_gap_pt"],
-                "plots.mantel.matrix.source_label_gap_pt",
-            ),
-            (
-                style["plots"]["mantel"]["matrix"]["source_group_gap_pt"],
-                "plots.mantel.matrix.source_group_gap_pt",
-            ),
-            (
-                style["plots"]["mantel"]["matrix"]["source_boundary_padding_pt"],
-                "plots.mantel.matrix.source_boundary_padding_pt",
-            ),
             (style["colorbar"]["vertical"]["width_pt"], "colorbar.vertical.width_pt"),
             (style["colorbar"]["vertical"]["gap_pt"], "colorbar.vertical.gap_pt"),
             (
@@ -206,14 +198,6 @@ def _validate_style(style: Mapping[str, Any]) -> None:
         ("plots.violin.combined_alpha", style["plots"]["violin"]["combined_alpha"]),
         ("plots.bar.alpha", style["plots"]["bar"]["alpha"]),
         ("plots.histogram.alpha", style["plots"]["histogram"]["alpha"]),
-        (
-            "plots.mantel.links.significant_alpha",
-            style["plots"]["mantel"]["links"]["significant_alpha"],
-        ),
-        (
-            "plots.mantel.links.nonsignificant_alpha",
-            style["plots"]["mantel"]["links"]["nonsignificant_alpha"],
-        ),
     ):
         value = _finite_number(alpha, dotted)
         if not 0.0 <= value <= 1.0:
@@ -221,42 +205,6 @@ def _validate_style(style: Mapping[str, Any]) -> None:
     decimals = style["plots"]["bar"]["decimals"]
     if isinstance(decimals, bool) or not isinstance(decimals, int) or decimals < 0:
         raise ValueError("plots.bar.decimals must be a nonnegative integer")
-    mantel = style["plots"]["mantel"]
-    matrix_contract = mantel["matrix"]
-    minimum_side = float(matrix_contract["minimum_cell_side"])
-    maximum_side = float(matrix_contract["maximum_cell_side"])
-    if minimum_side >= maximum_side or maximum_side > 1.0:
-        raise ValueError("Mantel cell sides must be ordered and no larger than one cell")
-    node_contract = mantel["nodes"]
-    for name in ("source_size_ratio", "target_size_ratio"):
-        _finite_number(node_contract[name], f"plots.mantel.nodes.{name}", positive=True)
-    link_contract = mantel["links"]
-    _finite_number(
-        link_contract["curve_curvature"],
-        "plots.mantel.links.curve_curvature",
-        positive=True,
-    )
-    strength_breaks = tuple(float(value) for value in link_contract["strength_breaks"])
-    widths = tuple(link_contract["widths_pt"])
-    if strength_breaks != tuple(sorted(strength_breaks)) or len(strength_breaks) != 2:
-        raise ValueError("Mantel strength breaks must contain two ordered values")
-    if len(widths) != 3:
-        raise ValueError("Mantel link widths must match their bins")
-    p_value_modes = link_contract["p_value_modes"]
-    expected_bins = {"canonical": 3, "detailed": 4}
-    if set(p_value_modes) != set(expected_bins):
-        raise ValueError("Mantel P-value modes must contain canonical and detailed")
-    for mode, bin_count in expected_bins.items():
-        p_value_breaks = tuple(float(value) for value in p_value_modes[mode]["breaks"])
-        color_references = tuple(p_value_modes[mode]["colors"])
-        if p_value_breaks != tuple(sorted(p_value_breaks)) or len(p_value_breaks) != bin_count - 1:
-            raise ValueError(f"Mantel {mode} P-value breaks do not match their bins")
-        if len(color_references) != bin_count:
-            raise ValueError(f"Mantel {mode} P-value colors do not match their bins")
-    for index, width in enumerate(widths):
-        _finite_number(width, f"plots.mantel.links.widths_pt[{index}]", positive=True)
-    if link_contract["nonsignificant_mode"] not in {"hide", "fade", "show"}:
-        raise ValueError("plots.mantel.links.nonsignificant_mode must be hide, fade, or show")
 
 
 @lru_cache(maxsize=16)
@@ -338,7 +286,7 @@ def build_rcparams(
         "ytick.labelright": False,
         "legend.frameon": bool(contracts.style["legend"]["frame"]),
         "legend.handlelength": float(contracts.style["legend"]["handlelength"]),
-        "axes.prop_cycle": mpl.cycler(color=tuple(color_map.values())),
+        "axes.prop_cycle": cycler(color=tuple(color_map.values())),
         "image.cmap": str(contracts.colors["colormaps"]["sequential"]),
         "image.interpolation": str(contracts.style["plots"]["heatmap"]["interpolation"]),
         "mathtext.fontset": "custom",

@@ -23,8 +23,8 @@ their measured strip plus contract-owned physical gaps and containment padding.
 
 ## 2. Physical solve and Primary Visual Area protection
 
-The engine converts the fixed page size to points using `72 pt = 1 inch` and `25.4 mm = 1 inch`.
-It creates equal GridSpec cells using YAML-owned physical horizontal and vertical gaps. Output
+The engine converts the fixed page size to physical points. It creates equal GridSpec cells using
+YAML-owned horizontal and vertical gaps. Output
 padding bounds the equal footprints; the measured panel-label gutter is reserved inside each
 footprint during the solve.
 
@@ -43,15 +43,15 @@ cannot alter the equal Outer Panel Footprint.
 
 For a registered square scientific region, the solver maximizes its side under the measured
 reservations. The renderer-derived diagnostic compares achieved and maximum area under identical
-constraints and requires at least `0.98` efficiency. It also reports the hypothetical maximum with
+constraints and requires the YAML-owned minimum efficiency. It also reports the hypothetical maximum with
 the right auxiliary strip removed, so every Colorbar penalty is attributable to a real width
 constraint rather than hidden subplot whitespace.
 
 ## 3. Panel labels
 
-Labels are `(a)`, `(b)`, `(c)`, …, 11 pt bold. The semantic anchor is the Primary Axes spine
-rectangle upper-left, followed by the single `panel.left_offset_pt=-1 pt` and
-`panel.top_offset_pt=+1 pt` translation. The label remains panel-owned and occupies the reserved
+Labels are `(a)`, `(b)`, `(c)`, … and use the YAML-owned panel-label typography. The semantic anchor
+is the Primary Axes spine rectangle upper-left, followed by the configured panel offset. The label
+remains panel-owned and occupies the reserved
 footprint gutter; it does not determine or move Primary Axes geometry after placement.
 
 ## 4. Legends
@@ -60,8 +60,7 @@ Single-series plots omit legends. A multi-series request tries `N`, `N-1`, … c
 the first candidate that fits the output boundary without axes or panel-label collision. If one row
 fits, a multi-row candidate is forbidden.
 
-Every spacing term is explicit in `style.yaml`: `handlelength=1.0`, `columnspacing=1.0`,
-`handletextpad=0.8`, `labelspacing=0.5`, `borderpad=0`, and `borderaxespad=0`. A requested top legend
+Every legend spacing term is explicit only in `style.yaml`. A requested top legend
 reserves only its measured bbox height plus `legend.top_gap_pt`. Mantel's bottom legends likewise
 reserve their measured bboxes and deterministic gap rather than an arbitrary full-width region.
 

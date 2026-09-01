@@ -6,7 +6,7 @@ import math
 from collections.abc import Iterable, Mapping
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
-from typing import Literal
+from typing import Any, Literal
 
 import matplotlib as mpl
 import numpy as np
@@ -74,69 +74,6 @@ def axiom_colormap(name: str, contracts: Contracts | None = None) -> LinearSegme
         raise ValueError(f"invalid Axiom colormap definition: {name!r}")
     colors = [palette_reference_color(reference, contracts=selected) for reference in references]
     return LinearSegmentedColormap.from_list(name, colors, N=257)
-
-
-def mantel_plot_contract() -> Mapping[str, object]:
-    """Return the central deterministic Mantel visual contract."""
-    return load_contracts().style["plots"]["mantel"]
-
-
-def mantel_visual_color(name: str) -> str:
-    """Resolve a Mantel neutral/structural color through the shared contracts."""
-    matrix = mantel_plot_contract()["matrix"]
-    assert isinstance(matrix, Mapping)
-    key = f"{name}_color"
-    if key not in matrix:
-        raise ValueError(f"unknown Mantel visual color: {name!r}")
-    reference = matrix[key]
-    if isinstance(reference, str):
-        return palette_color(reference)
-    return palette_reference_color(reference)
-
-
-def mantel_link_width(mantel_r: float) -> float:
-    """Map precomputed Mantel r to the canonical discrete stroke width."""
-    if not math.isfinite(mantel_r) or not -1.0 <= mantel_r <= 1.0:
-        raise ValueError("mantel_r must be between -1 and 1")
-    links = mantel_plot_contract()["links"]
-    assert isinstance(links, Mapping)
-    breaks = tuple(float(value) for value in links["strength_breaks"])
-    widths = tuple(float(value) for value in links["widths_pt"])
-    magnitude = abs(mantel_r)
-    index = 0 if magnitude < breaks[0] else 1 if magnitude < breaks[1] else 2
-    return widths[index]
-
-
-def mantel_p_style(p_value: float, *, mode: str = "canonical") -> dict[str, object]:
-    """Map precomputed P to the canonical color and opacity tokens."""
-    if not math.isfinite(p_value) or not 0.0 <= p_value <= 1.0:
-        raise ValueError("p_value must be between 0 and 1")
-    links = mantel_plot_contract()["links"]
-    assert isinstance(links, Mapping)
-    modes = links["p_value_modes"]
-    if mode not in modes:
-        raise ValueError(f"unknown Mantel P-value mode: {mode!r}")
-    selected = modes[mode]
-    breaks = tuple(float(value) for value in selected["breaks"])
-    references = tuple(selected["colors"])
-    index = next(
-        (index for index, boundary in enumerate(breaks) if p_value < boundary), len(breaks)
-    )
-    palette_name, color_name = references[index]
-    color = palette_color(str(color_name), palette_name=str(palette_name))
-    significant = index < len(breaks)
-    alpha_key = "significant_alpha" if significant else "nonsignificant_alpha"
-    labels: tuple[str, ...]
-    if mode == "canonical":
-        labels = ("p<0.01", "0.01<=p<0.05", "p>=0.05")
-    else:
-        labels = ("p<0.001", "0.001<=p<0.01", "0.01<=p<0.05", "p>=0.05")
-    return {
-        "color": color,
-        "alpha": float(links[alpha_key]),
-        "significant": significant,
-        "bin": labels[index],
-    }
 
 
 def render_xcolor(contracts: Contracts | None = None) -> str:
@@ -358,18 +295,16 @@ def add_bar_value_labels(axis: Axes, containers: Iterable[BarContainer], decimal
         )
 
 
-def _face_rgba(color: object, alpha: float) -> tuple[float, float, float, float]:
+def _face_rgba(color: Any, alpha: float) -> tuple[float, float, float, float]:
     red, green, blue, _ = mcolors.to_rgba(color)
     return red, green, blue, alpha
 
 
-def _collection_face_alpha(collection: object, alpha: float) -> None:
-    facecolors = collection.get_facecolors()  # type: ignore[attr-defined]
+def _collection_face_alpha(collection: Any, alpha: float) -> None:
+    facecolors = collection.get_facecolors()
     if len(facecolors):
-        collection.set_facecolors(  # type: ignore[attr-defined]
-            [_face_rgba(color, alpha) for color in facecolors]
-        )
-    collection.set_alpha(None)  # type: ignore[attr-defined]
+        collection.set_facecolors([_face_rgba(color, alpha) for color in facecolors])
+    collection.set_alpha(None)
 
 
 def apply_scatter_contract(collection: PathCollection, *, size_ratio: float = 1.0) -> None:
@@ -391,16 +326,16 @@ def apply_distribution_point_contract(collection: PathCollection) -> None:
 
 
 def apply_filled_collection_contract(
-    collection: object, *, alpha: float | None = None, edge_width_token: str = "fill_edge"
+    collection: Any, *, alpha: float | None = None, edge_width_token: str = "fill_edge"
 ) -> None:
     """Apply the shared filled-geometry face/edge contract to a collection."""
     if alpha is not None:
         _collection_face_alpha(collection, alpha)
-    collection.set_edgecolor(mcolors.to_rgba("black", 1.0))  # type: ignore[attr-defined]
-    collection.set_linewidth(_stroke_width(edge_width_token))  # type: ignore[attr-defined]
+    collection.set_edgecolor(mcolors.to_rgba("black", 1.0))
+    collection.set_linewidth(_stroke_width(edge_width_token))
 
 
-def line_marker_kwargs() -> dict[str, object]:
+def line_marker_kwargs() -> dict[str, Any]:
     contract = load_contracts().style["plots"]["line_marker"]
     return {
         "marker": str(contract["marker"]),
@@ -410,7 +345,7 @@ def line_marker_kwargs() -> dict[str, object]:
     }
 
 
-def confidence_interval_kwargs(color: object | None = None) -> dict[str, object]:
+def confidence_interval_kwargs(color: Any | None = None) -> dict[str, Any]:
     contract = load_contracts().style["plots"]["confidence_interval"]
     selected_color = color or mpl.rcParams["axes.prop_cycle"].by_key()["color"][0]
     return {
@@ -435,14 +370,14 @@ def _line_style(value: object) -> object:
         raise ValueError(f"unknown line style token: {value}") from error
 
 
-def series_style(index: int, *, include_marker: bool = True) -> dict[str, object]:
+def series_style(index: int, *, include_marker: bool = True) -> dict[str, Any]:
     if isinstance(index, bool) or not isinstance(index, int) or index < 0:
         raise ValueError("series index must be a nonnegative integer")
     contract = load_contracts().style["series"]
     colors = mpl.rcParams["axes.prop_cycle"].by_key()["color"]
     line_styles = contract["line_styles"]
     markers = contract["markers"]
-    result: dict[str, object] = {
+    result: dict[str, Any] = {
         "color": colors[index % len(colors)],
         "linestyle": _line_style(line_styles[index % len(line_styles)]),
     }
@@ -451,7 +386,7 @@ def series_style(index: int, *, include_marker: bool = True) -> dict[str, object
     return result
 
 
-def reference_line_kwargs() -> dict[str, object]:
+def reference_line_kwargs() -> dict[str, Any]:
     contract = load_contracts().style["series"]
     return {
         "color": "black",
@@ -460,7 +395,7 @@ def reference_line_kwargs() -> dict[str, object]:
     }
 
 
-def errorbar_kwargs() -> dict[str, object]:
+def errorbar_kwargs() -> dict[str, Any]:
     contract = load_contracts().style["plots"]["errorbar"]
     return {
         "marker": str(contract["marker"]),
@@ -473,30 +408,30 @@ def errorbar_kwargs() -> dict[str, object]:
     }
 
 
-def apply_boxplot_contract(parts: dict[str, object], *, combined: bool = False) -> None:
+def apply_boxplot_contract(parts: Mapping[str, Any], *, combined: bool = False) -> None:
     contract = load_contracts().style["plots"]["boxplot"]
-    for box in parts["boxes"]:  # type: ignore[index]
+    for box in parts["boxes"]:
         box.set_alpha(None)
         alpha = 1.0 if combined else float(contract["alpha"])
         box.set_facecolor(_face_rgba(box.get_facecolor(), alpha))
         box.set_edgecolor(mcolors.to_rgba(str(contract["edge_color"]), 1.0))
         box.set_linewidth(_stroke_width(contract["edge_width_token"]))
     for key in ("whiskers", "caps", "medians"):
-        for artist in parts[key]:  # type: ignore[index]
+        for artist in parts[key]:
             artist.set_color(str(contract["edge_color"]))
             artist.set_linewidth(MAIN_STROKE_PT)
 
 
-def apply_violin_contract(parts: dict[str, object], *, combined: bool = False) -> None:
+def apply_violin_contract(parts: Mapping[str, Any], *, combined: bool = False) -> None:
     contract = load_contracts().style["plots"]["violin"]
     alpha_token = "combined_alpha" if combined else "alpha"
-    for body in parts["bodies"]:  # type: ignore[index]
+    for body in parts["bodies"]:
         _collection_face_alpha(body, float(contract[alpha_token]))
         body.set_edgecolor(mcolors.to_rgba(str(contract["edge_color"]), 1.0))
         body.set_linewidth(_stroke_width(contract["edge_width_token"]))
 
 
-def histogram_kwargs() -> dict[str, object]:
+def histogram_kwargs() -> dict[str, Any]:
     contract = load_contracts().style["plots"]["histogram"]
     return {
         "color": _face_rgba(

@@ -7,14 +7,17 @@ from collections.abc import Callable, Mapping, Sequence
 
 import matplotlib as mpl
 import numpy as np
+from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.colors import Normalize
 from matplotlib.patches import Circle, Ellipse, Rectangle, Wedge
 
-from axiomfig.style import FILL_EDGE_PT, mantel_plot_contract, mantel_visual_color
+from axiomfig.style import FILL_EDGE_PT
 from axiomfig.templates.association.mantel.composition import GlyphSpec
 from axiomfig.templates.association.mantel.data import MantelData
 from axiomfig.templates.association.mantel.geometry import MantelGeometry, cell_center
+from axiomfig.templates.association.mantel.matrix import MatrixCell
+from axiomfig.templates.association.mantel.styling import mantel_plot_contract, mantel_visual_color
 
 
 def _cell_side() -> float:
@@ -23,13 +26,15 @@ def _cell_side() -> float:
     return float(matrix["maximum_cell_side"])
 
 
-def _tag(artist, *, method: str, row: int, column: int, value: float, region: str):
+def _tag(
+    artist: Artist, *, method: str, row: int, column: int, value: float, region: str
+) -> Artist:
     artist.set_gid("axiomfig-mantel-glyph")
-    artist._axiomfig_method = method
-    artist._axiomfig_row = row
-    artist._axiomfig_column = column
-    artist._axiomfig_value = value
-    artist._axiomfig_triangle = region
+    artist.__dict__["_axiomfig_method"] = method
+    artist.__dict__["_axiomfig_row"] = row
+    artist.__dict__["_axiomfig_column"] = column
+    artist.__dict__["_axiomfig_value"] = value
+    artist.__dict__["_axiomfig_triangle"] = region
     return artist
 
 
@@ -151,7 +156,7 @@ def _pie(axis: Axes, x: float, y: float, value: float, color: object, _format: s
     return artist
 
 
-GlyphPrimitive = Callable[[Axes, float, float, float, object, str], object]
+GlyphPrimitive = Callable[[Axes, float, float, float, object, str], Artist]
 GLYPH_PRIMITIVES: Mapping[str, GlyphPrimitive] = {
     "circle": _circle,
     "square": _square,
@@ -226,16 +231,16 @@ def draw_glyph(
 def render_glyph_layer(
     axis: Axes,
     data: MantelData,
-    cells: Sequence[object],
+    cells: Sequence[MatrixCell],
     spec: GlyphSpec,
     geometry: MantelGeometry,
     *,
     cmap: mpl.colors.Colormap,
     norm: Normalize,
     visible: set[tuple[int, int]],
-) -> tuple[object, ...]:
+) -> tuple[Artist, ...]:
     """Render one glyph primitive over one structural matrix region."""
-    rendered: list[object] = []
+    rendered: list[Artist] = []
     for cell in cells:
         row, column, region = cell.row, cell.column, cell.region
         if (row, column) not in visible:

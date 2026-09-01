@@ -7,21 +7,22 @@ from dataclasses import dataclass
 
 from matplotlib.axes import Axes
 from matplotlib.collections import PathCollection
+from matplotlib.text import Annotation
 
 from axiomfig.style import (
     apply_scatter_contract,
-    mantel_plot_contract,
     palette_color,
     series_style,
 )
 from axiomfig.templates.association.mantel.geometry import MantelGeometry, source_label_size
+from axiomfig.templates.association.mantel.styling import mantel_plot_contract
 
 
 @dataclass(frozen=True)
 class NodeRenderResult:
     source_nodes: tuple[PathCollection, ...]
     target_nodes: tuple[PathCollection, ...]
-    source_labels: tuple[object, ...]
+    source_labels: tuple[Annotation, ...]
 
 
 def _node(
@@ -59,7 +60,7 @@ def render_node_layer(
     target_size_ratio = float(nodes["target_size_ratio"])
 
     source_nodes: list[PathCollection] = []
-    rendered_labels: list[object] = []
+    rendered_labels: list[Annotation] = []
     for source_index, (source, center) in enumerate(geometry.source_positions.items()):
         source_nodes.append(
             _node(
@@ -85,7 +86,7 @@ def render_node_layer(
             zorder=7,
         )
         label.set_gid("axiomfig-mantel-source-label")
-        label._axiomfig_source = source
+        label.__dict__["_axiomfig_source"] = source
         rendered_labels.append(label)
 
     target_nodes = tuple(

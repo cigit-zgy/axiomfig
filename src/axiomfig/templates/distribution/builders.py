@@ -22,6 +22,7 @@ from axiomfig.style import (
     histogram_kwargs,
     series_style,
 )
+from axiomfig.templates._adapter import scalar
 
 
 def _samples(seed: int = 47) -> list[np.ndarray]:
@@ -71,7 +72,7 @@ def build_histogram(
         padding = max(float(np.ptp(residuals)) * 0.05, 0.1)
         limits = (float(residuals.min()) - padding, float(residuals.max()) + padding)
     figure, axis = plt.subplots()
-    counts, _, _ = axis.hist(residuals, bins=selected_bins, **histogram_kwargs())
+    counts, _, _ = axis.hist(residuals, bins=cast(Any, selected_bins), **histogram_kwargs())
     axis.set(
         xlabel="Residual (mg/L)" if xlabel is None else str(xlabel),
         ylabel="Frequency" if ylabel is None else str(ylabel),
@@ -291,7 +292,7 @@ def build_strip(
     figure, axis = plt.subplots()
     colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
     for position, (values, color) in enumerate(zip(samples, colors, strict=False), start=1):
-        amount = 0.13 if jitter is None else float(jitter)
+        amount = 0.13 if jitter is None else scalar(jitter, "jitter")
         offsets = rng.uniform(-amount, amount, values.size)
         collection = axis.scatter(np.full(values.size, position) + offsets, values, color=color)
         apply_distribution_point_contract(collection)
@@ -339,7 +340,7 @@ def build_raincloud(
         vertices[:, 0] = np.minimum(vertices[:, 0], float(position))
     apply_violin_contract(violins, combined=True)
     for position, (values, color) in enumerate(zip(samples, colors, strict=False), start=1):
-        amount = 0.18 if jitter is None else float(jitter)
+        amount = 0.18 if jitter is None else scalar(jitter, "jitter")
         offsets = rng.uniform(0.07, 0.07 + amount, values.size)
         collection = axis.scatter(np.full(values.size, position) + offsets, values, color=color)
         apply_distribution_point_contract(collection)

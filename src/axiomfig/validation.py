@@ -12,13 +12,16 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from matplotlib.artist import Artist
-from matplotlib.transforms import Bbox
+from matplotlib.backend_bases import RendererBase
+from matplotlib.figure import Figure
+from matplotlib.transforms import Bbox, BboxBase
 from pypdf import PdfReader
 
 from axiomfig.config import load_contracts
 from axiomfig.layout import (
     FigureLayout,
     PanelFootprint,
+    figure_renderer,
     get_figure_layout,
     primary_area_diagnostic,
 )
@@ -30,7 +33,7 @@ class FigureAnatomyError(RuntimeError):
     """Raised when deterministic figure geometry violates its ownership contract."""
 
 
-def _inside(inner: Bbox, outer: Bbox, tolerance: float) -> bool:
+def _inside(inner: BboxBase, outer: BboxBase, tolerance: float) -> bool:
     return (
         inner.x0 >= outer.x0 - tolerance
         and inner.y0 >= outer.y0 - tolerance
@@ -39,17 +42,17 @@ def _inside(inner: Bbox, outer: Bbox, tolerance: float) -> bool:
     )
 
 
-def _artist_bbox(artist: Artist, renderer: object) -> Bbox | None:
+def _artist_bbox(artist: Artist, renderer: RendererBase) -> Bbox | None:
     if not artist.get_visible() or not hasattr(artist, "get_window_extent"):
         return None
     try:
-        bbox = artist.get_window_extent(renderer)  # type: ignore[call-arg]
+        bbox = artist.get_window_extent(renderer)
     except (AttributeError, TypeError, ValueError):
         return None
     return bbox if bbox.width >= 0 and bbox.height >= 0 else None
 
 
-def _panel_content_boxes(panel: PanelFootprint, renderer: object) -> list[Bbox]:
+def _panel_content_boxes(panel: PanelFootprint, renderer: RendererBase) -> list[Bbox]:
     axes = [panel.primary_axes, *panel.auxiliary_axes]
     boxes = [
         bbox
@@ -84,7 +87,7 @@ def _validate_footprints(
             issues.append(f"panel footprint column {column} has misaligned x1")
 
 
-def _validate_primary_visual_square(figure: object, issues: list[str]) -> None:
+def _validate_primary_visual_square(figure: Figure, issues: list[str]) -> None:
     registered = getattr(figure, "_axiomfig_primary_visual_square", None)
     if registered is None:
         return
@@ -105,9 +108,9 @@ def _validate_primary_visual_square(figure: object, issues: list[str]) -> None:
         )
 
 
-def validate_figure_anatomy(figure: object, *, tolerance_pt: float = 0.25) -> None:
+def validate_figure_anatomy(figure: Figure, *, tolerance_pt: float = 0.25) -> None:
     """Validate in-memory Figure, Panel, Axes, Artist, and Ornament ownership."""
-    layout = get_figure_layout(figure)  # type: ignore[arg-type]
+    layout = get_figure_layout(figure)
     if layout is None:
         return
     from axiomfig.layout import solve_panel_layout
@@ -116,7 +119,7 @@ def validate_figure_anatomy(figure: object, *, tolerance_pt: float = 0.25) -> No
     solve_panel_layout(layout.figure)
     finalize_ornaments(layout.figure)
     layout.figure.canvas.draw()
-    renderer = layout.figure.canvas.get_renderer()
+    renderer = figure_renderer(layout.figure)
     tolerance = tolerance_pt * layout.figure.dpi / 72.0
     output = layout.figure.bbox
     footprints = [panel.bbox().transformed(layout.figure.transFigure) for panel in layout.panels]
@@ -127,7 +130,7 @@ def validate_figure_anatomy(figure: object, *, tolerance_pt: float = 0.25) -> No
     for panel, footprint in zip(layout.panels, footprints, strict=True):
         for auxiliary in panel.auxiliary_axes:
             auxiliary_bbox = auxiliary.get_tightbbox(renderer, bbox_extra_artists=[])
-            if not _inside(auxiliary_bbox, footprint, tolerance):
+            if auxiliary_bbox is not None and not _inside(auxiliary_bbox, footprint, tolerance):
                 issues.append(f"panel {panel.index} auxiliary axes outside panel footprint")
         for content in _panel_content_boxes(panel, renderer):
             if not _inside(content, footprint, tolerance):

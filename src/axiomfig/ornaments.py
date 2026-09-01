@@ -3,17 +3,17 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import cast
+from typing import Any, Literal, cast
 
 from matplotlib.axes import Axes
 from matplotlib.colorbar import Colorbar
-from matplotlib.figure import Figure
+from matplotlib.figure import Figure, SubFigure
 from matplotlib.font_manager import FontProperties
 from matplotlib.legend import Legend
 from matplotlib.transforms import ScaledTranslation
 
 from axiomfig.config import load_contracts
-from axiomfig.layout import get_figure_layout, register_figure_ornament
+from axiomfig.layout import figure_renderer, get_figure_layout, register_figure_ornament
 from axiomfig.style import MAIN_STROKE_PT, tick_lengths
 
 PANEL_LABEL_GID = "axiomfig-panel-label"
@@ -28,8 +28,10 @@ def apply_colorbar_contract(colorbar: Colorbar) -> None:
         from matplotlib.ticker import AutoMinorLocator
 
         contract = load_contracts().style["colorbar"]["vertical"]
-        axis.yaxis.set_ticks_position(str(contract["tick_side"]))
-        axis.yaxis.set_label_position(str(contract["label_side"]))
+        tick_side = cast(Literal["left", "right", "both", "default", "none"], contract["tick_side"])
+        label_side = cast(Literal["left", "right"], contract["label_side"])
+        axis.yaxis.set_ticks_position(tick_side)
+        axis.yaxis.set_label_position(label_side)
         axis.yaxis.set_minor_locator(AutoMinorLocator(2))
         axis.tick_params(
             axis="y",
@@ -77,7 +79,7 @@ def apply_colorbar_contract(colorbar: Colorbar) -> None:
         )
 
 
-def _legend_kwargs(ncol: int) -> dict[str, object]:
+def _legend_kwargs(ncol: int) -> dict[str, Any]:
     contract = load_contracts().style["legend"]
     return {
         "ncol": ncol,
@@ -97,7 +99,7 @@ def requested_legend_height_pt(axis: Axes) -> float:
         return 0.0
     figure = axis.figure
     figure.canvas.draw()
-    renderer = figure.canvas.get_renderer()
+    renderer = figure_renderer(figure)
     layout = get_figure_layout(figure)
     label_right = figure.bbox.x0
     if layout is not None and layout.panel_labels:
@@ -123,8 +125,8 @@ def requested_legend_height_pt(axis: Axes) -> float:
     raise ValueError("legend cannot fit above the axes")
 
 
-def _label_collision(figure: Figure, legend: Legend) -> bool:
-    renderer = figure.canvas.get_renderer()
+def _label_collision(figure: Figure | SubFigure, legend: Legend) -> bool:
+    renderer = figure_renderer(figure)
     legend_bbox = legend.get_window_extent(renderer)
     return any(
         legend_bbox.overlaps(text.get_window_extent(renderer))
@@ -133,8 +135,8 @@ def _label_collision(figure: Figure, legend: Legend) -> bool:
     )
 
 
-def _data_collision(figure: Figure, owner: Axes, legend: Legend) -> bool:
-    legend_bbox = legend.get_window_extent(figure.canvas.get_renderer())
+def _data_collision(figure: Figure | SubFigure, owner: Axes, legend: Legend) -> bool:
+    legend_bbox = legend.get_window_extent(figure_renderer(figure))
     return any(legend_bbox.overlaps(axis.bbox) for axis in figure.axes if axis is not owner)
 
 
@@ -164,7 +166,7 @@ def _place_legend(axis: Axes) -> Legend | None:
         )
         legend.set_in_layout(False)
         figure.canvas.draw()
-        bbox = legend.get_window_extent(figure.canvas.get_renderer())
+        bbox = legend.get_window_extent(figure_renderer(figure))
         if (
             bbox.x0 >= figure.bbox.x0 - tolerance
             and bbox.x1 <= figure.bbox.x1 + tolerance
@@ -176,7 +178,7 @@ def _place_legend(axis: Axes) -> Legend | None:
         legend.remove()
     if selected is None:
         raise ValueError("legend cannot fit above the axes")
-    bbox = selected.get_window_extent(figure.canvas.get_renderer())
+    bbox = selected.get_window_extent(figure_renderer(figure))
     overflow = bbox.y1 - figure.bbox.y1
     if overflow > tolerance and registered_layout is None:
         position = axis.get_position()
@@ -186,7 +188,7 @@ def _place_legend(axis: Axes) -> Legend | None:
             raise ValueError("legend cannot fit above the axes")
         axis.set_position((position.x0, position.y0 - shift, position.width, position.height))
         figure.canvas.draw()
-        bbox = selected.get_window_extent(figure.canvas.get_renderer())
+        bbox = selected.get_window_extent(figure_renderer(figure))
     if bbox.y1 > figure.bbox.y1 + tolerance:
         selected.remove()
         raise ValueError("legend cannot fit above the axes")

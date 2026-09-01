@@ -14,6 +14,7 @@ from axiomfig.style import (
     apply_nice_linear_axis,
     semantic_colormap,
 )
+from axiomfig.templates._adapter import scalar
 
 
 def _grid(x_values: object, y_values: object) -> tuple[np.ndarray, np.ndarray]:
@@ -67,7 +68,7 @@ def build_contour(
     if color_semantics == "diverging":
         if center is None:
             raise ValueError("diverging contour requires an explicit center")
-        selected_center = float(center)
+        selected_center = scalar(center, "center")
         if not float(field.min()) < selected_center < float(field.max()):
             raise ValueError("contour center must lie inside the data range")
         norm = TwoSlopeNorm(

@@ -9,8 +9,8 @@ from matplotlib.legend import Legend
 from matplotlib.patches import Circle, PathPatch
 
 from axiomfig.config import build_rcparams, load_contracts
-from axiomfig.style import mantel_link_width, mantel_p_style
 from axiomfig.templates import adapt_template_data, build_template
+from axiomfig.templates.association.mantel.styling import mantel_link_width, mantel_p_style
 from axiomfig.typography import discover_fonts
 from axiomfig.validation import validate_figure_anatomy
 

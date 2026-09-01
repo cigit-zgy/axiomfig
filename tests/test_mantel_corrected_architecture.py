@@ -8,11 +8,12 @@ from matplotlib.collections import PathCollection
 from matplotlib.patches import Circle
 
 from axiomfig.config import load_contracts
-from axiomfig.style import apply_contract_context, mantel_p_style, series_style
+from axiomfig.style import apply_contract_context, series_style
 from axiomfig.templates import build_template
 from axiomfig.templates.association.mantel.composition import normalize_composition
 from axiomfig.templates.association.mantel.geometry import cell_center
 from axiomfig.templates.association.mantel.glyphs import draw_glyph
+from axiomfig.templates.association.mantel.styling import mantel_p_style
 
 
 def _artists(figure, gid: str):

@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 from matplotlib.axes import Axes
 from matplotlib.patches import Rectangle
+from matplotlib.text import Text
 
-from axiomfig.style import FILL_EDGE_PT, mantel_visual_color
+from axiomfig.style import FILL_EDGE_PT
 from axiomfig.templates.association.mantel.composition import MatrixSpec
 from axiomfig.templates.association.mantel.data import MantelData
 from axiomfig.templates.association.mantel.geometry import (
@@ -15,6 +17,7 @@ from axiomfig.templates.association.mantel.geometry import (
     cell_center,
     variable_label_size,
 )
+from axiomfig.templates.association.mantel.styling import mantel_visual_color
 
 
 @dataclass(frozen=True)
@@ -27,7 +30,7 @@ class MatrixCell:
 @dataclass(frozen=True)
 class MatrixRenderResult:
     cells: tuple[MatrixCell, ...]
-    target_anchors: tuple[object, ...]
+    target_anchors: tuple[Text, ...]
 
     @property
     def visible_cells(self) -> int:
@@ -62,11 +65,11 @@ def _draw_labels(
     labels: tuple[str, ...],
     geometry: MantelGeometry,
     matrix_type: str,
-) -> tuple[object, ...]:
+) -> tuple[Text, ...]:
     """Place variable identity only on the two edges adjacent to colored matrix cells."""
     bounds = geometry.bounds
     size = variable_label_size(len(labels))
-    rendered: list[object] = []
+    rendered: list[Text] = []
 
     if matrix_type in {"full", "mixed"}:
         for index, label in enumerate(labels):
@@ -83,7 +86,7 @@ def _draw_labels(
                 zorder=5,
             )
             artist.set_gid("axiomfig-mantel-variable-label")
-            artist._axiomfig_edge = "top"
+            artist.__dict__["_axiomfig_edge"] = "top"
             rendered.append(artist)
             _, y = cell_center(bounds, index, 0, matrix_type=matrix_type)
             artist = axis.text(
@@ -97,7 +100,7 @@ def _draw_labels(
                 zorder=5,
             )
             artist.set_gid("axiomfig-mantel-variable-label")
-            artist._axiomfig_edge = "left"
+            artist.__dict__["_axiomfig_edge"] = "left"
             rendered.append(artist)
         return tuple(rendered)
 
@@ -106,7 +109,7 @@ def _draw_labels(
         for edge in geometry.label_edges:
             if edge == "left":
                 position = (bounds.x0 - 0.12, y)
-                options = {"ha": "right", "va": "center", "rotation": 0}
+                options: dict[str, Any] = {"ha": "right", "va": "center", "rotation": 0}
             elif edge == "bottom":
                 position = (x, bounds.y0 - 0.12)
                 options = {"ha": "right", "va": "center", "rotation": 90}
@@ -126,7 +129,7 @@ def _draw_labels(
                 **options,
             )
             artist.set_gid("axiomfig-mantel-variable-label")
-            artist._axiomfig_edge = edge
+            artist.__dict__["_axiomfig_edge"] = edge
             rendered.append(artist)
     return tuple(rendered)
 
@@ -158,8 +161,8 @@ def render_matrix_layer(
             zorder=1,
         )
         grid.set_gid("axiomfig-mantel-grid-cell")
-        grid._axiomfig_row = cell.row
-        grid._axiomfig_column = cell.column
+        grid.__dict__["_axiomfig_row"] = cell.row
+        grid.__dict__["_axiomfig_column"] = cell.column
         axis.add_patch(grid)
 
     _draw_labels(axis, data.labels, geometry, spec.matrix_type)
