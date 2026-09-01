@@ -44,6 +44,7 @@ colorbar:
     width_pt: 9.0
     gap_pt: 6.0
     length_fraction: 0.72
+    alignment: center
     tick_side: right
     label_side: right
 

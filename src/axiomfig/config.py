@@ -312,6 +312,8 @@ def _validate_style_values(style: Mapping[str, Any]) -> None:
     ):
         _finite_number(value, name)
     vertical_colorbar = style["colorbar"]["vertical"]
+    if vertical_colorbar["alignment"] != "center":
+        raise ValueError("colorbar.vertical.alignment must be center")
     if vertical_colorbar["tick_side"] != "right":
         raise ValueError("colorbar.vertical.tick_side must be right")
     if vertical_colorbar["label_side"] != "right":

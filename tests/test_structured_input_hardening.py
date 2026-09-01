@@ -105,7 +105,6 @@ def test_packaged_contracts_contain_no_known_dead_visual_defaults() -> None:
     assert "minor_to_major_inward_ratio" not in style["ticks"]["geometry"]
     assert all("length_token" not in policy for policy in style["ticks"]["open"].values())
     assert all("length_token" not in policy for policy in style["ticks"]["filled"].values())
-    assert "alignment" not in style["colorbar"]["vertical"]
     assert "line" not in style["plots"]
     assert "value_labels" not in style["plots"]["bar"]
 

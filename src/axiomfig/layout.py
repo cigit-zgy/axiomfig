@@ -282,6 +282,8 @@ def _place_vertical_colorbar(panel: PanelFootprint) -> None:
     width_px = float(contract["width_pt"]) * figure.dpi / 72.0
     gap_px = float(contract["gap_pt"]) * figure.dpi / 72.0
     height_px = float(contract["length_fraction"]) * reference.height
+    if contract["alignment"] != "center":
+        raise LayoutConstraintError("vertical Colorbar alignment must be center")
     center_y = (reference.y0 + reference.y1) / 2.0
     display = Bbox.from_extents(
         reference.x1 + gap_px,
@@ -493,6 +495,8 @@ def solve_panel_layout(figure: Figure) -> None:
     vertical_colorbar = style["colorbar"]["vertical"]
     colorbar_width = float(vertical_colorbar["width_pt"])
     colorbar_fraction = float(vertical_colorbar["length_fraction"])
+    if vertical_colorbar["alignment"] != "center":
+        raise LayoutConstraintError("vertical Colorbar alignment must be center")
     figure_width, figure_height = size_pt
     for legend in tuple(layout.legends):
         legend.remove()
