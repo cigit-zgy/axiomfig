@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from importlib.resources import files
 from importlib.resources.abc import Traversable
@@ -82,6 +82,25 @@ def load_family_contract(family: str) -> dict[str, Any]:
             raise ValueError(f"contract for {family}/{variant} must be a mapping")
         if family != "layouts" and spec.get("input_mode") not in {"direct", "precomputed"}:
             raise ValueError(f"contract for {family}/{variant} has invalid input_mode")
+        roles: dict[str, tuple[str, ...]] = {}
+        for name in ("required", "optional"):
+            value = spec.get(name)
+            if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
+                raise ValueError(f"contract for {family}/{variant} {name} must be a sequence")
+            selected = tuple(value)
+            if not all(isinstance(role, str) and role for role in selected):
+                raise ValueError(
+                    f"contract for {family}/{variant} {name} must contain non-empty strings"
+                )
+            if len(selected) != len(set(selected)):
+                raise ValueError(f"contract for {family}/{variant} {name} contains duplicates")
+            roles[name] = selected
+        overlap = set(roles["required"]) & set(roles["optional"])
+        if overlap:
+            raise ValueError(
+                f"contract for {family}/{variant} repeats roles across required and optional: "
+                f"{sorted(overlap)}"
+            )
     return contract
 
 

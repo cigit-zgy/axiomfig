@@ -5,6 +5,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 import pytest
+import yaml
 
 from axiomfig import config
 from axiomfig.config import load_contracts
@@ -81,6 +82,76 @@ def test_mantel_style_contract_contains_only_executable_defaults() -> None:
 
     assert "minimum_cell_side" not in mantel["matrix"]
     assert "nonsignificant_mode" not in mantel["links"]
+
+
+@pytest.mark.parametrize(
+    ("filename", "mutate"),
+    (
+        ("fonts.yaml", lambda document: document.__setitem__("modes", None)),
+        ("fonts.yaml", lambda document: document.__setitem__("families", None)),
+        ("colors.yaml", lambda document: document.__setitem__("palettes", None)),
+        ("colors.yaml", lambda document: document.__setitem__("constructed_colormaps", None)),
+        ("style.yaml", lambda document: document.__setitem__("series", None)),
+        ("style.yaml", lambda document: document["axes"].__setitem__("nice_linear", None)),
+        ("style.yaml", lambda document: document["layout"].__setitem__("single_panel", None)),
+        ("style.yaml", lambda document: document["plots"].__setitem__("heatmap", None)),
+    ),
+)
+def test_all_executable_resource_containers_fail_closed(
+    tmp_path: Path,
+    filename: str,
+    mutate: Callable[[dict[str, object]], None],
+) -> None:
+    source = ROOT / "src/axiomfig/resources/styles"
+    target = tmp_path / "styles"
+    shutil.copytree(source, target)
+    path = target / filename
+    document = yaml.safe_load(path.read_text(encoding="utf-8"))
+    mutate(document)
+    path.write_text(yaml.safe_dump(document, sort_keys=False), encoding="utf-8")
+
+    load_contracts.cache_clear()
+    try:
+        with pytest.raises(ValueError, match="mapping"):
+            load_contracts(target)
+    finally:
+        load_contracts.cache_clear()
+
+
+@pytest.mark.parametrize(
+    ("required", "optional"),
+    (
+        (1, []),
+        (["x", "x"], []),
+        (["x"], None),
+        ([""], []),
+    ),
+)
+def test_family_contract_role_sequences_fail_closed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    required: object,
+    optional: object,
+) -> None:
+    family = tmp_path / "line"
+    family.mkdir()
+    document = {
+        "family": "line",
+        "variants": {
+            "single": {
+                "input_mode": "direct",
+                "required": required,
+                "optional": optional,
+            }
+        },
+    }
+    (family / "contract.yaml").write_text(
+        yaml.safe_dump(document, sort_keys=False), encoding="utf-8"
+    )
+    monkeypatch.setattr(registry, "files", lambda _package: tmp_path)
+
+    with pytest.raises(ValueError, match="required|optional"):
+        registry.load_family_contract("line")
 
 
 def test_template_registry_rejects_duplicate_keys(

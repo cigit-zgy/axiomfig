@@ -95,6 +95,19 @@ def _required_sequence(container: Mapping[str, Any], key: str, prefix: str) -> t
     return tuple(value)
 
 
+def _nonempty_string(value: object, name: str) -> str:
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"{name} must be a non-empty string")
+    return value
+
+
+def _string_sequence(container: Mapping[str, Any], key: str, prefix: str) -> tuple[str, ...]:
+    values = _required_sequence(container, key, prefix)
+    if not values or not all(isinstance(value, str) and value for value in values):
+        raise ValueError(f"{prefix}.{key} must contain non-empty strings")
+    return values
+
+
 def _validate_style_values(style: Mapping[str, Any]) -> None:
     required = (
         "geometry",
@@ -107,6 +120,7 @@ def _validate_style_values(style: Mapping[str, Any]) -> None:
         "panel",
         "output",
         "layout",
+        "series",
         "plots",
         "rendering",
     )
@@ -129,8 +143,13 @@ def _validate_style_values(style: Mapping[str, Any]) -> None:
             _required_mapping(selected, level, f"ticks.{surface}")
     colorbar = _required_mapping(style, "colorbar", "style")
     _required_mapping(colorbar, "vertical", "colorbar")
+    axes = _required_mapping(style, "axes", "style")
+    nice_linear = _required_mapping(axes, "nice_linear", "axes")
     layout = _required_mapping(style, "layout", "style")
+    single_panel = _required_mapping(layout, "single_panel", "layout")
+    margins = _required_mapping(single_panel, "margins", "layout.single_panel")
     _required_mapping(layout, "multi_panel", "layout")
+    series = _required_mapping(style, "series", "style")
     plots = _required_mapping(style, "plots", "style")
     for name in (
         "confidence_interval",
@@ -141,8 +160,54 @@ def _validate_style_values(style: Mapping[str, Any]) -> None:
         "violin",
         "bar",
         "histogram",
+        "heatmap",
     ):
         _required_mapping(plots, name, "plots")
+
+    target_ticks = _required_sequence(nice_linear, "target_major_ticks", "axes.nice_linear")
+    if len(target_ticks) != 2:
+        raise ValueError("axes.nice_linear.target_major_ticks must contain two values")
+    target_low = _finite_number(
+        target_ticks[0], "axes.nice_linear.target_major_ticks[0]", positive=True
+    )
+    target_high = _finite_number(
+        target_ticks[1], "axes.nice_linear.target_major_ticks[1]", positive=True
+    )
+    if target_low > target_high:
+        raise ValueError("axes.nice_linear.target_major_ticks must be ordered")
+    step_mantissas = _required_sequence(nice_linear, "step_mantissas", "axes.nice_linear")
+    if not step_mantissas:
+        raise ValueError("axes.nice_linear.step_mantissas must not be empty")
+    for index, value in enumerate(step_mantissas):
+        _finite_number(value, f"axes.nice_linear.step_mantissas[{index}]", positive=True)
+    _finite_number(
+        nice_linear.get("minor_divisor"), "axes.nice_linear.minor_divisor", positive=True
+    )
+    _finite_number(
+        nice_linear.get("whole_step_blank_fraction"),
+        "axes.nice_linear.whole_step_blank_fraction",
+        nonnegative=True,
+    )
+
+    for name in ("left", "right", "bottom", "top"):
+        _finite_number(margins.get(name), f"layout.single_panel.margins.{name}")
+    if not 0.0 <= float(margins["left"]) < float(margins["right"]) <= 1.0:
+        raise ValueError("single-panel horizontal margins must be ordered within the figure")
+    if not 0.0 <= float(margins["bottom"]) < float(margins["top"]) <= 1.0:
+        raise ValueError("single-panel vertical margins must be ordered within the figure")
+
+    line_styles = _string_sequence(series, "line_styles", "series")
+    _string_sequence(series, "markers", "series")
+    dash_pattern = _required_sequence(series, "long_dash_pattern", "series")
+    if len(dash_pattern) != 2:
+        raise ValueError("series.long_dash_pattern must contain two values")
+    for index, value in enumerate(dash_pattern):
+        _finite_number(value, f"series.long_dash_pattern[{index}]", positive=True)
+    reference_style = _nonempty_string(
+        series.get("reference_line_style"), "series.reference_line_style"
+    )
+    if reference_style not in line_styles:
+        raise ValueError("series.reference_line_style must be present in series.line_styles")
 
     positive: list[tuple[Any, str]] = []
     for name, geometry in style["geometry"].items():
@@ -262,6 +327,84 @@ def _validate_style(style: Mapping[str, Any]) -> None:
         raise ValueError(f"style.yaml is missing required field: {exc.args[0]}") from exc
 
 
+def _validate_fonts(fonts: Mapping[str, Any]) -> None:
+    modes = _required_mapping(fonts, "modes", "fonts")
+    families = _required_mapping(fonts, "families", "fonts")
+    _nonempty_string(fonts.get("bundle_subdir"), "fonts.bundle_subdir")
+    _string_sequence(fonts, "search_roots", "fonts")
+    default = _nonempty_string(fonts.get("default"), "fonts.default")
+    if default not in modes:
+        raise ValueError("fonts.default must name a typography mode")
+
+    referenced: set[str] = set()
+    for mode_name, _value in modes.items():
+        mode = _required_mapping(modes, str(mode_name), "fonts.modes")
+        for role in ("text", "math", "mono"):
+            referenced.add(_nonempty_string(mode.get(role), f"fonts.modes.{mode_name}.{role}"))
+    for family_name, _value in families.items():
+        family = _required_mapping(families, str(family_name), "fonts.families")
+        _nonempty_string(family.get("family"), f"fonts.families.{family_name}.family")
+        _nonempty_string(
+            family.get("matplotlib_family"), f"fonts.families.{family_name}.matplotlib_family"
+        )
+        filenames = _required_mapping(family, "filenames", f"fonts.families.{family_name}")
+        _nonempty_string(
+            filenames.get("regular"), f"fonts.families.{family_name}.filenames.regular"
+        )
+        for variant, filename in filenames.items():
+            _nonempty_string(filename, f"fonts.families.{family_name}.filenames.{variant}")
+    missing = referenced - set(families)
+    if missing:
+        raise ValueError(f"font modes reference unknown families: {sorted(missing)}")
+
+
+def _validate_colors(colors: Mapping[str, Any]) -> None:
+    palettes = _required_mapping(colors, "palettes", "colors")
+    colormaps = _required_mapping(colors, "colormaps", "colors")
+    constructed = _required_mapping(colors, "constructed_colormaps", "colors")
+    default = _nonempty_string(colors.get("default"), "colors.default")
+    if default not in palettes:
+        raise ValueError("colors.default must name a palette")
+
+    for palette_name, _value in palettes.items():
+        palette = _required_mapping(palettes, str(palette_name), "colors.palettes")
+        if not palette:
+            raise ValueError(f"colors.palettes.{palette_name} must not be empty")
+        for token, color in palette.items():
+            selected = _nonempty_string(color, f"colors.palettes.{palette_name}.{token}")
+            if len(selected) != 7 or not selected.startswith("#"):
+                raise ValueError(f"colors.palettes.{palette_name}.{token} must be #RRGGBB")
+            try:
+                int(selected[1:], 16)
+            except ValueError as exc:
+                raise ValueError(f"colors.palettes.{palette_name}.{token} must be #RRGGBB") from exc
+    for name, value in colormaps.items():
+        _nonempty_string(value, f"colors.colormaps.{name}")
+    if "sequential" not in colormaps:
+        raise ValueError("colors.colormaps.sequential is required")
+    for name in constructed:
+        references = _required_sequence(constructed, str(name), "colors.constructed_colormaps")
+        if len(references) < 2:
+            raise ValueError(f"colors.constructed_colormaps.{name} needs at least two colors")
+        for index, reference in enumerate(references):
+            if (
+                isinstance(reference, (str, bytes))
+                or not isinstance(reference, Sequence)
+                or len(reference) != 2
+            ):
+                raise ValueError(f"colors.constructed_colormaps.{name}[{index}] is invalid")
+            palette_name = _nonempty_string(
+                reference[0], f"colors.constructed_colormaps.{name}[{index}].palette"
+            )
+            token = _nonempty_string(
+                reference[1], f"colors.constructed_colormaps.{name}[{index}].token"
+            )
+            if palette_name not in palettes or token not in palettes[palette_name]:
+                raise ValueError(
+                    f"colors.constructed_colormaps.{name}[{index}] references an unknown color"
+                )
+
+
 @lru_cache(maxsize=16)
 def load_contracts(config_root: Path | None = None) -> Contracts:
     """Load immutable contracts once per resource root for repeated deterministic rendering."""
@@ -270,6 +413,8 @@ def load_contracts(config_root: Path | None = None) -> Contracts:
     fonts = _load_mapping(root.joinpath("fonts.yaml"))
     colors = _load_mapping(root.joinpath("colors.yaml"))
     _validate_style(style)
+    _validate_fonts(fonts)
+    _validate_colors(colors)
     return Contracts(style=style, fonts=fonts, colors=colors)
 
 
