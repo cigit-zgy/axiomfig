@@ -1,6 +1,6 @@
-# Bar family scientific grammar
+# Bar family knowledge
 
-## Scientific role
+## Scientific question
 
 Use the Bar family for supplied categorical magnitudes, parts of categorical totals, explicit
 ranges, paired mirrored magnitudes, or a supplied cumulative change sequence. A bar encodes a
@@ -11,18 +11,18 @@ The Agent selects a scientific grammar first and then, when useful, applies the 
 `orientation` modifier. Vertical and horizontal forms carry the same data meaning and use the same
 canonical tabular schema. Orientation is not a separate data grammar.
 
-## Core grammar taxonomy
+## Grammar taxonomy
 
 | Grammar | Scientific question | Canonical columns |
 |---|---|---|
 | `bar.simple` | What supplied magnitude belongs to each category? | `category`, `value` |
 | `bar.grouped` | How do supplied group magnitudes compare within categories? | `category`, `group`, `value` |
 | `bar.stacked` | How do supplied components contribute to each categorical total? | `category`, `component`, `value` |
-| `bar.normalized_stacked` | How do component proportions compare after an explicit normalization decision? | `category`, `component`, `value`, `normalization` |
+| `bar.normalized_stacked` | How do component proportions compare after an explicit normalization decision? | `category`, `component`, `value` |
 | `bar.grouped_stacked` | How do component totals compare across groups nested within categories? | `category`, `group`, `component`, `value` |
 | `bar.diverging_stacked` | How do signed components accumulate above and below a zero reference? | `category`, `component`, `value` |
 | `bar.range` | What supplied lower-to-upper span belongs to each category? | `category`, `lower`, `upper` |
-| `bar.mirrored` | How do two non-negative supplied sides compare around a shared zero interface? | `category`, `side`, `value`, `mirror_side` |
+| `bar.mirrored` | How do two non-negative supplied sides compare around a shared zero interface? | `category`, `side`, `value` |
 | `bar.waterfall` | How do explicit changes lead from a supplied subtotal to a supplied final total? | `step`, `delta`, `role` |
 
 `bar.vertical`, `bar.horizontal`, and `bar.dot` remain executable compatibility IDs released in
@@ -30,7 +30,7 @@ v1.1. They are not core recommendation grammars. New requests use `bar.simple` p
 a categorical dot/lollipop request is a neighboring grammar rather than a reason to extend Bar
 internals.
 
-## Canonical tabular contract
+## Canonical DataFrame/tabular contract
 
 The canonical Agent-facing representation is a long/tidy table. CSV and JSON are the executable
 runtime paths; “DataFrame schema” describes the same rows and columns without making pandas a
@@ -50,7 +50,7 @@ Duplicate logical rows fail closed. AxiomFig never resolves duplicates with `mea
 uncertainty estimate, that scientific computation happens upstream and its meaning remains
 explicit.
 
-Labels must be non-empty, numeric columns must be finite, and row order is preserved by first
+Labels must be non-null and non-empty, numeric columns must be finite, and row order is preserved by first
 appearance. Multi-series grammars require a complete logical grid so that a missing combination is
 not silently interpreted as zero. `bar.range` requires `lower <= upper`. Range endpoints are
 supplied spans; they are not automatically interpreted as confidence intervals or uncertainty.
@@ -65,7 +65,88 @@ current cumulative value, and exactly one final total must equal the final cumul
 runtime does not infer missing totals, insert reconciliation rows, or repair an inconsistent
 sequence.
 
-## Selection rules
+### Minimal tabular examples
+
+`bar.simple` — one supplied magnitude per category.
+
+| category | value |
+|---|---:|
+| Control | 3.1 |
+| Treatment | 4.6 |
+
+`bar.grouped` — every category/group combination is present exactly once.
+
+| category | group | value |
+|---|---|---:|
+| R1 | Control | 2.0 |
+| R1 | Treatment | 2.7 |
+| R2 | Control | 2.4 |
+| R2 | Treatment | 3.0 |
+
+`bar.stacked` — additive components form categorical totals.
+
+| category | component | value |
+|---|---|---:|
+| R1 | Soluble | 2.0 |
+| R1 | Particulate | 1.0 |
+| R2 | Soluble | 2.5 |
+| R2 | Particulate | 1.2 |
+
+`bar.normalized_stacked` — the same data schema is used whether values are normalized by the
+runtime or asserted to be supplied proportions.
+
+| category | component | value |
+|---|---|---:|
+| R1 | A | 0.7 |
+| R1 | B | 0.3 |
+| R2 | A | 0.4 |
+| R2 | B | 0.6 |
+
+`bar.grouped_stacked` — category, group, and component form a complete hierarchy.
+
+| category | group | component | value |
+|---|---|---|---:|
+| R1 | Control | Soluble | 2.0 |
+| R1 | Control | Particulate | 1.0 |
+| R1 | Treatment | Soluble | 2.6 |
+| R1 | Treatment | Particulate | 1.3 |
+
+`bar.diverging_stacked` — supplied signed components accumulate independently around zero.
+
+| category | component | value |
+|---|---|---:|
+| R1 | Gain | 2.0 |
+| R1 | Loss | -0.8 |
+| R2 | Gain | 1.5 |
+| R2 | Loss | -1.1 |
+
+`bar.range` — lower and upper are the encoded endpoints.
+
+| category | lower | upper |
+|---|---:|---:|
+| Reactor A | 1.2 | 2.8 |
+| Reactor B | 1.6 | 3.1 |
+
+`bar.mirrored` — two non-negative sides use the same canonical schema; `mirror_side` is a semantic
+modifier rather than a data column.
+
+| category | side | value |
+|---|---|---:|
+| 18–29 | Female | 4.2 |
+| 18–29 | Male | 3.8 |
+| 30–44 | Female | 5.1 |
+| 30–44 | Male | 4.7 |
+
+`bar.waterfall` — the ordered rows explicitly distinguish changes, subtotals, and the final total.
+
+| step | delta | role |
+|---|---:|---|
+| Start | 10.0 | subtotal |
+| Addition | 2.5 | change |
+| Removal | -1.0 | change |
+| Final | 11.5 | total |
+
+## Grammar selection rules
 
 Choose `simple` when each category already has one supplied magnitude. Choose `grouped` when group
 identity matters within each category and side-by-side comparison is the message. Choose `stacked`
@@ -98,8 +179,8 @@ explicit cumulative meaning.
   remain deterministic.
 - `normalization`: `normalize` asks the runtime to convert supplied non-negative components to
   within-category proportions; `proportion` asserts values are already proportions and requires
-  them to sum to one within tolerance. This is an explicit display normalization, not an inferred
-  scientific analysis.
+  them to sum to one within an absolute tolerance of `1e-8` with no relative slack. This is an
+  explicit display normalization, not an inferred scientific analysis.
 - `mirror_side`: identifies the supplied mirrored side; it is scientific/display semantics, not a
   coordinate.
 
@@ -108,7 +189,7 @@ semantics are the entire public adjustment surface. Bar width, group gap, colors
 legend placement, label padding, margins, and physical dimensions remain deterministic runtime
 decisions.
 
-## Scientific boundaries
+## Scientific boundaries and upstream boundary
 
 Do not turn replicate observations into category means to fit a bar grammar. When raw variation is
 the message, route to strip, box, violin, box-violin, raincloud, ECDF, histogram, or density as

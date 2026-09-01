@@ -311,3 +311,283 @@ def test_orientation_is_one_modifier_on_every_core_bar_schema() -> None:
 
     assert all("orientation" not in contract[name]["required"] for name in core)
     assert all("orientation" in contract[name]["optional"] for name in core)
+
+
+def _build_public_bar(
+    template: str,
+    data: dict[str, object],
+    *,
+    semantics: dict[str, object] | None = None,
+) -> object:
+    from axiomfig.intent import build_intent_figure, parse_figure_intent
+
+    mapping = {name: name for name in data}
+    intent = parse_figure_intent(
+        {
+            "template": template,
+            "data": mapping,
+            "semantics": {} if semantics is None else semantics,
+        }
+    )
+    return build_intent_figure(intent, data)
+
+
+@pytest.mark.parametrize(
+    ("template", "data", "semantics"),
+    [
+        ("bar.simple", {"category": [None], "value": [1.0]}, {}),
+        (
+            "bar.grouped",
+            {"category": ["A"], "group": [None], "value": [1.0]},
+            {},
+        ),
+        (
+            "bar.stacked",
+            {"category": ["A"], "component": [None], "value": [1.0]},
+            {},
+        ),
+        (
+            "bar.mirrored",
+            {
+                "category": ["A", "A"],
+                "side": [None, "right"],
+                "value": [1.0, 2.0],
+            },
+            {"mirror_side": "left"},
+        ),
+        (
+            "bar.waterfall",
+            {
+                "step": [None, "Final"],
+                "delta": [1.0, 1.0],
+                "role": ["subtotal", "total"],
+            },
+            {},
+        ),
+        (
+            "bar.waterfall",
+            {
+                "step": ["Initial", "Final"],
+                "delta": [1.0, 1.0],
+                "role": [None, "total"],
+            },
+            {},
+        ),
+    ],
+)
+def test_public_bar_rejects_null_identifier_roles(
+    template: str,
+    data: dict[str, object],
+    semantics: dict[str, object],
+) -> None:
+    from axiomfig.intent import FigureIntentError
+
+    with pytest.raises(FigureIntentError, match="labels must be non-null and non-empty"):
+        _build_public_bar(template, data, semantics=semantics)
+
+
+@pytest.mark.parametrize(
+    ("template", "data", "semantics"),
+    [
+        (
+            "bar.grouped",
+            {
+                "category": ["A", "A", "B"],
+                "group": ["G1", "G2", "G1"],
+                "value": [1.0, 2.0, 3.0],
+            },
+            {},
+        ),
+        (
+            "bar.stacked",
+            {
+                "category": ["A", "A", "B"],
+                "component": ["C1", "C2", "C1"],
+                "value": [1.0, 2.0, 3.0],
+            },
+            {},
+        ),
+        (
+            "bar.normalized_stacked",
+            {
+                "category": ["A", "A", "B"],
+                "component": ["C1", "C2", "C1"],
+                "value": [0.5, 0.5, 1.0],
+            },
+            {"normalization": "proportion"},
+        ),
+        (
+            "bar.diverging_stacked",
+            {
+                "category": ["A", "A", "B"],
+                "component": ["C1", "C2", "C1"],
+                "value": [1.0, -1.0, 2.0],
+            },
+            {},
+        ),
+        (
+            "bar.mirrored",
+            {
+                "category": ["A", "A", "B"],
+                "side": ["left", "right", "left"],
+                "value": [1.0, 2.0, 3.0],
+            },
+            {"mirror_side": "left"},
+        ),
+        (
+            "bar.grouped_stacked",
+            {
+                "category": ["A", "A", "A"],
+                "group": ["G1", "G1", "G2"],
+                "component": ["C1", "C2", "C1"],
+                "value": [1.0, 2.0, 3.0],
+            },
+            {},
+        ),
+    ],
+)
+def test_public_bar_incomplete_logical_grids_fail_at_adapter_boundary(
+    template: str,
+    data: dict[str, object],
+    semantics: dict[str, object],
+) -> None:
+    from axiomfig.intent import FigureIntentError
+
+    with pytest.raises(FigureIntentError, match="complete logical grid"):
+        _build_public_bar(template, data, semantics=semantics)
+
+
+@pytest.mark.parametrize(
+    ("normalization", "values", "message"),
+    [
+        ("normalize", [0.0, 0.0], "positive category totals"),
+        ("proportion", [0.5, 0.50000002], "within absolute tolerance"),
+    ],
+)
+def test_public_normalized_stack_rejects_malformed_totals_with_bounded_error(
+    normalization: str,
+    values: list[float],
+    message: str,
+) -> None:
+    from axiomfig.intent import FigureIntentError
+
+    with pytest.raises(FigureIntentError, match=message):
+        _build_public_bar(
+            "bar.normalized_stacked",
+            {
+                "category": ["A", "A"],
+                "component": ["x", "y"],
+                "value": values,
+            },
+            semantics={"normalization": normalization},
+        )
+
+
+def test_proportion_absolute_tolerance_accepts_boundary_without_relative_slack() -> None:
+    figure = _build_public_bar(
+        "bar.normalized_stacked",
+        {
+            "category": ["A", "A"],
+            "component": ["x", "y"],
+            "value": [0.5, 0.50000001],
+        },
+        semantics={"normalization": "proportion"},
+    )
+    plt.close(figure)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(
+    ("variant", "values", "message"),
+    [
+        ("simple", {"category": ["A", "B"], "value": [1.0]}, "equal-length"),
+        ("simple", {"category": ["A"], "value": [np.inf]}, "finite"),
+        (
+            "simple",
+            {"category": ["A"], "value": [1.0], "orientation": "diagonal"},
+            "vertical or horizontal",
+        ),
+        (
+            "mirrored",
+            {
+                "category": ["A"],
+                "side": ["left"],
+                "value": [1.0],
+                "mirror_side": "left",
+            },
+            "exactly two side labels",
+        ),
+        (
+            "mirrored",
+            {
+                "category": ["A", "A"],
+                "side": ["left", "right"],
+                "value": [1.0, 2.0],
+                "mirror_side": "unknown",
+            },
+            "identify one supplied side",
+        ),
+        (
+            "waterfall",
+            {"step": ["A", "B"], "delta": [1.0, 1.0], "role": ["bad", "total"]},
+            "change, subtotal, or total",
+        ),
+        (
+            "waterfall",
+            {"step": ["A", "B"], "delta": [1.0, 2.0], "role": ["subtotal", "total"]},
+            "equal the cumulative value",
+        ),
+        (
+            "grouped",
+            {
+                "category": ["A"],
+                "group": ["G"],
+                "value": [1.0],
+                "error": [0.1],
+            },
+            "uncertainty_type is required",
+        ),
+    ],
+)
+def test_bar_required_negative_input_matrix(
+    variant: str,
+    values: dict[str, object],
+    message: str,
+) -> None:
+    from axiomfig.templates.bar.adapter import adapt
+
+    with pytest.raises(ValueError, match=message):
+        adapt(variant, values)
+
+
+@pytest.mark.parametrize(
+    "template",
+    [
+        "bar/simple",
+        "bar/grouped",
+        "bar/stacked",
+        "bar/normalized_stacked",
+        "bar/grouped_stacked",
+        "bar/diverging_stacked",
+        "bar/range",
+        "bar/mirrored",
+        "bar/waterfall",
+    ],
+)
+@pytest.mark.parametrize("orientation", ["vertical", "horizontal"])
+def test_bar_builders_consume_both_axis_labels(template: str, orientation: str) -> None:
+    from axiomfig.templates import build_template
+
+    values: dict[str, object] = {
+        "orientation": orientation,
+        "xlabel": "Explicit x label",
+        "ylabel": "Explicit y label",
+    }
+    if template == "bar/normalized_stacked":
+        values["normalization"] = "normalize"
+    figure = build_template(template, **values)
+    try:
+        axis = figure.axes[0]
+        assert axis.get_xlabel() == "Explicit x label"
+        assert axis.get_ylabel() == "Explicit y label"
+    finally:
+        plt.close(figure)

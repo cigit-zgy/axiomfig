@@ -26,6 +26,19 @@ _CATEGORY_VALUE_VARIANTS = {
     "mirrored",
 }
 _ORIENTATIONS = {"vertical", "horizontal"}
+PROPORTION_ABSOLUTE_TOLERANCE = 1e-8
+
+
+def _bar_labels(value: object, name: str) -> np.ndarray:
+    array = np.asarray(value, dtype=object)
+    if array.ndim == 1 and any(
+        item is None
+        or (isinstance(item, (float, np.floating)) and not np.isfinite(item))
+        or (isinstance(item, str) and not item.strip())
+        for item in array
+    ):
+        raise ValueError(f"{name} labels must be non-null and non-empty")
+    return labels_1d(value, name)
 
 
 def _unique_logical_keys(values: dict[str, object], names: Sequence[str]) -> None:
@@ -34,6 +47,23 @@ def _unique_logical_keys(values: dict[str, object], names: Sequence[str]) -> Non
     if len(keys) != len(set(keys)):
         rendered = ", ".join(names)
         raise ValueError(f"bar duplicate logical key for {rendered}")
+
+
+def _complete_logical_grid(values: dict[str, object], names: Sequence[str]) -> None:
+    expected = 1
+    for name in names:
+        expected *= len(dict.fromkeys(np.asarray(values[name], dtype=object).tolist()))
+    row_count = len(np.asarray(values[names[0]], dtype=object))
+    if row_count != expected:
+        rendered = ", ".join(names)
+        raise ValueError(f"bar {rendered} rows must form a complete logical grid")
+
+
+def _category_totals(values: dict[str, object]) -> np.ndarray:
+    categories = np.asarray(values["category"], dtype=object)
+    magnitude = np.asarray(values["value"], dtype=float)
+    labels = tuple(dict.fromkeys(categories.tolist()))
+    return np.asarray([magnitude[categories == label].sum() for label in labels], dtype=float)
 
 
 def _adapt_error(values: dict[str, object], magnitude: np.ndarray) -> None:
@@ -67,12 +97,12 @@ def _adapt_orientation(values: dict[str, object]) -> None:
 
 
 def _adapt_category_values(variant: str, values: dict[str, object]) -> None:
-    category = labels_1d(values["category"], "category")
+    category = _bar_labels(values["category"], "category")
     magnitude = numeric_1d(values["value"], "value")
     arrays: dict[str, np.ndarray] = {"category": category, "value": magnitude}
     for role in ("group", "component", "side"):
         if role in values:
-            arrays[role] = labels_1d(values[role], role)
+            arrays[role] = _bar_labels(values[role], role)
     equal_length(arrays)
     values.update(arrays)
 
@@ -89,6 +119,15 @@ def _adapt_category_values(variant: str, values: dict[str, object]) -> None:
         "mirrored": ("category", "side"),
     }
     _unique_logical_keys(values, key_roles[variant])
+    if variant in {
+        "grouped",
+        "stacked",
+        "normalized_stacked",
+        "grouped_stacked",
+        "diverging_stacked",
+        "mirrored",
+    }:
+        _complete_logical_grid(values, key_roles[variant])
 
     if variant in {"simple", "grouped"}:
         _adapt_error(values, magnitude)
@@ -98,6 +137,11 @@ def _adapt_category_values(variant: str, values: dict[str, object]) -> None:
             raise ValueError("normalization must be normalize or proportion")
         if np.any(magnitude < 0):
             raise ValueError("normalized stacks require non-negative values")
+        totals = _category_totals(values)
+        if mode == "normalize" and np.any(totals <= 0):
+            raise ValueError("normalized stacks require positive category totals")
+        if mode == "proportion" and np.any(np.abs(totals - 1.0) > PROPORTION_ABSOLUTE_TOLERANCE):
+            raise ValueError("proportion stacks must sum to one within absolute tolerance 1e-8")
         values["normalization"] = mode
     if variant == "mirrored":
         sides = list(dict.fromkeys(np.asarray(values["side"], dtype=object).astype(str)))
@@ -112,7 +156,7 @@ def _adapt_category_values(variant: str, values: dict[str, object]) -> None:
 
 
 def _adapt_range(values: dict[str, object]) -> None:
-    category = labels_1d(values["category"], "category")
+    category = _bar_labels(values["category"], "category")
     lower = numeric_1d(values["lower"], "lower")
     upper = numeric_1d(values["upper"], "upper")
     arrays = {"category": category, "lower": lower, "upper": upper}
@@ -124,9 +168,9 @@ def _adapt_range(values: dict[str, object]) -> None:
 
 
 def _adapt_waterfall(values: dict[str, object]) -> None:
-    step = labels_1d(values["step"], "step")
+    step = _bar_labels(values["step"], "step")
     delta = numeric_1d(values["delta"], "delta")
-    role = labels_1d(values["role"], "role")
+    role = _bar_labels(values["role"], "role")
     arrays = {"step": step, "delta": delta, "role": role}
     equal_length(arrays)
     values.update(arrays)

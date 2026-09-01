@@ -10,14 +10,14 @@ from axiomfig.templates.gallery_support import TemplateGalleryCase
 def _simple(
     *, orientation: str = "vertical", negative: bool = False, labels: bool = False
 ) -> dict[str, object]:
-    return {
+    values: dict[str, object] = {
         "category": ["Control", "Low dose", "High dose"],
         "value": [2.8, -1.1 if negative else 3.7, 4.4],
         "orientation": orientation,
         "value_labels": labels,
-        "ylabel": "Response (mg/L)",
-        "xlabel": "Response (mg/L)",
     }
+    values["ylabel" if orientation == "vertical" else "xlabel"] = "Response (mg/L)"
+    return values
 
 
 def _grouped(*, orientation: str = "vertical", uncertainty: bool = False) -> dict[str, object]:

@@ -42,3 +42,25 @@ def test_skill_routes_progressively_without_requiring_all_sources() -> None:
     assert "src/axiomfig/templates/index.yaml" in skill
     assert "src/axiomfig/templates/<family>/contract.yaml" in skill
     assert "Do not read all builders" in skill
+
+
+def test_bar_family_guide_covers_each_grammar_without_schema_semantic_leakage() -> None:
+    guide = (KNOWLEDGE_ROOT / "families/bar.md").read_text(encoding="utf-8")
+    grammars = (
+        "simple",
+        "grouped",
+        "stacked",
+        "normalized_stacked",
+        "grouped_stacked",
+        "diverging_stacked",
+        "range",
+        "mirrored",
+        "waterfall",
+    )
+
+    for grammar in grammars:
+        assert f"`bar.{grammar}`" in guide
+    assert guide.count("|---") >= len(grammars) + 1
+    assert "`category`, `component`, `value`, `normalization`" not in guide
+    assert "`category`, `side`, `value`, `mirror_side`" not in guide
+    assert "absolute tolerance of `1e-8` with no relative slack" in guide

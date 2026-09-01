@@ -18,6 +18,7 @@ from axiomfig.style import (
     apply_scatter_contract,
     bar_width,
 )
+from axiomfig.templates.bar.adapter import PROPORTION_ABSOLUTE_TOLERANCE
 
 
 def _orientation(value: object | None, *, default: str = "vertical") -> str:
@@ -52,6 +53,27 @@ def _categorical_axes(
         axis.set_yticks(positions, labels)
         apply_categorical_axis(axis, coordinate="y")
         apply_nice_linear_axis(axis, lower, upper, coordinate="x")
+
+
+def _set_axis_labels(
+    axis: Axes,
+    *,
+    orientation: str,
+    value_default: str,
+    xlabel: object | None,
+    ylabel: object | None,
+    value_suffix: str = "",
+) -> None:
+    labels: dict[str, str] = {}
+    if orientation == "vertical":
+        if xlabel is not None:
+            labels["xlabel"] = str(xlabel)
+        labels["ylabel"] = (value_default if ylabel is None else str(ylabel)) + value_suffix
+    else:
+        labels["xlabel"] = (value_default if xlabel is None else str(xlabel)) + value_suffix
+        if ylabel is not None:
+            labels["ylabel"] = str(ylabel)
+    axis.set(**labels)
 
 
 def _finish_bars(
@@ -187,10 +209,14 @@ def build_simple(
         error=errors,
     )
     suffix = "" if uncertainty_type is None else f" ({uncertainty_type})"
-    if selected_orientation == "vertical":
-        axis.set(ylabel=("Value" if ylabel is None else str(ylabel)) + suffix)
-    else:
-        axis.set(xlabel=("Value" if xlabel is None else str(xlabel)) + suffix)
+    _set_axis_labels(
+        axis,
+        orientation=selected_orientation,
+        value_default="Value",
+        xlabel=xlabel,
+        ylabel=ylabel,
+        value_suffix=suffix,
+    )
     _categorical_axes(axis, labels, selected_orientation, *_limits(values))
     _finish_bars(axis, [container], value_labels)
     return figure
@@ -255,10 +281,14 @@ def build_grouped(
             )
         )
     suffix = "" if uncertainty_type is None else f" ({uncertainty_type})"
-    if selected_orientation == "vertical":
-        axis.set(ylabel=("Value" if ylabel is None else str(ylabel)) + suffix)
-    else:
-        axis.set(xlabel=("Value" if xlabel is None else str(xlabel)) + suffix)
+    _set_axis_labels(
+        axis,
+        orientation=selected_orientation,
+        value_default="Value",
+        xlabel=xlabel,
+        ylabel=ylabel,
+        value_suffix=suffix,
+    )
     _categorical_axes(axis, labels, selected_orientation, *_limits(values))
     _finish_bars(axis, containers, value_labels)
     request_legend(axis)
@@ -293,7 +323,12 @@ def _stacked(
                 if np.any(totals <= 0):
                     raise ValueError("normalized stacks require positive category totals")
                 values = values / totals
-            elif not np.allclose(values.sum(axis=0), 1.0, atol=1e-8):
+            elif not np.allclose(
+                values.sum(axis=0),
+                1.0,
+                atol=PROPORTION_ABSOLUTE_TOLERANCE,
+                rtol=0.0,
+            ):
                 raise ValueError("proportion stacks must sum to one for each category")
     else:
         raise ValueError("stacked bar requires category, value, and component together")
@@ -316,10 +351,13 @@ def _stacked(
         )
         bottom += selected
     axis_label = "Proportion" if normalized else "Value"
-    if selected_orientation == "vertical":
-        axis.set(ylabel=axis_label if ylabel is None else str(ylabel))
-    else:
-        axis.set(xlabel=axis_label if xlabel is None else str(xlabel))
+    _set_axis_labels(
+        axis,
+        orientation=selected_orientation,
+        value_default=axis_label,
+        xlabel=xlabel,
+        ylabel=ylabel,
+    )
     bounds = (0.0, 1.0) if normalized else _limits(bottom)
     _categorical_axes(axis, labels, selected_orientation, *bounds)
     _finish_bars(axis, containers, value_labels)
@@ -411,10 +449,13 @@ def build_grouped_stacked(
             )
             containers.append(container)
             bottom[group_index] += values[component_index, group_index]
-    if selected_orientation == "vertical":
-        axis.set(ylabel="Value" if ylabel is None else str(ylabel))
-    else:
-        axis.set(xlabel="Value" if xlabel is None else str(xlabel))
+    _set_axis_labels(
+        axis,
+        orientation=selected_orientation,
+        value_default="Value",
+        xlabel=xlabel,
+        ylabel=ylabel,
+    )
     _categorical_axes(axis, labels, selected_orientation, *_limits(bottom))
     _finish_bars(axis, containers, value_labels)
     request_legend(axis)
@@ -460,10 +501,13 @@ def build_diverging_stacked(
         )
         positive += np.maximum(selected, 0)
         negative += np.minimum(selected, 0)
-    if selected_orientation == "vertical":
-        axis.set(ylabel="Signed value" if ylabel is None else str(ylabel))
-    else:
-        axis.set(xlabel="Signed value" if xlabel is None else str(xlabel))
+    _set_axis_labels(
+        axis,
+        orientation=selected_orientation,
+        value_default="Signed value",
+        xlabel=xlabel,
+        ylabel=ylabel,
+    )
     _categorical_axes(axis, labels, selected_orientation, *_limits(negative, positive))
     _finish_bars(axis, containers, value_labels)
     request_legend(axis)
@@ -500,10 +544,13 @@ def build_range(
         width=bar_width(),
         baseline=lower_values,
     )
-    if selected_orientation == "vertical":
-        axis.set(ylabel="Range" if ylabel is None else str(ylabel))
-    else:
-        axis.set(xlabel="Range" if xlabel is None else str(xlabel))
+    _set_axis_labels(
+        axis,
+        orientation=selected_orientation,
+        value_default="Range",
+        xlabel=xlabel,
+        ylabel=ylabel,
+    )
     _categorical_axes(axis, labels, selected_orientation, *_limits(lower_values, upper_values))
     _finish_bars(axis, [container], value_labels)
     return figure
@@ -548,10 +595,13 @@ def build_mirrored(
                 label=label,
             )
         )
-    if selected_orientation == "vertical":
-        axis.set(ylabel="Mirrored value" if ylabel is None else str(ylabel))
-    else:
-        axis.set(xlabel="Mirrored value" if xlabel is None else str(xlabel))
+    _set_axis_labels(
+        axis,
+        orientation=selected_orientation,
+        value_default="Mirrored value",
+        xlabel=xlabel,
+        ylabel=ylabel,
+    )
     _categorical_axes(axis, labels, selected_orientation, *_limits(signed))
     _finish_bars(axis, containers, value_labels)
     request_legend(axis)
@@ -621,10 +671,13 @@ def build_waterfall(
                 color=edge.get_edgecolor(),
                 linewidth=edge.get_linewidth(),
             )
-    if selected_orientation == "vertical":
-        axis.set(ylabel="Cumulative value" if ylabel is None else str(ylabel))
-    else:
-        axis.set(xlabel="Cumulative value" if xlabel is None else str(xlabel))
+    _set_axis_labels(
+        axis,
+        orientation=selected_orientation,
+        value_default="Cumulative value",
+        xlabel=xlabel,
+        ylabel=ylabel,
+    )
     _categorical_axes(
         axis,
         labels,
