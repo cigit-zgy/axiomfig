@@ -206,3 +206,35 @@ def test_mantel_contract_rejects_unowned_ornament_configuration() -> None:
 
     with pytest.raises(ValueError, match="ornaments must contain only legend"):
         mantel_styling._validate_mantel_contract(contract)
+
+
+@pytest.mark.parametrize(
+    ("mutate", "message"),
+    (
+        (lambda contract: contract["links"].__setitem__("widths_pt", None), "must be a sequence"),
+        (
+            lambda contract: contract["links"]["p_value_modes"]["canonical"].__setitem__(
+                "colors", 1
+            ),
+            "must be a sequence",
+        ),
+        (
+            lambda contract: contract["links"]["p_value_modes"]["canonical"]["colors"].__setitem__(
+                0, ["only-one-token"]
+            ),
+            "palette reference",
+        ),
+    ),
+)
+def test_mantel_contract_bounds_malformed_sequence_containers(
+    mutate: Callable[[dict[str, object]], None], message: str
+) -> None:
+    style = load_yaml(
+        (ROOT / "src/axiomfig/resources/styles/style.yaml").read_text(encoding="utf-8"),
+        source="style.yaml",
+    )
+    contract = style["plots"]["mantel"]
+    mutate(contract)
+
+    with pytest.raises(ValueError, match=message):
+        mantel_styling._validate_mantel_contract(contract)

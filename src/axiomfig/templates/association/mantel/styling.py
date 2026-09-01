@@ -32,9 +32,14 @@ def _finite_number(value: object, name: str, *, positive: bool = False) -> float
 
 
 def _finite_numbers(value: object, name: str) -> tuple[float, ...]:
+    values = _sequence(value, name)
+    return tuple(_finite_number(item, f"{name}[{index}]") for index, item in enumerate(values))
+
+
+def _sequence(value: object, name: str) -> tuple[object, ...]:
     if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
         raise ValueError(f"{name} must be a sequence")
-    return tuple(_finite_number(item, f"{name}[{index}]") for index, item in enumerate(value))
+    return tuple(value)
 
 
 def _validate_mantel_contract(contract: Mapping[str, Any]) -> None:
@@ -93,7 +98,7 @@ def _validate_mantel_contract(contract: Mapping[str, Any]) -> None:
     strength_breaks = _finite_numbers(
         links.get("strength_breaks"), "plots.mantel.links.strength_breaks"
     )
-    widths = tuple(links.get("widths_pt", ()))
+    widths = _finite_numbers(links.get("widths_pt"), "plots.mantel.links.widths_pt")
     if (
         strength_breaks != tuple(sorted(strength_breaks))
         or len(strength_breaks) != 2
@@ -102,8 +107,8 @@ def _validate_mantel_contract(contract: Mapping[str, Any]) -> None:
         raise ValueError("Mantel strength breaks must contain two ordered values")
     if len(widths) != 3:
         raise ValueError("Mantel link widths must match their bins")
-    for index, width in enumerate(widths):
-        _finite_number(width, f"plots.mantel.links.widths_pt[{index}]", positive=True)
+    if any(width <= 0.0 for width in widths):
+        raise ValueError("Mantel link widths must be positive")
 
     modes = _mapping(links.get("p_value_modes"), "plots.mantel.links.p_value_modes")
     expected_bins = {"canonical": 3, "detailed": 4}
@@ -114,7 +119,9 @@ def _validate_mantel_contract(contract: Mapping[str, Any]) -> None:
         breaks = _finite_numbers(
             selected.get("breaks"), f"plots.mantel.links.p_value_modes.{mode}.breaks"
         )
-        colors = tuple(selected.get("colors", ()))
+        colors = _sequence(
+            selected.get("colors"), f"plots.mantel.links.p_value_modes.{mode}.colors"
+        )
         if (
             breaks != tuple(sorted(breaks))
             or len(breaks) != bin_count - 1
@@ -123,6 +130,14 @@ def _validate_mantel_contract(contract: Mapping[str, Any]) -> None:
             raise ValueError(f"Mantel {mode} P-value breaks do not match their bins")
         if len(colors) != bin_count:
             raise ValueError(f"Mantel {mode} P-value colors do not match their bins")
+        for reference in colors:
+            if (
+                not isinstance(reference, Sequence)
+                or isinstance(reference, (str, bytes))
+                or len(reference) != 2
+                or not all(isinstance(token, str) and token for token in reference)
+            ):
+                raise ValueError(f"Mantel {mode} P-value palette reference is invalid")
     if links.get("nonsignificant_mode") not in {"hide", "fade", "show"}:
         raise ValueError("plots.mantel.links.nonsignificant_mode must be hide, fade, or show")
 
