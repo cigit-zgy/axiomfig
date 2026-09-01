@@ -33,6 +33,9 @@ jobs:
         run: |
           ruff check .
           ruff format --check .
+      - name: Static type contract
+        if: matrix.python-version == '3.11'
+        run: |
           mypy src/axiomfig
       - name: Enforce architecture and dependency contracts
         run: |
