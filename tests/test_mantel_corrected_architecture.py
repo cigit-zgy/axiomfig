@@ -187,6 +187,57 @@ def test_mantel_legend_bins_follow_the_executable_style_contract(
     assert [handle.get_label() for handle in p_values] == ["< 0.02", "0.02-0.08", ">= 0.08"]
 
 
+def test_mantel_legend_spacing_comes_from_global_and_family_yaml(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from types import SimpleNamespace
+
+    from axiomfig import ornaments
+    from axiomfig.templates.association.mantel import legends, styling
+
+    contracts = load_contracts()
+    style = dict(contracts.style)
+    style["legend"] = {
+        **contracts.style["legend"],
+        "handlelength": 2.3,
+        "borderaxespad": 0.7,
+    }
+    monkeypatch.setattr(ornaments, "load_contracts", lambda: SimpleNamespace(style=style))
+
+    contract = styling.mantel_plot_contract()
+    custom = {
+        **contract,
+        "ornaments": {
+            **contract["ornaments"],
+            "legend": {
+                "borderpad": 0.4,
+                "labelspacing": 0.31,
+                "handletextpad": 0.46,
+                "columnspacing": 0.76,
+            },
+        },
+    }
+    monkeypatch.setattr(legends, "mantel_plot_contract", lambda: custom)
+
+    figure, axis = plt.subplots()
+    strength, p_values = legends._create_link_legends(
+        axis,
+        strength_anchor=(0.0, 0.0),
+        p_anchor=(0.0, 0.2),
+        transform=axis.transAxes,
+        p_value_mode="canonical",
+    )
+
+    for legend in (strength, p_values):
+        assert legend.handlelength == pytest.approx(2.3)
+        assert legend.borderaxespad == pytest.approx(0.7)
+        assert legend.borderpad == pytest.approx(0.4)
+        assert legend.labelspacing == pytest.approx(0.31)
+        assert legend.handletextpad == pytest.approx(0.46)
+        assert legend.columnspacing == pytest.approx(0.76)
+    plt.close(figure)
+
+
 def test_matrix_region_is_semantic_alias_and_cannot_conflict_with_matrix_type() -> None:
     lower = normalize_composition({"matrix_region": "lower_left"}, size=5)
     upper = normalize_composition({"matrix_region": "upper_right"}, size=5)

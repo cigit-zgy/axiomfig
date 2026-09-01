@@ -148,6 +148,11 @@ plots:
       source_size_ratio: 1.35
       target_size_ratio: 1.0
     ornaments:
+      legend:
+        borderpad: 0.4
+        labelspacing: 0.20
+        handletextpad: 0.45
+        columnspacing: 0.75
       lower:
         legend_anchor_x_fraction: 0.55
         p_legend_anchor_y_fraction: 0.02

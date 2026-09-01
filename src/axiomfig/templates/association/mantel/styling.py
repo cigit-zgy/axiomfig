@@ -20,7 +20,10 @@ def _mapping(value: object, name: str) -> Mapping[str, Any]:
 def _finite_number(value: object, name: str, *, positive: bool = False) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise ValueError(f"{name} must be numeric")
-    result = float(value)
+    try:
+        result = float(value)
+    except OverflowError as exc:
+        raise ValueError(f"{name} must be finite") from exc
     if not math.isfinite(result):
         raise ValueError(f"{name} must be finite")
     if positive and result <= 0:
@@ -46,6 +49,13 @@ def _validate_mantel_contract(contract: Mapping[str, Any]) -> None:
     nodes = _mapping(contract.get("nodes"), "plots.mantel.nodes")
     for name in ("source_size_ratio", "target_size_ratio"):
         _finite_number(nodes.get(name), f"plots.mantel.nodes.{name}", positive=True)
+
+    ornaments = _mapping(contract.get("ornaments"), "plots.mantel.ornaments")
+    legend_layout = _mapping(ornaments.get("legend"), "plots.mantel.ornaments.legend")
+    for name in ("borderpad", "labelspacing", "handletextpad", "columnspacing"):
+        value = _finite_number(legend_layout.get(name), f"plots.mantel.ornaments.legend.{name}")
+        if value < 0.0:
+            raise ValueError(f"plots.mantel.ornaments.legend.{name} must be nonnegative")
 
     links = _mapping(contract.get("links"), "plots.mantel.links")
     _finite_number(

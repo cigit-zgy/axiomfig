@@ -79,17 +79,25 @@ def apply_colorbar_contract(colorbar: Colorbar) -> None:
         )
 
 
+def legend_base_kwargs() -> dict[str, Any]:
+    """Return shared legend properties used by generic and family ornaments."""
+    contract = load_contracts().style["legend"]
+    return {
+        "frameon": bool(contract["frame"]),
+        "handlelength": float(contract["handlelength"]),
+        "borderaxespad": float(contract["borderaxespad"]),
+    }
+
+
 def _legend_kwargs(ncol: int) -> dict[str, Any]:
     contract = load_contracts().style["legend"]
     return {
+        **legend_base_kwargs(),
         "ncol": ncol,
-        "frameon": False,
-        "handlelength": float(contract["handlelength"]),
         "columnspacing": float(contract["columnspacing"]),
         "handletextpad": float(contract["handletextpad"]),
         "labelspacing": float(contract["labelspacing"]),
         "borderpad": float(contract["borderpad"]),
-        "borderaxespad": float(contract["borderaxespad"]),
     }
 
 

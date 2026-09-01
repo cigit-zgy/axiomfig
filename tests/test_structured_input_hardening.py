@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+from axiomfig import config
 from axiomfig.config import load_contracts
 from axiomfig.intent import (
     FigureIntentError,
@@ -14,6 +15,7 @@ from axiomfig.intent import (
     parse_figure_intent,
 )
 from axiomfig.templates import registry
+from axiomfig.templates.association.mantel import styling as mantel_styling
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -156,3 +158,12 @@ def test_builder_programmer_assertions_are_not_masked(monkeypatch: pytest.Monkey
     monkeypatch.setattr("axiomfig.intent.build_template", broken_builder)
     with pytest.raises(AssertionError, match="internal builder invariant"):
         build_intent_figure(intent, {"x": [1, 2], "y": [3, 4]})
+
+
+@pytest.mark.parametrize(
+    "validator",
+    (config._finite_number, mantel_styling._finite_number),
+)
+def test_oversized_executable_yaml_numbers_are_bounded_value_errors(validator) -> None:
+    with pytest.raises(ValueError, match="must be finite"):
+        validator(10**10000, "style.token")

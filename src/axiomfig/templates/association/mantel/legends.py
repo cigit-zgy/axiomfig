@@ -14,7 +14,7 @@ from matplotlib.lines import Line2D
 from matplotlib.transforms import Transform
 
 from axiomfig.layout import figure_renderer
-from axiomfig.ornaments import apply_colorbar_contract
+from axiomfig.ornaments import apply_colorbar_contract, legend_base_kwargs
 from axiomfig.style import (
     MAIN_STROKE_PT,
     axiom_colormap,
@@ -101,13 +101,14 @@ def _create_link_legends(
     p_value_mode: str,
 ) -> tuple[Legend, Legend]:
     strength_handles, p_handles = _legend_handles(p_value_mode)
+    ornaments = mantel_plot_contract()["ornaments"]
+    legend_layout = ornaments["legend"]
     common = {
-        "frameon": False,
-        "handlelength": 1.0,
-        "borderaxespad": 0.0,
-        "labelspacing": 0.20,
-        "handletextpad": 0.45,
-        "columnspacing": 0.75,
+        **legend_base_kwargs(),
+        "borderpad": float(legend_layout["borderpad"]),
+        "labelspacing": float(legend_layout["labelspacing"]),
+        "handletextpad": float(legend_layout["handletextpad"]),
+        "columnspacing": float(legend_layout["columnspacing"]),
         "fontsize": mpl.rcParams["legend.fontsize"],
         "title_fontsize": mpl.rcParams["font.size"],
     }
