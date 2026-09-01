@@ -44,11 +44,13 @@ Matplotlib creates the error artists before those limits are imposed (`builders.
 Public Figure Intent reproduction for simple bars:
 
 ```python
-intent = parse_figure_intent({
-    "template": "bar.simple",
-    "data": {"category": "category", "value": "value", "error": "error"},
-    "semantics": {"orientation": "vertical", "uncertainty_type": "SE"},
-})
+intent = parse_figure_intent(
+    {
+        "template": "bar.simple",
+        "data": {"category": "category", "value": "value", "error": "error"},
+        "semantics": {"orientation": "vertical", "uncertainty_type": "SE"},
+    }
+)
 figure = build_intent_figure(
     intent,
     {"category": ["A"], "value": [1.0], "error": [100.0]},
