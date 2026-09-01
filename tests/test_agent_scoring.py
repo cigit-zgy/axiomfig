@@ -85,13 +85,19 @@ def _case(predictions: list[dict[str, object]], case_id: str) -> dict[str, objec
     return next(item for item in predictions if item["id"] == case_id)
 
 
+def _action_count(action: str) -> int:
+    document = yaml.safe_load(CASES_PATH.read_text(encoding="utf-8"))
+    return sum(case["expected"]["action"] == action for case in document["cases"])
+
+
 def test_agent_scorer_reports_perfect_predictions(tmp_path: Path) -> None:
     from tests.evaluation.agent_scoring import score_agent_predictions
 
     result = score_agent_predictions(CASES_PATH, _write_predictions(tmp_path, _predictions()))
 
-    assert result.total_cases == 120
-    assert result.prediction_count == 120
+    case_count = len(_predictions())
+    assert result.total_cases == case_count
+    assert result.prediction_count == case_count
     assert result.missing_count == 0
     assert result.unsafe_count == 0
     assert result.action_accuracy == 1.0
@@ -120,7 +126,8 @@ def test_agent_scorer_separates_wrong_template_from_family(tmp_path: Path) -> No
     result = score_agent_predictions(CASES_PATH, _write_predictions(tmp_path, predictions))
 
     assert result.action_accuracy == 1.0
-    assert result.render_template_accuracy == pytest.approx(69 / 70)
+    render_count = _action_count("render")
+    assert result.render_template_accuracy == pytest.approx((render_count - 1) / render_count)
     assert result.family_accuracy == 1.0
     assert result.valid_figure_intent_rate == 1.0
 
@@ -157,8 +164,10 @@ def test_agent_scorer_marks_unsafe_render_instead_of_clarification(tmp_path: Pat
 
     result = score_agent_predictions(CASES_PATH, _write_predictions(tmp_path, predictions))
 
-    assert result.action_accuracy == pytest.approx(119 / 120)
-    assert result.clarification_accuracy == pytest.approx(19 / 20)
+    case_count = len(predictions)
+    clarify_count = _action_count("clarify")
+    assert result.action_accuracy == pytest.approx((case_count - 1) / case_count)
+    assert result.clarification_accuracy == pytest.approx((clarify_count - 1) / clarify_count)
     assert result.unsafe_count == 1
 
 
@@ -247,7 +256,8 @@ def test_agent_scorer_counts_unnecessary_clarification_as_routing_error(
 
     result = score_agent_predictions(CASES_PATH, _write_predictions(tmp_path, predictions))
 
-    assert result.action_accuracy == pytest.approx(119 / 120)
+    case_count = len(predictions)
+    assert result.action_accuracy == pytest.approx((case_count - 1) / case_count)
     assert result.unsafe_count == 0
 
 
@@ -259,9 +269,10 @@ def test_agent_scorer_reports_missing_prediction(tmp_path: Path) -> None:
         _write_predictions(tmp_path, _predictions()[:-1]),
     )
 
-    assert result.prediction_count == 119
+    case_count = len(_predictions())
+    assert result.prediction_count == case_count - 1
     assert result.missing_count == 1
-    assert result.action_accuracy == pytest.approx(119 / 120)
+    assert result.action_accuracy == pytest.approx((case_count - 1) / case_count)
 
 
 def test_agent_scorer_rejects_duplicate_prediction_id(tmp_path: Path) -> None:

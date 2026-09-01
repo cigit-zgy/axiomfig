@@ -20,10 +20,15 @@ class TemplateSpec:
     variant: str
     geometry: str
     public: bool
+    status: str
 
     @property
     def template_id(self) -> str:
         return f"{self.family}/{self.variant}"
+
+    @property
+    def agent_recommended(self) -> bool:
+        return self.status == "core"
 
 
 def _read_yaml(resource: Traversable) -> dict[str, Any]:
@@ -55,7 +60,12 @@ def load_template_registry() -> tuple[TemplateSpec, ...]:
                 geometry = variant_data.get("geometry")
                 if not isinstance(geometry, str):
                     raise ValueError(f"template {family}/{variant} has no geometry")
-                specs.append(TemplateSpec(family, variant, geometry, public))
+                status = variant_data.get("status", "core")
+                if status not in {"core", "compatibility"}:
+                    raise ValueError(f"template {family}/{variant} has invalid status")
+                if not public and status != "core":
+                    raise ValueError("non-public layout fixtures cannot be compatibility templates")
+                specs.append(TemplateSpec(family, variant, geometry, public, status))
     ids = [spec.template_id for spec in specs]
     if len(ids) != len(set(ids)):
         raise ValueError("duplicate template ID in registry")

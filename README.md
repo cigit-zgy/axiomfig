@@ -170,8 +170,9 @@ Stable numeric defaults remain only in the executable style/runtime sources of t
 
 ## Template system
 
-AxiomFig currently exposes 55 public templates across 13 scientific plot families. All public
-templates accept external structured input: direct data or explicit precomputed results.
+AxiomFig exposes a registry-defined public template surface across 13 scientific plot families.
+Every public template accepts external structured input: direct data or explicit precomputed
+results. Counts are derived from the committed registry rather than duplicated here.
 
 | Families | Typical role |
 |---|---|
@@ -257,13 +258,13 @@ See [SKILL.md](SKILL.md) for the executable routing policy.
 
 ## Gallery and evidence
 
-The formal registry-driven Gallery contains matching sans and serif examples for the public
-templates plus technical validation figures. Additional audit namespaces contain complex-figure and
-layout evidence but are not public template registrations.
+The formal registry-driven Gallery is a curated serif-only, family-first evidence tree. Sans
+typography remains an executable runtime mode. Technical and capability evidence lives under the
+evaluation suite rather than the user-facing Gallery.
 
 | Parity | Mantel | Correlation heatmap |
 |---|---|---|
-| ![Parity](gallery/sans/scatter/parity.png) | ![Mantel](gallery/sans/association/mantel_canonical.png) | ![Correlation heatmap](gallery/sans/heatmap/correlation.png) |
+| ![Parity](gallery/scatter/parity.png) | ![Mantel](gallery/association/mantel_canonical.png) | ![Correlation heatmap](gallery/heatmap/correlation.png) |
 
 A complex-figure capability audit showed that Matplotlib can express all tested complex statistical
 figures, while public AxiomFig coverage and movable-annotation semantics remain deliberately

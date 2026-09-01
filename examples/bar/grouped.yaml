@@ -1,0 +1,2 @@
+template: bar.grouped
+data: {category: category, group: group, value: value}

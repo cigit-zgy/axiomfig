@@ -2,15 +2,15 @@
 
 ## Public surface
 
-`src/axiomfig/templates/index.yaml` is the compact discovery and Gallery registry. It exposes 55
-public templates across 13 scientific families. `layouts` provides four registered composition
+`src/axiomfig/templates/index.yaml` is the compact discovery and Gallery registry. Public-template
+counts are derived from it across 13 scientific families. `layouts` provides four registered composition
 capabilities but is not a plot family and does not produce public Gallery entries.
 
 | Family | Variants |
 |---|---|
 | `line` | `single`, `multi`, `marker`, `confidence_band`, `errorbar`, `step`, `area` |
 | `scatter` | `simple`, `grouped`, `regression`, `parity`, `bubble`, `hexbin` |
-| `bar` | `vertical`, `horizontal`, `grouped`, `stacked`, `normalized_stacked`, `dot` |
+| `bar` | core: `simple`, `grouped`, `stacked`, `normalized_stacked`, `grouped_stacked`, `diverging_stacked`, `range`, `mirrored`, `waterfall`; compatibility: `vertical`, `horizontal`, `dot` |
 | `distribution` | `histogram`, `density`, `ecdf`, `box`, `violin`, `box_violin`, `strip`, `raincloud` |
 | `heatmap` | `basic`, `correlation`, `clustered`, `confusion_matrix`, `annotated` |
 | `estimation` | `forest`, `point_interval`, `coefficient` |
@@ -40,10 +40,11 @@ templates/index.yaml
   -> deterministic runtime and validation
 ```
 
-The registry contains only family, variant, geometry, and public/layout classification. Each family
+The registry contains only family, variant, geometry, public/layout classification, and a minimal
+core/compatibility status for released IDs. Each family
 contract declares required and optional roles plus `input_mode: direct|precomputed`. Operability
-counts are derived from contracts: 28 direct-data templates and 27 precomputed-result templates.
-No public template is canonical-only.
+counts are derived from contracts rather than duplicated as constants. No public template is
+canonical-only.
 
 An adapter validates role ownership and shape compatibility without silently dropping fields.
 Builders own plot grammar and deterministic canonical examples. They do not own fonts, strokes,
@@ -57,16 +58,15 @@ explicit precomputed results where the contract requires them.
 
 - Registry IDs are unique and match builder and contract variants exactly.
 - Every public ID has one adapter and one direct/precomputed input mode.
-- Every public ID has sans and serif PDF/PNG Gallery artifacts.
+- Every public ID has an executable data path; the formal serif-only Gallery is curated and may
+  exclude compatibility-only IDs or include multiple representative cases for one core grammar.
 - Technical Tectonic probes are not templates.
 - Recommendation knowledge remains under `references/template-knowledge/`, outside the registry.
 - Explicit imports are used instead of plugin discovery, metaclasses, a DSL, or dynamic import magic.
 
-For each public ID, Gallery contains:
+Formal Gallery artifacts use one family-first layer:
 
 ```text
-gallery/sans/<family>/<variant>.pdf
-gallery/sans/<family>/<variant>.png
-gallery/serif/<family>/<variant>.pdf
-gallery/serif/<family>/<variant>.png
+gallery/<family>/<case>.pdf
+gallery/<family>/<case>.png
 ```

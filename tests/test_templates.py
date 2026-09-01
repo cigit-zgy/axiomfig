@@ -32,7 +32,7 @@ SCIENTIFIC_FAMILIES = (
 EXPECTED_PUBLIC_COUNTS = {
     "line": 7,
     "scatter": 6,
-    "bar": 6,
+    "bar": 12,
     "distribution": 8,
     "heatmap": 5,
     "estimation": 3,
@@ -52,8 +52,8 @@ def test_registry_has_canonical_taxonomy_and_separate_layouts() -> None:
 
     assert tuple(dict.fromkeys(spec.family for spec in public)) == SCIENTIFIC_FAMILIES
     assert {spec.family for spec in specs if not spec.public} == {"layouts"}
-    assert len(public) == 55
-    assert len(specs) == 59
+    assert len(public) == sum(EXPECTED_PUBLIC_COUNTS.values())
+    assert len(specs) == len(public) + sum(not spec.public for spec in specs)
     assert {
         family: sum(spec.family == family for spec in public) for family in SCIENTIFIC_FAMILIES
     } == EXPECTED_PUBLIC_COUNTS

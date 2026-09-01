@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- added nine core Bar grammars with typed long-form contracts, orientation as a semantic modifier,
+  fail-closed duplicate logical keys, explicit normalization/mirroring/waterfall semantics, and
+  executable CSV/Figure Intent examples while retaining released Bar compatibility IDs;
+- consolidated the formal Gallery into a curated serif-only, family-first tree, moved development
+  benchmark evidence under `tests/evaluation/`, and made release and repeatability counts derive
+  from the registry or curated Gallery specification;
 - added executable architecture, Mypy, strict structured-input, property/adversarial, all-template
   structural-repeatability, dependency-audit, and isolated-installation release gates; malformed
   public inputs now fail with bounded AxiomFig errors, programmer assertions remain visible,

@@ -26,8 +26,6 @@ from axiomfig.layout import (
     primary_area_diagnostic,
 )
 
-PDF_ONLY_GALLERY_ROOTS = frozenset({"archive", "capability_audit"})
-
 
 class FigureAnatomyError(RuntimeError):
     """Raised when deterministic figure geometry violates its ownership contract."""
@@ -362,24 +360,17 @@ def validate_gallery(
     expected_stems: Iterable[str] | None = None,
 ) -> list[GalleryEntry]:
     gallery = Path(gallery)
-    pdfs = sorted(
-        path
-        for path in gallery.rglob("*.pdf")
-        if path.relative_to(gallery).parts[0] not in PDF_ONLY_GALLERY_ROOTS
-    )
+    pdfs = sorted(gallery.rglob("*.pdf"))
     selected_pdfs = pdfs
     if expected_stems is not None:
         expected = {f"{stem}.pdf" for stem in expected_stems}
-        official_pdfs = [
-            path for path in pdfs if not path.relative_to(gallery).as_posix().startswith("parity/")
-        ]
-        actual = {path.relative_to(gallery).as_posix() for path in official_pdfs}
+        actual = {path.relative_to(gallery).as_posix() for path in pdfs}
         if actual != expected:
             raise ValidationError(
                 f"gallery PDF set mismatch; missing={sorted(expected - actual)}, "
                 f"unexpected={sorted(actual - expected)}"
             )
-        selected_pdfs = official_pdfs
+        selected_pdfs = pdfs
     entries = []
     for pdf in selected_pdfs:
         png = pdf.with_suffix(".png")

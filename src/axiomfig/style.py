@@ -292,19 +292,25 @@ def add_bar_value_labels(
         raise ValueError("decimals must be non-negative")
     selected = list(containers)
     _reserve_bar_label_headroom(axis, selected)
-    contract = load_contracts().style["plots"]["bar"]
+    apply_bar_contract(selected)
     for container in selected:
-        for patch in container.patches:
-            patch.set_alpha(None)
-            patch.set_facecolor(_face_rgba(patch.get_facecolor(), float(contract["alpha"])))
-            patch.set_edgecolor(mcolors.to_rgba(str(contract["edge_color"]), 1.0))
-            patch.set_linewidth(_stroke_width(contract["edge_width_token"]))
         values = np.asarray(container.datavalues, dtype=float)
         axis.bar_label(
             container,
             labels=[f"{value:.{selected_decimals}f}" for value in values],
             padding=2.0,
         )
+
+
+def apply_bar_contract(containers: Iterable[BarContainer]) -> None:
+    """Apply the shared deterministic fill and edge contract to bars."""
+    contract = load_contracts().style["plots"]["bar"]
+    for container in containers:
+        for patch in container.patches:
+            patch.set_alpha(None)
+            patch.set_facecolor(_face_rgba(patch.get_facecolor(), float(contract["alpha"])))
+            patch.set_edgecolor(mcolors.to_rgba(str(contract["edge_color"]), 1.0))
+            patch.set_linewidth(_stroke_width(contract["edge_width_token"]))
 
 
 def _face_rgba(color: Any, alpha: float) -> tuple[float, float, float, float]:

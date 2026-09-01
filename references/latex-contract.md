@@ -76,6 +76,8 @@ The only runtime LaTeX source is `src/axiomfig/resources/latex/`. Its `axiomfig.
 \end{document}
 ```
 
-`gallery/technical/latex/scientific_typography` and `gallery/technical/latex/palettes` are genuinely Tectonic-native documents built through that packaged resource; macros and palette-qualified colors are expanded by TeX there.
+The Tectonic-native typography and palette probes in the evaluation suite are built through that
+packaged resource; macros and palette-qualified colors are expanded by TeX there. They are not
+formal Gallery entries.
 
 The Matplotlib Gallery path renders plot text into an intermediate PDF before Tectonic wraps that PDF. Therefore Tectonic cannot expand `\qty`, `\unit`, `\ce`, or other TeX macros placed inside Matplotlib labels. TeX-native Matplotlib text remains **DEFERRED**. The syntax above is valid for TeX-native documents; it is not evidence that Matplotlib labels support these macros.

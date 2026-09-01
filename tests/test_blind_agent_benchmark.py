@@ -36,6 +36,7 @@ def test_sanitized_workspace_exposes_only_the_agent_surface(tmp_path: Path) -> N
     assert destination / "references/agent-protocol.md" in copied
     assert destination / "references/figure-intent.md" in copied
     assert destination / "references/template-knowledge/index.yaml" in copied
+    assert destination / "references/template-knowledge/families/bar.md" in copied
     assert destination / "src/axiomfig/templates/index.yaml" in copied
     assert len(list(destination.glob("src/axiomfig/templates/*/contract.yaml"))) == 14
     assert not (destination / "tests").exists()

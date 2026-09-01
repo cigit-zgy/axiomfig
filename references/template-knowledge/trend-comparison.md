@@ -33,9 +33,8 @@ whether the available values are magnitudes, summaries, or observations.
 
 ## Choose among categorical comparison templates
 
-- `bar.vertical` and `bar.horizontal` encode one categorical magnitude per category. Horizontal
-  bars are often the clearer contract for long category labels; this is a routing decision about
-  label legibility, not a new scientific meaning.
+- `bar.simple` encodes one supplied categorical magnitude. Vertical and horizontal are semantic
+  orientations of the same grammar and the same tabular schema.
 - `bar.grouped` compares magnitudes for combinations of category and group. Supplied error values
   require an explicit uncertainty type; their presence does not make the bars a distribution plot.
 - `bar.stacked` shows part-to-whole magnitudes while preserving the total. Components and totals
@@ -43,8 +42,9 @@ whether the available values are magnitudes, summaries, or observations.
 - `bar.normalized_stacked` shows composition after an explicit normalization. It removes total
   magnitude from the message and therefore must not substitute for ordinary stacking when totals
   matter.
-- `bar.dot` compares categorical magnitudes with less visual mass than bars. Prefer it when precise
-  positions matter and filled rectangles add no scientific information.
+- `bar.grouped_stacked`, `bar.diverging_stacked`, `bar.range`, `bar.mirrored`, and
+  `bar.waterfall` own distinct hierarchy, sign, endpoint, side, and cumulative semantics. After the
+  Bar family is selected, read `families/bar.md` for the exact selection and tabular contracts.
 
 Magnitude bars normally require a meaningful zero baseline because bar length encodes value.
 Never choose a truncated magnitude bar merely to magnify small differences. A bar with an error
@@ -66,10 +66,15 @@ Separate these questions before routing:
 | What is the uncertainty at individual estimates? | `line.errorbar` |
 | When does a state change discretely? | `line.step` |
 | What magnitude exists relative to a meaningful baseline? | `line.area` |
-| Which category has a larger supplied magnitude? | bar or `bar.dot` |
+| Which category has a larger supplied magnitude? | `bar.simple` |
 | How do group magnitudes compare within categories? | `bar.grouped` |
 | How much does each component contribute to a total? | `bar.stacked` |
 | How do compositions compare after normalization? | `bar.normalized_stacked` |
+| How do components compare within category-group combinations? | `bar.grouped_stacked` |
+| Which signed components accumulate around zero? | `bar.diverging_stacked` |
+| What supplied lower-to-upper span belongs to each category? | `bar.range` |
+| How do two comparable sides differ around zero? | `bar.mirrored` |
+| How do explicit changes reconcile to a final total? | `bar.waterfall` |
 | How are replicate values distributed? | distribution topic, not summary bars |
 
 ## Ask when

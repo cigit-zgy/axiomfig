@@ -19,6 +19,8 @@ def test_knowledge_index_routes_to_existing_topics_and_templates() -> None:
     for route in document["intents"].values():
         assert (KNOWLEDGE_ROOT / route["topic"]).is_file()
         assert {template.replace(".", "/") for template in route["templates"]} <= registered
+    assert document["family_guides"] == {"bar": "families/bar.md"}
+    assert (KNOWLEDGE_ROOT / document["family_guides"]["bar"]).is_file()
 
 
 def test_registry_stays_discovery_only_and_knowledge_stays_compact() -> None:

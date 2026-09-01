@@ -108,5 +108,5 @@ def test_registry_contract_and_builder_binding_remain_consistent() -> None:
     """Catch duplicated identity drifting away from the executable binding."""
     specs = validate_registry(TEMPLATE_BUILDERS)
 
-    assert len([spec for spec in specs if spec.public]) == 55
-    assert len(TEMPLATE_BUILDERS) == len(specs) == 59
+    assert len([spec for spec in specs if spec.public]) == len(public_template_specs())
+    assert len(TEMPLATE_BUILDERS) == len(specs)

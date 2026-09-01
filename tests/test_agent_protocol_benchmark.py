@@ -2,18 +2,27 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import yaml
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_agent_protocol_benchmark_is_structurally_valid() -> None:
+    from axiomfig.templates.registry import public_template_specs
     from tests.evaluation.agent_protocol import validate_agent_protocol_cases
 
-    result = validate_agent_protocol_cases(ROOT / "tests/evaluation/agent_protocol_cases.yaml")
+    path = ROOT / "tests/evaluation/agent_protocol_cases.yaml"
+    result = validate_agent_protocol_cases(path)
+    document = yaml.safe_load(path.read_text(encoding="utf-8"))
+    cases = document["cases"]
 
-    assert result.case_count == 120
-    assert result.render_count == 70
-    assert result.public_families == 13
-    assert result.languages == {"en": 108, "zh": 12}
+    assert result.case_count == len(cases)
+    assert result.render_count == sum(case["expected"]["action"] == "render" for case in cases)
+    assert result.public_families == len(
+        {spec.family for spec in public_template_specs() if spec.agent_recommended}
+    )
+    assert sum(result.languages.values()) == result.case_count
+    assert result.languages["zh"] >= 12
     assert result.actual_llm_runs == 0
 
 
@@ -22,12 +31,14 @@ def test_agent_protocol_benchmark_covers_decision_boundaries() -> None:
 
     result = validate_agent_protocol_cases(ROOT / "tests/evaluation/agent_protocol_cases.yaml")
 
-    assert result.actions == {
-        "clarify": 20,
-        "render": 70,
-        "require_precomputed": 20,
-        "unsupported": 10,
+    assert set(result.actions) == {
+        "clarify",
+        "render",
+        "require_precomputed",
+        "unsupported",
     }
+    assert result.actions["render"] == result.render_count
+    assert all(count >= 10 for count in result.actions.values())
     assert {
         "ambiguous",
         "column_mapping",

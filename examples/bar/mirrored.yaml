@@ -1,0 +1,3 @@
+template: bar.mirrored
+data: {category: category, side: side, value: value}
+semantics: {mirror_side: Female, orientation: horizontal}

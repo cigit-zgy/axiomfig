@@ -1,0 +1,2 @@
+template: bar.diverging_stacked
+data: {category: category, component: component, value: value}

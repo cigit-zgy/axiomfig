@@ -9,7 +9,7 @@ cases:
     expected_anatomy: [matrix, row_dendrogram, column_dendrogram, row_annotation_strips, column_annotation_strip, colorbar, categorical_legend]
     positioning_relations: [matrix_alignment, shared_ordering, minimum_gap, containment, non_overlap]
     publication_geometry: {width_in: 7.48, height_in: 6.40}
-    reference_pdf: gallery/capability_audit/original/01_complex_clustermap.pdf
+    reference_pdf: tests/evaluation/figure_capability/artifacts/original/01_complex_clustermap.pdf
   - id: "02"
     name: dense_pairgrid
     authoritative_source: https://seaborn.pydata.org/generated/seaborn.PairGrid.html
@@ -19,7 +19,7 @@ cases:
     expected_anatomy: [panel_grid_5x5, diagonal_distributions, pairwise_scatter, global_legend]
     positioning_relations: [equal_size, shared_axis, alignment, ordering, containment]
     publication_geometry: {width_in: 7.48, height_in: 7.20}
-    reference_pdf: gallery/capability_audit/original/02_dense_pairgrid.pdf
+    reference_pdf: tests/evaluation/figure_capability/artifacts/original/02_dense_pairgrid.pdf
   - id: "03"
     name: joint_complex_marginals
     authoritative_source: https://seaborn.pydata.org/generated/seaborn.JointGrid.html
@@ -29,7 +29,7 @@ cases:
     expected_anatomy: [joint_axes, top_marginal, right_marginal, contours, selected_annotations, global_legend]
     positioning_relations: [shared_axis, shared_edge, containment, anchor, non_overlap]
     publication_geometry: {width_in: 5.51, height_in: 5.40}
-    reference_pdf: gallery/capability_audit/original/03_joint_complex_marginals.pdf
+    reference_pdf: tests/evaluation/figure_capability/artifacts/original/03_joint_complex_marginals.pdf
   - id: "04"
     name: extended_forest
     authoritative_source: https://www.statsmodels.org/stable/generated/statsmodels.graphics.dotplots.dot_plot.html
@@ -39,7 +39,7 @@ cases:
     expected_anatomy: [estimate_axis, confidence_intervals, subgroup_headers, null_reference, left_labels, right_statistics]
     positioning_relations: [row_alignment, anchor, minimum_gap, containment]
     publication_geometry: {width_in: 7.48, height_in: 7.00}
-    reference_pdf: gallery/capability_audit/original/04_extended_forest.pdf
+    reference_pdf: tests/evaluation/figure_capability/artifacts/original/04_extended_forest.pdf
   - id: "05"
     name: km_risk_table
     authoritative_source: https://lifelines.readthedocs.io/en/stable/lifelines.plotting.html#lifelines.plotting.add_at_risk_counts
@@ -49,7 +49,7 @@ cases:
     expected_anatomy: [survival_axes, confidence_bands, censor_marks, legend, risk_table]
     positioning_relations: [shared_axis, row_alignment, minimum_gap, containment]
     publication_geometry: {width_in: 7.48, height_in: 5.80}
-    reference_pdf: gallery/capability_audit/original/05_km_risk_table.pdf
+    reference_pdf: tests/evaluation/figure_capability/artifacts/original/05_km_risk_table.pdf
   - id: "06"
     name: calibration_dashboard
     authoritative_source: https://scikit-learn.org/stable/auto_examples/calibration/plot_calibration_curve.html
@@ -59,7 +59,7 @@ cases:
     expected_anatomy: [reliability_axes, identity_reference, model_curves, four_histogram_axes, global_legend]
     positioning_relations: [shared_axis, alignment, equal_size, containment]
     publication_geometry: {width_in: 7.48, height_in: 6.00}
-    reference_pdf: gallery/capability_audit/original/06_calibration_dashboard.pdf
+    reference_pdf: tests/evaluation/figure_capability/artifacts/original/06_calibration_dashboard.pdf
   - id: "07"
     name: pdp_ice_dashboard
     authoritative_source: https://scikit-learn.org/stable/modules/generated/sklearn.inspection.PartialDependenceDisplay.html
@@ -69,7 +69,7 @@ cases:
     expected_anatomy: [four_line_axes, ice_lines, pdp_lines, decile_marks, contour_axes, colorbar]
     positioning_relations: [equal_size, shared_axis, containment, minimum_gap]
     publication_geometry: {width_in: 7.48, height_in: 5.80}
-    reference_pdf: gallery/capability_audit/original/07_pdp_ice_dashboard.pdf
+    reference_pdf: tests/evaluation/figure_capability/artifacts/original/07_pdp_ice_dashboard.pdf
   - id: "08"
     name: influence_labels
     authoritative_source: https://www.statsmodels.org/stable/generated/statsmodels.graphics.regressionplots.influence_plot.html
@@ -79,7 +79,7 @@ cases:
     expected_anatomy: [bubble_scatter, reference_lines, movable_labels, leader_lines]
     positioning_relations: [anchor, allowed_displacement, non_overlap, containment]
     publication_geometry: {width_in: 5.51, height_in: 4.80}
-    reference_pdf: gallery/capability_audit/original/08_influence_labels.pdf
+    reference_pdf: tests/evaluation/figure_capability/artifacts/original/08_influence_labels.pdf
   - id: "09"
     name: dense_volcano
     authoritative_source: https://bioconductor.org/packages/release/bioc/vignettes/EnhancedVolcano/inst/doc/EnhancedVolcano.html#fit-more-labels-by-adding-connectors
@@ -89,7 +89,7 @@ cases:
     expected_anatomy: [dense_scatter, effect_thresholds, significance_threshold, movable_labels, connectors, legend]
     positioning_relations: [anchor, allowed_displacement, non_overlap, z_order, containment]
     publication_geometry: {width_in: 7.48, height_in: 5.80}
-    reference_pdf: gallery/capability_audit/original/09_dense_volcano.pdf
+    reference_pdf: tests/evaluation/figure_capability/artifacts/original/09_dense_volcano.pdf
   - id: "10"
     name: dotplot_dendrogram
     authoritative_source: https://scanpy.readthedocs.io/en/latest/tutorials/plotting/core.html#dotplot
@@ -99,7 +99,7 @@ cases:
     expected_anatomy: [dot_matrix, dendrogram, size_legend, colorbar, category_labels, feature_labels]
     positioning_relations: [shared_ordering, alignment, minimum_gap, containment]
     publication_geometry: {width_in: 7.48, height_in: 5.60}
-    reference_pdf: gallery/capability_audit/original/10_dotplot_dendrogram.pdf
+    reference_pdf: tests/evaluation/figure_capability/artifacts/original/10_dotplot_dendrogram.pdf
   - id: "11"
     name: upset
     authoritative_source: https://upsetplot.readthedocs.io/en/stable/auto_examples/index.html
@@ -109,7 +109,7 @@ cases:
     expected_anatomy: [set_size_bars, intersection_bars, membership_matrix, connectors, annotations]
     positioning_relations: [shared_axis, shared_ordering, alignment, containment]
     publication_geometry: {width_in: 7.48, height_in: 5.60}
-    reference_pdf: gallery/capability_audit/original/11_upset.pdf
+    reference_pdf: tests/evaluation/figure_capability/artifacts/original/11_upset.pdf
   - id: "12"
     name: oncoprint
     authoritative_source: https://jokergoo.github.io/ComplexHeatmap-reference/book/oncoprint.html
@@ -119,7 +119,7 @@ cases:
     expected_anatomy: [alteration_matrix, multi_glyph_cells, top_frequency, right_frequency, percentages, legends]
     positioning_relations: [shared_axis, shared_ordering, alignment, z_order, containment]
     publication_geometry: {width_in: 7.48, height_in: 5.80}
-    reference_pdf: gallery/capability_audit/original/12_oncoprint.pdf
+    reference_pdf: tests/evaluation/figure_capability/artifacts/original/12_oncoprint.pdf
   - id: "13"
     name: ridge_density
     authoritative_source: https://seaborn.pydata.org/examples/kde_ridgeplot.html
@@ -129,7 +129,7 @@ cases:
     expected_anatomy: [twelve_density_axes, filled_densities, group_labels, baselines]
     positioning_relations: [shared_axis, allowed_overlap, ordering, z_order, containment]
     publication_geometry: {width_in: 5.51, height_in: 6.20}
-    reference_pdf: gallery/capability_audit/original/13_ridge_density.pdf
+    reference_pdf: tests/evaluation/figure_capability/artifacts/original/13_ridge_density.pdf
   - id: "14"
     name: distribution_composite
     authoritative_source: https://seaborn.pydata.org/generated/seaborn.violinplot.html
@@ -139,7 +139,7 @@ cases:
     expected_anatomy: [violins, boxes, raw_points, significance_brackets, legend, long_labels]
     positioning_relations: [categorical_ordering, allowed_overlap, minimum_gap, containment]
     publication_geometry: {width_in: 7.48, height_in: 5.60}
-    reference_pdf: gallery/capability_audit/original/14_distribution_composite.pdf
+    reference_pdf: tests/evaluation/figure_capability/artifacts/original/14_distribution_composite.pdf
   - id: "15"
     name: pca_biplot
     authoritative_source: https://scikit-learn.org/stable/auto_examples/decomposition/plot_pca_iris.html
@@ -149,7 +149,7 @@ cases:
     expected_anatomy: [score_scatter, group_ellipses, loading_arrows, movable_loading_labels, origin_references, legend]
     positioning_relations: [anchor, allowed_displacement, non_overlap, containment]
     publication_geometry: {width_in: 5.51, height_in: 5.20}
-    reference_pdf: gallery/capability_audit/original/15_pca_biplot.pdf
+    reference_pdf: tests/evaluation/figure_capability/artifacts/original/15_pca_biplot.pdf
   - id: "16"
     name: mantel_correlation
     authoritative_source: references/mantel.md
@@ -159,7 +159,7 @@ cases:
     expected_anatomy: [correlation_half_matrix, target_nodes, source_nodes, links, pearson_colorbar, mantel_legends]
     positioning_relations: [target_rail, source_rail, anchor, containment, non_overlap]
     publication_geometry: {width_in: 7.48, height_in: 5.80}
-    reference_pdf: gallery/capability_audit/original/16_mantel_correlation.pdf
+    reference_pdf: tests/evaluation/figure_capability/artifacts/original/16_mantel_correlation.pdf
   - id: "17"
     name: classifier_dashboard
     authoritative_source: https://scikit-learn.org/stable/auto_examples/miscellaneous/plot_display_object_visualization.html
@@ -169,7 +169,7 @@ cases:
     expected_anatomy: [roc_axes, precision_recall_axes, det_axes, confusion_matrix_axes, global_legend, colorbar]
     positioning_relations: [equal_size, alignment, shared_legend, containment]
     publication_geometry: {width_in: 7.48, height_in: 6.20}
-    reference_pdf: gallery/capability_audit/original/17_classifier_dashboard.pdf
+    reference_pdf: tests/evaluation/figure_capability/artifacts/original/17_classifier_dashboard.pdf
   - id: "18"
     name: regression_diagnostics
     authoritative_source: https://www.statsmodels.org/stable/diagnostic.html
@@ -179,7 +179,7 @@ cases:
     expected_anatomy: [residual_panel, qq_panel, scale_location_panel, leverage_panel, references, movable_labels]
     positioning_relations: [equal_size, alignment, anchor, non_overlap, containment]
     publication_geometry: {width_in: 7.48, height_in: 6.20}
-    reference_pdf: gallery/capability_audit/original/18_regression_diagnostics.pdf
+    reference_pdf: tests/evaluation/figure_capability/artifacts/original/18_regression_diagnostics.pdf
   - id: "19"
     name: learning_scalability
     authoritative_source: https://scikit-learn.org/stable/auto_examples/model_selection/plot_learning_curve.html
@@ -189,7 +189,7 @@ cases:
     expected_anatomy: [six_panel_grid, learning_curves, uncertainty_bands, timing_curves, performance_timing, global_legend]
     positioning_relations: [equal_size, shared_axis, alignment, containment]
     publication_geometry: {width_in: 7.48, height_in: 7.00}
-    reference_pdf: gallery/capability_audit/original/19_learning_scalability.pdf
+    reference_pdf: tests/evaluation/figure_capability/artifacts/original/19_learning_scalability.pdf
   - id: "20"
     name: manhattan_qq
     authoritative_source: https://github.com/stephenturner/qqman
@@ -199,4 +199,4 @@ cases:
     expected_anatomy: [manhattan_axes, chromosome_groups, threshold_lines, selected_labels, qq_axes, identity_reference]
     positioning_relations: [shared_ordering, anchor, non_overlap, containment]
     publication_geometry: {width_in: 7.48, height_in: 5.20}
-    reference_pdf: gallery/capability_audit/original/20_manhattan_qq.pdf
+    reference_pdf: tests/evaluation/figure_capability/artifacts/original/20_manhattan_qq.pdf

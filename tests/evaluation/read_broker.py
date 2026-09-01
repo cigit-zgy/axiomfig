@@ -20,6 +20,7 @@ CORE_FILES = (
 )
 GLOBS = (
     "references/template-knowledge/*.md",
+    "references/template-knowledge/families/*.md",
     "src/axiomfig/templates/*/contract.yaml",
 )
 

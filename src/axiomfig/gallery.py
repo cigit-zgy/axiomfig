@@ -14,16 +14,13 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from axiomfig.config import build_rcparams, load_contracts
-from axiomfig.latex import LatexGalleryResult, build_latex_gallery
 from axiomfig.rendering import RenderResult, render_figure
 from axiomfig.templates import TEMPLATE_GALLERY_CASES, build_template
 from axiomfig.templates.registry import public_template_specs
 from axiomfig.typography import discover_fonts
 from axiomfig.validation import validate_pair
 
-GALLERY_MODES = ("sans", "serif")
-TECHNICAL_LATEX_STEMS = ("scientific_typography", "palettes")
-PRESERVED_GALLERY_ROOTS = ("archive", "capability_audit")
+GALLERY_TYPOGRAPHY = "serif"
 
 
 @dataclass(frozen=True)
@@ -42,6 +39,8 @@ class GallerySpec:
 def _gallery_specs() -> tuple[GallerySpec, ...]:
     specs: list[GallerySpec] = []
     for spec in public_template_specs():
+        if not spec.agent_recommended:
+            continue
         cases = TEMPLATE_GALLERY_CASES.get(spec.template_id)
         if cases is not None:
             specs.extend(
@@ -63,9 +62,7 @@ GALLERY_SPECS = _gallery_specs()
 
 
 def expected_gallery_stems() -> tuple[str, ...]:
-    stems = [f"{mode}/{spec.output_id}" for mode in GALLERY_MODES for spec in GALLERY_SPECS]
-    stems.extend(f"technical/latex/{stem}" for stem in TECHNICAL_LATEX_STEMS)
-    return tuple(stems)
+    return tuple(spec.output_id for spec in GALLERY_SPECS)
 
 
 @contextmanager
@@ -94,95 +91,70 @@ def _assert_generated_tree(path: Path) -> None:
 
 def _prepare_gallery(root: Path) -> None:
     root.mkdir(parents=True, exist_ok=True)
-    allowed_roots = {*GALLERY_MODES, "latex", "technical"}
+    expected_families = {spec.family for spec in GALLERY_SPECS}
     for path in root.iterdir():
-        if path.is_dir() and path.name in PRESERVED_GALLERY_ROOTS:
+        if path.is_file() and path.name == "README.md":
             continue
-        if not path.is_dir() or path.name not in allowed_roots:
+        if not path.is_dir() or path.name not in expected_families:
             raise RuntimeError(f"unexpected Gallery content: {path}")
         _assert_generated_tree(path)
         shutil.rmtree(path)
-    for mode in GALLERY_MODES:
-        (root / mode).mkdir()
-    (root / "technical" / "latex").mkdir(parents=True)
+    for family in sorted(expected_families):
+        (root / family).mkdir()
 
 
-def build_gallery(
-    gallery: Path, *, work_root: Path | None = None
-) -> list[RenderResult | LatexGalleryResult]:
+def build_gallery(gallery: Path, *, work_root: Path) -> list[RenderResult]:
     gallery = Path(gallery).expanduser().resolve()
-    work_root = (
-        Path(work_root).expanduser().resolve()
-        if work_root is not None
-        else (Path.cwd() / "tmp" / "gallery").resolve()
-    )
+    work_root = Path(work_root).expanduser().resolve()
     if work_root.exists():
         shutil.rmtree(work_root)
     work_root.mkdir(parents=True)
     _prepare_gallery(gallery)
     contracts = load_contracts()
-    results: list[RenderResult | LatexGalleryResult] = []
-    manifest: dict[str, Any] = {"figures": []}
+    results: list[RenderResult] = []
+    manifest: dict[str, Any] = {"typography": GALLERY_TYPOGRAPHY, "figures": []}
 
     with _deterministic_pdf_environment():
-        for mode in GALLERY_MODES:
-            fonts = discover_fonts(mode)
-            for spec in GALLERY_SPECS:
-                params = build_rcparams(contracts, geometry=spec.geometry, typography=mode)
-                with mpl.rc_context(rc=params):
-                    values = spec.values() if spec.values is not None else {}
-                    figure = build_template(spec.template_id, **values)
-                    figure.set_size_inches(
-                        cast(tuple[float, float], params["figure.figsize"]), forward=False
-                    )
-                    result = render_figure(
-                        figure,
-                        gallery / mode / spec.output_id,
-                        work_root=work_root / mode / spec.family,
-                        typography=mode,
-                        geometry=spec.geometry,
-                    )
-                    plt.close(figure)
-                geometry = contracts.style["geometry"][spec.geometry]
-                width_mm = float(geometry["width_mm"])
-                height_mm = width_mm / float(geometry["aspect"])
-                entry = validate_pair(
-                    result.pdf,
-                    result.png,
-                    expected_width_mm=width_mm,
-                    expected_height_mm=height_mm,
-                    tectonic_log=result.log,
-                )
-                results.append(result)
-                manifest["figures"].append(
-                    {
-                        "mode": mode,
-                        "template": spec.template_id,
-                        "example": spec.example_id,
-                        "geometry": spec.geometry,
-                        "pdf_sha256": _sha256(result.pdf),
-                        "png_sha256": _sha256(result.png),
-                        "font_sources": {role: font.path for role, font in fonts.items()},
-                        "font_rows": list(entry.fonts),
-                    }
-                )
-        technical = gallery / "technical" / "latex"
-        latex_results = build_latex_gallery(technical, work_root=work_root / "technical" / "latex")
-        for latex_result in latex_results:
-            entry = validate_pair(
-                latex_result.pdf,
-                latex_result.png,
-                tectonic_log=latex_result.log,
+        fonts = discover_fonts(GALLERY_TYPOGRAPHY)
+        for spec in GALLERY_SPECS:
+            params = build_rcparams(
+                contracts,
+                geometry=spec.geometry,
+                typography=GALLERY_TYPOGRAPHY,
             )
-            results.append(latex_result)
+            with mpl.rc_context(rc=params):
+                values = spec.values() if spec.values is not None else {}
+                figure = build_template(spec.template_id, **values)
+                figure.set_size_inches(
+                    cast(tuple[float, float], params["figure.figsize"]), forward=False
+                )
+                result = render_figure(
+                    figure,
+                    gallery / spec.output_id,
+                    work_root=work_root / spec.family,
+                    typography=GALLERY_TYPOGRAPHY,
+                    geometry=spec.geometry,
+                )
+                plt.close(figure)
+            geometry = contracts.style["geometry"][spec.geometry]
+            width_mm = float(geometry["width_mm"])
+            height_mm = width_mm / float(geometry["aspect"])
+            entry = validate_pair(
+                result.pdf,
+                result.png,
+                expected_width_mm=width_mm,
+                expected_height_mm=height_mm,
+                tectonic_log=result.log,
+            )
+            results.append(result)
             manifest["figures"].append(
                 {
-                    "mode": "technical/latex",
-                    "template": "tectonic-native",
-                    "stem": latex_result.pdf.stem,
-                    "geometry": "standalone",
-                    "pdf_sha256": _sha256(latex_result.pdf),
-                    "png_sha256": _sha256(latex_result.png),
+                    "template": spec.template_id,
+                    "example": spec.example_id,
+                    "geometry": spec.geometry,
+                    "pdf_sha256": _sha256(result.pdf),
+                    "png_sha256": _sha256(result.png),
+                    "font_sources": {role: font.path for role, font in fonts.items()},
                     "font_rows": list(entry.fonts),
                 }
             )

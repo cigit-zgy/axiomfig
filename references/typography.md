@@ -25,7 +25,9 @@ Arial, Times New Roman, SimSun, and Yu Gothic are optional system-font records w
 
 Latin Modern Sans and XCharter each resolve regular, bold, italic/oblique, and bold-italic files. Maple Mono and XCharter Math resolve the configured regular/variable file. Sans mode maps Matplotlib MathText regular, italic, and bold roles to Latin Modern Sans so `R^2`, Greek letters, subscripts, and superscripts remain visually sans. `discover_fonts(mode)` searches the repository/installed bundle before optional system roots, registers exact matches, and returns the resolved `text`, `math`, and `mono` roles without mutating global `rcParams`.
 
-`apply_figure_typography()` assigns the selected Latin family and MathText mapping to ordinary Matplotlib text artists while preserving size, weight, and style. An artist with an explicit font file is preserved. This is distinct from the XCharter/XCharter Math Tectonic-native reference figures under `gallery/technical/latex/`.
+`apply_figure_typography()` assigns the selected Latin family and MathText mapping to ordinary
+Matplotlib text artists while preserving size, weight, and style. An artist with an explicit font
+file is preserved. This is distinct from Tectonic-native typography probes in the evaluation suite.
 
 ## Deferred scripts
 

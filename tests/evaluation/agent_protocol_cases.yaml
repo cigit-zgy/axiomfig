@@ -70,16 +70,16 @@ cases:
     available_data: {format: csv, columns: [x, y]}
     expected: {action: render, template: scatter.hexbin, input_mode: direct, required_roles: [x, y]}
 
-  - id: R14-bar-vertical
+  - id: R14-bar-simple-vertical
     request: Compare the category values with vertical bars.
     classes: [implicit_template, direct_data]
     available_data: {format: csv, columns: [category, value]}
-    expected: {action: render, template: bar.vertical, input_mode: direct, required_roles: [category, value]}
-  - id: R15-bar-horizontal
+    expected: {action: render, template: bar.simple, input_mode: direct, required_roles: [category, value], required_semantics: [orientation]}
+  - id: R15-bar-simple-horizontal
     request: Use horizontal bars for the long category names and their values.
     classes: [implicit_template, direct_data]
     available_data: {format: csv, columns: [category, value]}
-    expected: {action: render, template: bar.horizontal, input_mode: direct, required_roles: [category, value]}
+    expected: {action: render, template: bar.simple, input_mode: direct, required_roles: [category, value], required_semantics: [orientation]}
   - id: R16-bar-grouped
     request: Compare each treatment across sites with grouped bars.
     classes: [implicit_template, direct_data]
@@ -95,11 +95,31 @@ cases:
     classes: [explicit_template, direct_data]
     available_data: {format: csv, columns: [category, value, component, normalization]}
     expected: {action: render, template: bar.normalized_stacked, input_mode: direct, required_roles: [category, value, component, normalization]}
-  - id: R19-bar-dot
-    request: Make a categorical dot chart for these category values.
+  - id: R19-bar-grouped-stacked
+    request: Compare the supplied component totals across groups nested within each category.
     classes: [implicit_template, direct_data]
-    available_data: {format: csv, columns: [category, value]}
-    expected: {action: render, template: bar.dot, input_mode: direct, required_roles: [category, value]}
+    available_data: {format: csv, columns: [category, group, component, value]}
+    expected: {action: render, template: bar.grouped_stacked, input_mode: direct, required_roles: [category, group, component, value]}
+  - id: R19b-bar-diverging-stacked
+    request: Show the supplied signed component contributions accumulating above and below zero.
+    classes: [implicit_template, direct_data, scientific_boundary]
+    available_data: {format: csv, columns: [category, component, value]}
+    expected: {action: render, template: bar.diverging_stacked, input_mode: direct, required_roles: [category, component, value]}
+  - id: R19c-bar-range
+    request: Show the supplied operating lower-to-upper range for each category; these are endpoints, not uncertainty intervals.
+    classes: [implicit_template, direct_data, scientific_boundary]
+    available_data: {format: csv, columns: [category, lower, upper]}
+    expected: {action: render, template: bar.range, input_mode: direct, required_roles: [category, lower, upper]}
+  - id: R19d-bar-mirrored
+    request: Compare the two supplied population sides around zero using the explicit left side as the mirror.
+    classes: [implicit_template, direct_data, scientific_boundary]
+    available_data: {format: csv, columns: [category, side, value, mirror_side]}
+    expected: {action: render, template: bar.mirrored, input_mode: direct, required_roles: [category, side, value, mirror_side]}
+  - id: R19e-bar-waterfall
+    request: Reconcile the supplied subtotal, changes, and final total in their given step order.
+    classes: [implicit_template, direct_data, scientific_boundary]
+    available_data: {format: csv, columns: [step, delta, role]}
+    expected: {action: render, template: bar.waterfall, input_mode: direct, required_roles: [step, delta, role]}
 
   - id: R20-distribution-histogram
     request: Show the frequency distribution of all measured concentrations.

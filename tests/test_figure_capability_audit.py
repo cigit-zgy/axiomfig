@@ -9,8 +9,8 @@ import yaml
 from pypdf import PdfReader
 
 ROOT = Path(__file__).resolve().parents[1]
-AUDIT = ROOT / "gallery" / "capability_audit"
-ARCHIVE = ROOT / "gallery" / "archive" / "layout_engine_round01"
+AUDIT = ROOT / "tests" / "evaluation" / "figure_capability" / "artifacts"
+ARCHIVE = ROOT / "tests" / "evaluation" / "layout_benchmark" / "round01"
 CASES = ROOT / "tests" / "evaluation" / "figure_capability" / "cases.yaml"
 
 

@@ -10,6 +10,7 @@ the document needed for the current decision.
 | execution / clarification / unsupported decision | `agent-protocol.md` |
 | Figure Intent syntax | `figure-intent.md` |
 | choose a figure family when scientific intent is ambiguous | `template-knowledge/index.yaml` → one routed topic |
+| choose a grammar/schema inside a selected family | `template-knowledge/index.yaml` → one `family_guides` entry |
 | non-default visual or positional request | `element-contracts/index.md` → one routed topic |
 | advanced Mantel semantics | `mantel.md` |
 

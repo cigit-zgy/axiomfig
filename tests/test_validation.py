@@ -21,23 +21,25 @@ def test_nested_gallery_validation_checks_relative_expected_stems(tmp_path: Path
         validate_gallery(tmp_path, expected_stems={"sans/01_line", "serif/01_line"})
 
 
-def test_gallery_validation_excludes_pdf_only_evidence_roots(tmp_path: Path) -> None:
+def test_gallery_validation_rejects_retired_evidence_roots(tmp_path: Path) -> None:
     for root in ("archive", "capability_audit"):
         benchmark = tmp_path / root / "evidence"
         benchmark.mkdir(parents=True)
         (benchmark / "example.pdf").write_bytes(b"benchmark evidence")
 
-    assert validate_gallery(tmp_path, expected_stems=set()) == []
+    with pytest.raises(ValidationError, match="unexpected=.*archive"):
+        validate_gallery(tmp_path, expected_stems=set())
 
 
-def test_gallery_validation_preserves_conditional_parity_behavior(tmp_path: Path) -> None:
+def test_gallery_validation_rejects_retired_parity_root(tmp_path: Path) -> None:
     parity = tmp_path / "parity"
     parity.mkdir()
     (parity / "reference.pdf").write_bytes(b"not a PDF")
 
     with pytest.raises(ValidationError, match="missing PNG preview"):
         validate_gallery(tmp_path)
-    assert validate_gallery(tmp_path, expected_stems=set()) == []
+    with pytest.raises(ValidationError, match="unexpected=.*parity"):
+        validate_gallery(tmp_path, expected_stems=set())
 
 
 def test_figure_anatomy_rejects_auxiliary_axes_outside_its_footprint() -> None:

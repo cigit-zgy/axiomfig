@@ -13,7 +13,8 @@ description: Create deterministic publication-oriented scientific PDF and PNG fi
    `references/template-knowledge/index.yaml`, then only its routed topic. Ask only for missing
    scientific meaning that would materially change the result.
 3. Read `src/axiomfig/templates/index.yaml`, select exactly one registered template, and read only
-   `src/axiomfig/templates/<family>/contract.yaml`.
+   `src/axiomfig/templates/<family>/contract.yaml`. After family selection, read a routed
+   `family_guides` entry only when grammar or tabular-schema guidance is needed.
 4. Confirm whether the contract requires direct data or precomputed scientific results. Never
    invent missing analysis or scientific semantics.
 5. Normalize supported user files losslessly to CSV or JSON when needed, then write minimal Figure
@@ -46,7 +47,8 @@ Do not read all builders, contracts, references, or Gallery descriptions for a n
 
 ## Non-negotiable boundary
 
-- Use registered templates when one exists; all 55 public templates have executable data paths.
+- Use registered templates when one exists; every registered public template has an executable
+  data path.
 - Never expose font size, line width, tick length, legend position, marker or bar size, panel offset,
   margins, or colorbar geometry in Figure Intent.
 - Do not change scientific encoding merely to imitate a low-level visual request.

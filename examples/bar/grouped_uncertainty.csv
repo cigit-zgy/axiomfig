@@ -1,0 +1,7 @@
+category,group,value,error
+Influent,Control,5.2,0.30
+Influent,Treatment,4.7,0.25
+Effluent,Control,2.9,0.20
+Effluent,Treatment,2.1,0.18
+Reuse,Control,1.8,0.14
+Reuse,Treatment,1.3,0.12

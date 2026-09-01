@@ -26,7 +26,7 @@ def test_every_public_template_executes_true_external_data_intent() -> None:
     public_ids = {spec.template_id for spec in public_template_specs()}
     case_ids = {str(case["expected_template"]).replace(".", "/") for case in cases}
 
-    assert len(cases) == 55
+    assert len(cases) == len(public_ids)
     assert case_ids == public_ids
 
     completed: list[str] = []

@@ -1,0 +1,2 @@
+template: bar.waterfall
+data: {step: step, delta: delta, role: role}

@@ -6,33 +6,37 @@ from pathlib import Path
 import pytest
 
 
-def test_gallery_specs_are_derived_from_public_template_registry() -> None:
-    from axiomfig.gallery import GALLERY_MODES, GALLERY_SPECS
+def test_gallery_is_serif_only_family_first_and_curated() -> None:
+    from axiomfig.gallery import GALLERY_SPECS, GALLERY_TYPOGRAPHY
+    from axiomfig.templates.bar.gallery_cases import BAR_GALLERY_CASE_IDS
     from axiomfig.templates.registry import public_template_specs
 
-    public = public_template_specs()
-    assert GALLERY_MODES == ("sans", "serif")
-    assert {spec.template_id for spec in GALLERY_SPECS} == {spec.template_id for spec in public}
-    assert len(GALLERY_SPECS) == len(public) + 3
-
-
-def test_gallery_declares_semantic_technical_latex_cases() -> None:
-    from axiomfig.gallery import TECHNICAL_LATEX_STEMS
-
-    assert TECHNICAL_LATEX_STEMS == ("scientific_typography", "palettes")
-
-
-def test_expected_gallery_paths_are_registry_projection() -> None:
-    from axiomfig.gallery import GALLERY_SPECS, expected_gallery_stems
-    from axiomfig.templates.registry import public_template_specs
-
-    expected = {
-        *(f"{mode}/{spec.output_id}" for mode in ("sans", "serif") for spec in GALLERY_SPECS),
-        "technical/latex/scientific_typography",
-        "technical/latex/palettes",
+    assert GALLERY_TYPOGRAPHY == "serif"
+    assert len(BAR_GALLERY_CASE_IDS) == 16
+    compatibility = {
+        spec.template_id for spec in public_template_specs() if not spec.agent_recommended
     }
-    assert set(expected_gallery_stems()) == expected
-    assert len(expected) == 2 * (len(public_template_specs()) + 3) + 2
+    assert compatibility == {"bar/vertical", "bar/horizontal", "bar/dot"}
+    assert not ({spec.template_id for spec in GALLERY_SPECS} & compatibility)
+    assert {spec.template_id for spec in GALLERY_SPECS if spec.family == "bar"} == {
+        "bar/simple",
+        "bar/grouped",
+        "bar/stacked",
+        "bar/normalized_stacked",
+        "bar/grouped_stacked",
+        "bar/diverging_stacked",
+        "bar/range",
+        "bar/mirrored",
+        "bar/waterfall",
+    }
+    assert all(spec.output_id.count("/") == 1 for spec in GALLERY_SPECS)
+
+
+def test_expected_gallery_paths_are_curated_registry_projection() -> None:
+    from axiomfig.gallery import GALLERY_SPECS, expected_gallery_stems
+
+    assert set(expected_gallery_stems()) == {spec.output_id for spec in GALLERY_SPECS}
+    assert len(expected_gallery_stems()) == len(GALLERY_SPECS)
 
 
 def test_gallery_cli_validates_registry_projection(
@@ -54,48 +58,53 @@ def test_gallery_cli_validates_registry_projection(
     assert captured["expected"] == set(expected_gallery_stems())
 
 
-def test_committed_gallery_has_no_numbered_flat_or_orphan_artifacts() -> None:
+def test_committed_gallery_is_flat_complete_and_has_no_retired_namespaces() -> None:
     from axiomfig.gallery import expected_gallery_stems
 
     gallery = Path(__file__).resolve().parents[1] / "gallery"
     expected = set(expected_gallery_stems())
-    pdfs = {
-        path.relative_to(gallery).with_suffix("").as_posix()
-        for path in gallery.rglob("*.pdf")
-        if path.relative_to(gallery).parts[0] not in {"archive", "capability_audit"}
-    }
-    pngs = {
-        path.relative_to(gallery).with_suffix("").as_posix()
-        for path in gallery.rglob("*.png")
-        if path.relative_to(gallery).parts[0] not in {"archive", "capability_audit"}
-    }
+    pdfs = {path.relative_to(gallery).with_suffix("").as_posix() for path in gallery.rglob("*.pdf")}
+    pngs = {path.relative_to(gallery).with_suffix("").as_posix() for path in gallery.rglob("*.png")}
 
     assert pdfs == pngs == expected
     assert not any(re.match(r"(?:^|/)\d+_", stem) for stem in pdfs)
+    assert not {
+        "sans",
+        "serif",
+        "technical",
+        "capability_audit",
+        "archive",
+    } & {path.name for path in gallery.iterdir() if path.is_dir()}
+    assert {path.name for path in gallery.iterdir() if path.is_dir()} == {
+        stem.split("/", maxsplit=1)[0] for stem in expected
+    }
 
 
-def test_gallery_build_preserves_evidence_namespaces(tmp_path: Path) -> None:
+def test_maintenance_scripts_do_not_recreate_retired_gallery_namespaces() -> None:
+    root = Path(__file__).resolve().parents[1]
+    retired = tuple(
+        f"gallery/{name}" for name in ("sans", "serif", "technical", "capability_audit", "archive")
+    )
+    for path in (root / "scripts").glob("*.py"):
+        text = path.read_text(encoding="utf-8")
+        assert not any(namespace in text for namespace in retired), path
+
+
+def test_gallery_prepare_accepts_only_family_directories(tmp_path: Path) -> None:
     from axiomfig.gallery import _prepare_gallery
 
     gallery = tmp_path / "gallery"
-    artifacts = []
-    for root in ("archive", "capability_audit"):
-        directory = gallery / root / "evidence"
-        directory.mkdir(parents=True)
-        artifact = directory / "example.pdf"
-        artifact.write_bytes(f"{root} evidence".encode())
-        artifacts.append(artifact)
+    gallery.mkdir()
+    (gallery / "README.md").write_text("Gallery\n", encoding="utf-8")
+    retired = gallery / "sans"
+    retired.mkdir()
 
-    _prepare_gallery(gallery)
-
-    assert [artifact.read_text() for artifact in artifacts] == [
-        "archive evidence",
-        "capability_audit evidence",
-    ]
+    with pytest.raises(RuntimeError, match="unexpected Gallery content"):
+        _prepare_gallery(gallery)
 
 
 @pytest.mark.e2e
-def test_gallery_builds_only_registry_pdf_png_pairs(tmp_path: Path) -> None:
+def test_gallery_builds_only_curated_pdf_png_pairs(tmp_path: Path) -> None:
     from axiomfig.gallery import build_gallery, expected_gallery_stems
     from axiomfig.validation import validate_gallery
 
@@ -104,8 +113,8 @@ def test_gallery_builds_only_registry_pdf_png_pairs(tmp_path: Path) -> None:
     expected = set(expected_gallery_stems())
     entries = validate_gallery(gallery, expected_stems=expected)
 
-    assert len(results) == 118
-    assert len(entries) == 118
+    assert len(results) == len(expected)
+    assert len(entries) == len(expected)
     assert {
         path.relative_to(gallery).with_suffix("").as_posix() for path in gallery.rglob("*.pdf")
     } == expected

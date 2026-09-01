@@ -11,7 +11,7 @@ import pytest
 from pypdf import PdfReader
 
 ROOT = Path(__file__).resolve().parents[1]
-BENCHMARK = ROOT / "gallery" / "archive" / "layout_engine_round01"
+BENCHMARK = ROOT / "tests" / "evaluation" / "layout_benchmark" / "round01"
 BACKENDS = ("original", "default", "kiwi", "adjusttext", "textalloc")
 EXPERIMENTAL_BACKENDS = BACKENDS[1:]
 FILENAMES = (

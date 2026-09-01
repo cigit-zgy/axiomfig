@@ -1,7 +1,7 @@
 version: 1
 intents:
   trend: {topic: trend-comparison.md, templates: [line.single, line.multi, line.marker, line.step, line.area]}
-  comparison: {topic: trend-comparison.md, templates: [bar.vertical, bar.horizontal, bar.grouped, bar.stacked, bar.normalized_stacked, bar.dot]}
+  comparison: {topic: trend-comparison.md, templates: [bar.simple, bar.grouped, bar.stacked, bar.normalized_stacked, bar.grouped_stacked, bar.diverging_stacked, bar.range, bar.mirrored, bar.waterfall]}
   distribution: {topic: distribution-relationship.md, templates: [distribution.histogram, distribution.density, distribution.ecdf, distribution.box, distribution.violin, distribution.box_violin, distribution.strip, distribution.raincloud]}
   relationship: {topic: distribution-relationship.md, templates: [scatter.simple, scatter.grouped, scatter.regression, scatter.parity, scatter.bubble, scatter.hexbin]}
   uncertainty: {topic: uncertainty-model.md, templates: [line.confidence_band, line.errorbar, estimation.forest, estimation.point_interval, estimation.coefficient]}
@@ -14,3 +14,5 @@ intents:
   omics: {topic: domain-specialized.md, templates: [omics.volcano, omics.enrichment_dot]}
   survival: {topic: domain-specialized.md, templates: [survival.kaplan_meier]}
   composition: {topic: domain-specialized.md, templates: [layouts.grid_2x2, layouts.grid_2x3, layouts.grid_3x2]}
+family_guides:
+  bar: families/bar.md

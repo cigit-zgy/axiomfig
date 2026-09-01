@@ -84,7 +84,7 @@ def validate_agent_protocol_cases(path: Path) -> AgentProtocolBenchmarkResult:
         raise ValueError("Agent protocol benchmark must contain 110-130 cases")
 
     specs = {spec.template_id: spec for spec in load_template_registry()}
-    public_ids = {spec.template_id for spec in public_template_specs()}
+    public_ids = {spec.template_id for spec in public_template_specs() if spec.agent_recommended}
     public_families = {spec.family for spec in public_template_specs()}
     ids: set[str] = set()
     actions: Counter[str] = Counter()
@@ -174,7 +174,7 @@ def validate_agent_protocol_cases(path: Path) -> AgentProtocolBenchmarkResult:
 
     if rendered_templates != public_ids:
         raise ValueError(
-            "render cases must cover every public template; "
+            "render cases must cover every Agent-recommended public template; "
             f"missing={sorted(public_ids - rendered_templates)}, "
             f"extra={sorted(rendered_templates - public_ids)}"
         )

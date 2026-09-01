@@ -19,12 +19,18 @@ families:
       hexbin: {geometry: single-column}
   bar:
     variants:
-      vertical: {geometry: single-column}
-      horizontal: {geometry: single-column}
+      simple: {geometry: single-column}
       grouped: {geometry: single-column}
       stacked: {geometry: single-column}
       normalized_stacked: {geometry: single-column}
-      dot: {geometry: single-column}
+      grouped_stacked: {geometry: single-column}
+      diverging_stacked: {geometry: single-column}
+      range: {geometry: single-column}
+      mirrored: {geometry: single-column}
+      waterfall: {geometry: single-column}
+      vertical: {geometry: single-column, status: compatibility}
+      horizontal: {geometry: single-column, status: compatibility}
+      dot: {geometry: single-column, status: compatibility}
   distribution:
     variants:
       histogram: {geometry: single-column}

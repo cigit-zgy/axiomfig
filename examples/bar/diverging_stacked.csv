@@ -1,0 +1,9 @@
+category,component,value
+Site A,Gain 1,2.8
+Site A,Loss 1,-1.2
+Site A,Gain 2,1.1
+Site A,Loss 2,-0.6
+Site B,Gain 1,3.4
+Site B,Loss 1,-1.8
+Site B,Gain 2,0.8
+Site B,Loss 2,-0.7

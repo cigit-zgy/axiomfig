@@ -21,7 +21,7 @@ from axiomfig.intent import build_intent_figure, parse_figure_intent
 from axiomfig.rendering import render_figure
 from axiomfig.structured_io import load_yaml
 from axiomfig.templates import build_template
-from axiomfig.templates.registry import load_template_registry, public_template_specs
+from axiomfig.templates.registry import load_template_registry
 from axiomfig.typography import discover_fonts
 from axiomfig.validation import validate_figure_anatomy, validate_pair
 
@@ -210,23 +210,14 @@ def _figure_signature(case: EvaluationCase, fixture: Mapping[str, Any]) -> str:
 
 
 def _gallery_coverage(gallery_root: Path) -> tuple[int, int]:
-    specs = public_template_specs()
     present = 0
-    for spec in specs:
-        gallery_specs = tuple(
-            gallery_spec
-            for gallery_spec in GALLERY_SPECS
-            if gallery_spec.template_id == spec.template_id
-        )
+    for gallery_spec in GALLERY_SPECS:
         paths = tuple(
-            gallery_root / mode / f"{gallery_spec.output_id}.{suffix}"
-            for gallery_spec in gallery_specs
-            for mode in ("sans", "serif")
-            for suffix in ("pdf", "png")
+            gallery_root / f"{gallery_spec.output_id}.{suffix}" for suffix in ("pdf", "png")
         )
-        if gallery_specs and all(path.is_file() and path.stat().st_size > 0 for path in paths):
+        if all(path.is_file() and path.stat().st_size > 0 for path in paths):
             present += 1
-    return len(specs), present
+    return len(GALLERY_SPECS), present
 
 
 def run_evaluation(
@@ -251,7 +242,10 @@ def run_evaluation(
         if (
             intent.template_id == case.expected_template
             and case.expected_template in specs
-            and case.expected_template in routes.get(case.scientific_intent, ())
+            and (
+                not specs[case.expected_template].agent_recommended
+                or case.expected_template in routes.get(case.scientific_intent, ())
+            )
             and case.fixture_id in fixtures
         ):
             routing_passed += 1

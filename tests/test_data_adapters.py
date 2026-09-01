@@ -5,15 +5,22 @@ import pytest
 
 def test_all_public_templates_have_an_external_operability_class() -> None:
     from axiomfig.templates import TEMPLATE_ADAPTERS
-    from axiomfig.templates.registry import public_template_operability, public_template_specs
+    from axiomfig.templates.registry import (
+        load_family_contract,
+        public_template_operability,
+        public_template_specs,
+    )
 
     public_ids = {spec.template_id for spec in public_template_specs()}
     operability = public_template_operability()
 
     assert public_ids == set(TEMPLATE_ADAPTERS)
     assert set(operability) == public_ids
-    assert sum(value == "direct" for value in operability.values()) == 28
-    assert sum(value == "precomputed" for value in operability.values()) == 27
+    assert all(
+        operability[spec.template_id]
+        == load_family_contract(spec.family)["variants"][spec.variant]["input_mode"]
+        for spec in public_template_specs()
+    )
     assert set(operability.values()) == {"direct", "precomputed"}
 
 

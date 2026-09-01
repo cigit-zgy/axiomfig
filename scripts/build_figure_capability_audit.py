@@ -36,10 +36,10 @@ from axiomfig.style import axiom_colormap, palette_color, semantic_colormap  # n
 from axiomfig.typography import discover_fonts  # noqa: E402
 from scripts import build_layout_benchmark as round01  # noqa: E402
 
-AUDIT = ROOT / "gallery" / "capability_audit"
+AUDIT = ROOT / "tests" / "evaluation" / "figure_capability" / "artifacts"
 TMP = ROOT / "tmp" / "figure-capability-audit"
 CASES_PATH = ROOT / "tests" / "evaluation" / "figure_capability" / "cases.yaml"
-ARCHIVE = ROOT / "gallery" / "archive" / "layout_engine_round01"
+ARCHIVE = ROOT / "tests" / "evaluation" / "layout_benchmark" / "round01"
 
 BLUE = palette_color("AxiomBlue")
 CYAN = palette_color("AxiomCyan")
@@ -1319,11 +1319,9 @@ def build_originals() -> None:
     for index, legacy_name in enumerate(legacy_names, start=1):
         case_id = f"{index:02d}"
         shutil.copy2(ARCHIVE / "original" / legacy_name, output / _name(cases[case_id]))
+    shutil.copy2(ROOT / "gallery" / "ordination" / "pca_biplot.pdf", output / _name(cases["15"]))
     shutil.copy2(
-        ROOT / "gallery" / "sans" / "ordination" / "pca_biplot.pdf", output / _name(cases["15"])
-    )
-    shutil.copy2(
-        ROOT / "gallery" / "sans" / "association" / "mantel_canonical.pdf",
+        ROOT / "gallery" / "association" / "mantel_canonical.pdf",
         output / _name(cases["16"]),
     )
 

@@ -38,9 +38,10 @@ PNG, embedded and subset fonts, no Type 3 fonts, no text beyond the PDF boundary
 font/glyph diagnostics. Gallery validation additionally enforces the exact registry-derived nested
 artifact set and rejects missing or orphan files.
 
-The frozen Gallery contains 58 sans pairs, 58 serif pairs, and two Tectonic-native technical pairs:
-118 pairs and 236 artifacts. The three additional pairs per typography are formal Mantel routing
-stress cases generated from the same registered public template.
+The formal Gallery is a curated serif-only projection of `GALLERY_SPECS`. Its expected pair count
+is derived at runtime; every expected stem must have exactly one PDF and one PNG, with no orphan or
+retired namespace. Multiple cases may exercise one grammar, while compatibility-only IDs may remain
+executable without being promoted as current Gallery recommendations.
 
 ## Commands
 

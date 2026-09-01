@@ -1,0 +1,3 @@
+template: bar.normalized_stacked
+data: {category: category, component: component, value: value}
+semantics: {normalization: normalize}

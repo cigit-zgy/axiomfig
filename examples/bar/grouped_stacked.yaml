@@ -1,0 +1,2 @@
+template: bar.grouped_stacked
+data: {category: category, group: group, component: component, value: value}

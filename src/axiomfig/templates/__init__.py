@@ -16,6 +16,7 @@ from axiomfig.templates.association import (
 )
 from axiomfig.templates.association.adapter import adapt as adapt_association
 from axiomfig.templates.bar import BUILDERS as BAR_BUILDERS
+from axiomfig.templates.bar import GALLERY_CASES as BAR_GALLERY_CASES
 from axiomfig.templates.bar.adapter import adapt as adapt_bar
 from axiomfig.templates.diagnostics import BUILDERS as DIAGNOSTICS_BUILDERS
 from axiomfig.templates.diagnostics.adapter import adapt as adapt_diagnostics
@@ -86,7 +87,7 @@ _FAMILY_ADAPTERS = MappingProxyType(
 TEMPLATE_ADAPTERS = MappingProxyType(
     {spec.template_id: _FAMILY_ADAPTERS[spec.family] for spec in public_template_specs()}
 )
-TEMPLATE_GALLERY_CASES = MappingProxyType(dict(ASSOCIATION_GALLERY_CASES))
+TEMPLATE_GALLERY_CASES = MappingProxyType({**ASSOCIATION_GALLERY_CASES, **BAR_GALLERY_CASES})
 
 
 def adapt_template_data(template_id: str, values: dict[str, Any]) -> dict[str, object]:

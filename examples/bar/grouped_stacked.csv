@@ -1,0 +1,9 @@
+category,group,component,value
+R1,Control,Soluble,2.0
+R1,Control,Particulate,1.0
+R1,Treatment,Soluble,2.5
+R1,Treatment,Particulate,1.4
+R2,Control,Soluble,2.6
+R2,Control,Particulate,1.2
+R2,Treatment,Soluble,3.1
+R2,Treatment,Particulate,1.6

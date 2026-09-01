@@ -1,5 +1,41 @@
 family: bar
 variants:
+  simple:
+    input_mode: direct
+    required: [category, value]
+    optional: [orientation, error, uncertainty_type, value_labels, xlabel, ylabel]
+  grouped:
+    input_mode: direct
+    required: [category, value, group]
+    optional: [orientation, error, uncertainty_type, value_labels, xlabel, ylabel]
+  stacked:
+    input_mode: direct
+    required: [category, value, component]
+    optional: [orientation, value_labels, xlabel, ylabel]
+  normalized_stacked:
+    input_mode: direct
+    required: [category, value, component, normalization]
+    optional: [orientation, value_labels, xlabel, ylabel]
+  grouped_stacked:
+    input_mode: direct
+    required: [category, value, group, component]
+    optional: [orientation, value_labels, xlabel, ylabel]
+  diverging_stacked:
+    input_mode: direct
+    required: [category, value, component]
+    optional: [orientation, value_labels, xlabel, ylabel]
+  range:
+    input_mode: direct
+    required: [category, lower, upper]
+    optional: [orientation, value_labels, xlabel, ylabel]
+  mirrored:
+    input_mode: direct
+    required: [category, side, value, mirror_side]
+    optional: [orientation, value_labels, xlabel, ylabel]
+  waterfall:
+    input_mode: direct
+    required: [step, delta, role]
+    optional: [orientation, value_labels, xlabel, ylabel]
   vertical:
     input_mode: direct
     required: [category, value]
@@ -8,18 +44,6 @@ variants:
     input_mode: direct
     required: [category, value]
     optional: [value_labels, xlabel]
-  grouped:
-    input_mode: direct
-    required: [category, value, group]
-    optional: [error, uncertainty_type, value_labels]
-  stacked:
-    input_mode: direct
-    required: [category, value, component]
-    optional: [value_labels, ylabel]
-  normalized_stacked:
-    input_mode: direct
-    required: [category, value, component, normalization]
-    optional: [value_labels, ylabel]
   dot:
     input_mode: direct
     required: [category, value]

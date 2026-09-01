@@ -40,10 +40,10 @@ bar width, colorbar width, subplot spacing, and arbitrary fields. It also reject
 uncertainty types, centers, significance thresholds, or other required contract fields.
 
 CSV supplies named columns. JSON supplies a mapping of keys to arrays/matrices or a non-empty array
-of row objects. All 55 public templates have deliberately explicit family-owned adapters. Read only
-the selected family's `contract.yaml` to discover its required and optional roles. Twenty-eight
+of row objects. Every registered public template has a deliberately explicit family-owned adapter.
+Read only the selected family's `contract.yaml` to discover its required and optional roles. Some
 templates consume direct observations, categorical records, matrices, grids, or flow records;
-twenty-seven consume precomputed scientific results such as intervals, ordination coordinates,
+others consume precomputed scientific results such as intervals, ordination coordinates,
 Mantel links, adjusted p-values, or survival curves. AxiomFig does not compute those analyses.
 
 All public templates also accept a no-data Figure Intent for their deterministic canonical example.

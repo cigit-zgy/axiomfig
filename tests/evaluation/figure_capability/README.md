@@ -16,6 +16,6 @@ and association statistics) are represented only by frozen results. The native r
 Matplotlib plotting and layout primitives; numerical libraries may prepare deterministic fixture
 geometry but do not own plotting or placement.
 
-Canonical visual evidence is under `gallery/capability_audit/`. Temporary PNG previews, raw Agent
+Canonical audit evidence is under `tests/evaluation/figure_capability/artifacts/`. Temporary PNG previews, raw Agent
 logs, metrics, repeatability signatures, and the live attempt ledger remain under
 `tmp/figure-capability-audit/`.

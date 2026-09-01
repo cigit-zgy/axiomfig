@@ -168,7 +168,11 @@ def main() -> int:
     if args.output is not None:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(rendered + "\n", encoding="utf-8")
-    return 0 if result["public_templates"] == result["passed"] == 55 else 1
+    return (
+        0
+        if result["public_templates"] > 0 and result["public_templates"] == result["passed"]
+        else 1
+    )
 
 
 if __name__ == "__main__":

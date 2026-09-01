@@ -1,0 +1,3 @@
+template: bar.grouped
+data: {category: category, group: group, value: value, error: error}
+semantics: {uncertainty_type: SE}

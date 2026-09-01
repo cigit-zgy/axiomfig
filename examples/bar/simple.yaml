@@ -1,0 +1,3 @@
+template: bar.simple
+data: {category: category, value: value}
+semantics: {orientation: horizontal}

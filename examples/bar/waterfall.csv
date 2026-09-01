@@ -1,0 +1,5 @@
+step,delta,role
+Initial,5.0,subtotal
+Gain,3.0,change
+Loss,-2.0,change
+Final,6.0,total

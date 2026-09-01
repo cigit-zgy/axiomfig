@@ -33,7 +33,8 @@ box may move to remain readable.
 
 **Default behavior.** Keep fixed labels when they do not collide. Collision-aware displacement is
 not a current general production service. **Default source.** Selected builder plus
-`references/figure-anatomy.md` class D; prior evidence in `gallery/capability_audit/`.
+`references/figure-anatomy.md` class D; prior evidence in
+`tests/evaluation/figure_capability/artifacts/`.
 
 **When to modify.** Mandatory selected labels, dense volcano/Manhattan/biplot labels, or influential
 observations may require bounded displacement.
