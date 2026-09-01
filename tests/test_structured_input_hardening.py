@@ -10,6 +10,7 @@ from matplotlib import pyplot as plt
 
 import axiomfig.layout as layout_module
 import axiomfig.ornaments as ornaments_module
+import axiomfig.style as style_module
 from axiomfig import config
 from axiomfig.config import load_contracts
 from axiomfig.intent import (
@@ -284,6 +285,141 @@ def test_malformed_figure_intent_is_a_bounded_domain_error(
 def test_missing_figure_intent_path_is_a_bounded_domain_error(tmp_path: Path) -> None:
     with pytest.raises(FigureIntentError, match="cannot read Figure Intent"):
         load_figure_intent(tmp_path / "missing.yaml")
+
+
+def test_figure_intent_rejects_non_string_top_level_keys() -> None:
+    document = {
+        "template": "line.single",
+        "data": {"x": "time", "y": "value"},
+        1: "unexpected",
+    }
+
+    with pytest.raises(FigureIntentError, match="keys must be strings"):
+        parse_figure_intent(document)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(("field", "value"), (("geometry", []), ("typography", {})))
+def test_figure_intent_rejects_non_string_selection_fields(field: str, value: object) -> None:
+    document = {
+        "template": "line.single",
+        "data": {"x": "time", "y": "value"},
+        field: value,
+    }
+
+    with pytest.raises(FigureIntentError, match=f"{field} must be a string"):
+        parse_figure_intent(document)
+
+
+def test_yaml_figure_intent_rejects_non_string_top_level_keys(tmp_path: Path) -> None:
+    path = tmp_path / "intent.yaml"
+    path.write_text(
+        "template: line.single\ndata: {x: time, y: value}\n1: unexpected\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(FigureIntentError, match="keys must be strings"):
+        load_figure_intent(path)
+
+
+def test_xcolor_consumer_rejects_non_string_palette_token(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source = ROOT / "src/axiomfig/resources/styles"
+    target = tmp_path / "styles"
+    shutil.copytree(source, target)
+    path = target / "colors.yaml"
+    document = yaml.safe_load(path.read_text(encoding="utf-8"))
+    document["palettes"]["axiom_classic"][1] = "#123456"
+    path.write_text(yaml.safe_dump(document, sort_keys=False), encoding="utf-8")
+    monkeypatch.setattr(style_module, "load_contracts", lambda: load_contracts(target))
+
+    try:
+        with pytest.raises(ValueError, match="palette token names must be non-empty strings"):
+            style_module.render_xcolor()
+    finally:
+        load_contracts.cache_clear()
+
+
+@pytest.mark.parametrize(
+    ("plot_name", "field"),
+    (
+        *(
+            (name, "edge_color")
+            for name in (
+                "line_marker",
+                "confidence_interval",
+                "scatter",
+                "errorbar",
+                "bar",
+                "boxplot",
+                "violin",
+                "histogram",
+            )
+        ),
+        *(
+            (name, "edge_width_token")
+            for name in (
+                "line_marker",
+                "confidence_interval",
+                "scatter",
+                "errorbar",
+                "bar",
+                "boxplot",
+                "violin",
+                "histogram",
+            )
+        ),
+        ("line_marker", "marker"),
+        ("errorbar", "marker"),
+    ),
+)
+def test_executable_plot_artist_tokens_fail_closed(
+    tmp_path: Path, plot_name: str, field: str
+) -> None:
+    target = _mutated_style_root(
+        tmp_path,
+        lambda style: style["plots"][plot_name].__setitem__(field, None),
+    )
+    load_contracts.cache_clear()
+    try:
+        with pytest.raises(ValueError, match=f"plots.{plot_name}.{field}"):
+            load_contracts(target)
+    finally:
+        load_contracts.cache_clear()
+
+
+def test_line_marker_consumer_rejects_silently_hidden_marker(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    target = _mutated_style_root(
+        tmp_path,
+        lambda style: style["plots"]["line_marker"].__setitem__("marker", None),
+    )
+    monkeypatch.setattr(style_module, "load_contracts", lambda: load_contracts(target))
+
+    try:
+        with pytest.raises(ValueError, match="plots.line_marker.marker"):
+            style_module.line_marker_kwargs()
+    finally:
+        load_contracts.cache_clear()
+
+
+def test_scatter_consumer_rejects_silently_transparent_edge(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    target = _mutated_style_root(
+        tmp_path,
+        lambda style: style["plots"]["scatter"].__setitem__("edge_color", None),
+    )
+    monkeypatch.setattr(style_module, "load_contracts", lambda: load_contracts(target))
+    figure, axis = plt.subplots()
+    collection = axis.scatter([0.0], [0.0])
+    try:
+        with pytest.raises(ValueError, match="plots.scatter.edge_color"):
+            style_module.apply_scatter_contract(collection)
+    finally:
+        plt.close(figure)
+        load_contracts.cache_clear()
 
 
 def test_json_rows_must_have_one_consistent_schema(tmp_path: Path) -> None:

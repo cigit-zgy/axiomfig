@@ -239,7 +239,7 @@ def _validate_style_values(style: Mapping[str, Any]) -> None:
         raise ValueError("single-panel vertical margins must be ordered within the figure")
 
     line_styles = _string_sequence(series, "line_styles", "series")
-    _string_sequence(series, "markers", "series")
+    markers = _string_sequence(series, "markers", "series")
     dash_pattern = _required_sequence(series, "long_dash_pattern", "series")
     if len(dash_pattern) != 2:
         raise ValueError("series.long_dash_pattern must contain two values")
@@ -250,6 +250,33 @@ def _validate_style_values(style: Mapping[str, Any]) -> None:
     )
     if reference_style not in line_styles:
         raise ValueError("series.reference_line_style must be present in series.line_styles")
+
+    edged_plots = (
+        "line_marker",
+        "confidence_interval",
+        "scatter",
+        "errorbar",
+        "bar",
+        "boxplot",
+        "violin",
+        "histogram",
+    )
+    stroke_tokens = {"main_stroke", "fill_edge"}
+    for plot_name in edged_plots:
+        contract = plots[plot_name]
+        edge_color = _nonempty_string(contract.get("edge_color"), f"plots.{plot_name}.edge_color")
+        if edge_color.casefold() == "none" or not mpl.colors.is_color_like(edge_color):
+            raise ValueError(f"plots.{plot_name}.edge_color must be an opaque color")
+        edge_width_token = _nonempty_string(
+            contract.get("edge_width_token"), f"plots.{plot_name}.edge_width_token"
+        )
+        if edge_width_token not in stroke_tokens:
+            raise ValueError(f"plots.{plot_name}.edge_width_token must name an owned stroke token")
+    for plot_name in ("line_marker", "errorbar"):
+        marker = _nonempty_string(plots[plot_name].get("marker"), f"plots.{plot_name}.marker")
+        if marker not in markers:
+            raise ValueError(f"plots.{plot_name}.marker must be present in series.markers")
+
     for surface in ("open", "filled"):
         for level in ("major", "minor"):
             direction = style["ticks"][surface][level].get("direction")
@@ -443,6 +470,8 @@ def _validate_colors(colors: Mapping[str, Any]) -> None:
         if not palette:
             raise ValueError(f"colors.palettes.{palette_name} must not be empty")
         for token, color in palette.items():
+            if not isinstance(token, str) or not token:
+                raise ValueError("palette token names must be non-empty strings")
             selected = _nonempty_string(color, f"colors.palettes.{palette_name}.{token}")
             if len(selected) != 7 or not selected.startswith("#"):
                 raise ValueError(f"colors.palettes.{palette_name}.{token} must be #RRGGBB")

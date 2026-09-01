@@ -73,6 +73,8 @@ def _mapping(value: object, name: str) -> dict[str, Any]:
 def parse_figure_intent(document: Mapping[str, Any]) -> FigureIntent:
     if not isinstance(document, Mapping):
         raise FigureIntentError("Figure Intent root must be a mapping")
+    if not all(isinstance(key, str) for key in document):
+        raise FigureIntentError("Figure Intent keys must be strings")
     forbidden = FORBIDDEN_VISUAL_FIELDS & set(document)
     if forbidden:
         rendered = ", ".join(sorted(forbidden))
@@ -98,6 +100,10 @@ def parse_figure_intent(document: Mapping[str, Any]) -> FigureIntent:
     )
     geometry = document.get("geometry", default_geometry)
     typography = document.get("typography", "sans")
+    if not isinstance(geometry, str):
+        raise FigureIntentError("geometry must be a string")
+    if not isinstance(typography, str):
+        raise FigureIntentError("typography must be a string")
     contracts = load_contracts()
     if geometry not in contracts.style["geometry"]:
         raise FigureIntentError(f"unknown geometry: {geometry!r}")
@@ -120,8 +126,8 @@ def parse_figure_intent(document: Mapping[str, Any]) -> FigureIntent:
     return FigureIntent(
         template_id=template_id,
         data=MappingProxyType(data),
-        geometry=str(geometry),
-        typography=str(typography),
+        geometry=geometry,
+        typography=typography,
         semantics=MappingProxyType(semantics),
     )
 
