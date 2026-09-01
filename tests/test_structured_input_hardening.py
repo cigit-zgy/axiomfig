@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import shutil
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -14,6 +15,7 @@ from axiomfig.intent import (
     load_figure_intent,
     parse_figure_intent,
 )
+from axiomfig.structured_io import load_yaml
 from axiomfig.templates import registry
 from axiomfig.templates.association.mantel import styling as mantel_styling
 
@@ -167,3 +169,40 @@ def test_builder_programmer_assertions_are_not_masked(monkeypatch: pytest.Monkey
 def test_oversized_executable_yaml_numbers_are_bounded_value_errors(validator) -> None:
     with pytest.raises(ValueError, match="must be finite"):
         validator(10**10000, "style.token")
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    (
+        lambda contract: contract["matrix"].__setitem__("source_label_max_width_pt", 10**10000),
+        lambda contract: contract["matrix"].__setitem__("target_rail_offset", 10**10000),
+        lambda contract: contract["links"]["strength_breaks"].__setitem__(0, 10**10000),
+        lambda contract: contract["links"]["p_value_modes"]["canonical"]["breaks"].__setitem__(
+            0, 10**10000
+        ),
+    ),
+)
+def test_complete_mantel_contract_bounds_oversized_numeric_values(
+    mutate: Callable[[dict[str, object]], None],
+) -> None:
+    style = load_yaml(
+        (ROOT / "src/axiomfig/resources/styles/style.yaml").read_text(encoding="utf-8"),
+        source="style.yaml",
+    )
+    contract = style["plots"]["mantel"]
+    mutate(contract)
+
+    with pytest.raises(ValueError, match="must be finite"):
+        mantel_styling._validate_mantel_contract(contract)
+
+
+def test_mantel_contract_rejects_unowned_ornament_configuration() -> None:
+    style = load_yaml(
+        (ROOT / "src/axiomfig/resources/styles/style.yaml").read_text(encoding="utf-8"),
+        source="style.yaml",
+    )
+    contract = style["plots"]["mantel"]
+    contract["ornaments"]["obsolete_anchor"] = {"x": 0.5}
+
+    with pytest.raises(ValueError, match="ornaments must contain only legend"):
+        mantel_styling._validate_mantel_contract(contract)

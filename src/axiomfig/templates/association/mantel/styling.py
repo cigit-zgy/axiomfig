@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from itertools import pairwise
 from typing import Any
 
@@ -31,6 +31,12 @@ def _finite_number(value: object, name: str, *, positive: bool = False) -> float
     return result
 
 
+def _finite_numbers(value: object, name: str) -> tuple[float, ...]:
+    if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
+        raise ValueError(f"{name} must be a sequence")
+    return tuple(_finite_number(item, f"{name}[{index}]") for index, item in enumerate(value))
+
+
 def _validate_mantel_contract(contract: Mapping[str, Any]) -> None:
     matrix = _mapping(contract.get("matrix"), "plots.mantel.matrix")
     for name in (
@@ -39,8 +45,10 @@ def _validate_mantel_contract(contract: Mapping[str, Any]) -> None:
         "source_label_gap_pt",
         "source_group_gap_pt",
         "source_boundary_padding_pt",
+        "source_label_max_width_pt",
     ):
         _finite_number(matrix.get(name), f"plots.mantel.matrix.{name}", positive=True)
+    _finite_number(matrix.get("target_rail_offset"), "plots.mantel.matrix.target_rail_offset")
     minimum_side = float(matrix["minimum_cell_side"])
     maximum_side = float(matrix["maximum_cell_side"])
     if minimum_side >= maximum_side or maximum_side > 1.0:
@@ -51,6 +59,8 @@ def _validate_mantel_contract(contract: Mapping[str, Any]) -> None:
         _finite_number(nodes.get(name), f"plots.mantel.nodes.{name}", positive=True)
 
     ornaments = _mapping(contract.get("ornaments"), "plots.mantel.ornaments")
+    if set(ornaments) != {"legend"}:
+        raise ValueError("plots.mantel.ornaments must contain only legend")
     legend_layout = _mapping(ornaments.get("legend"), "plots.mantel.ornaments.legend")
     for name in ("borderpad", "labelspacing", "handletextpad", "columnspacing"):
         value = _finite_number(legend_layout.get(name), f"plots.mantel.ornaments.legend.{name}")
@@ -80,9 +90,15 @@ def _validate_mantel_contract(contract: Mapping[str, Any]) -> None:
         positive=True,
     )
 
-    strength_breaks = tuple(float(value) for value in links.get("strength_breaks", ()))
+    strength_breaks = _finite_numbers(
+        links.get("strength_breaks"), "plots.mantel.links.strength_breaks"
+    )
     widths = tuple(links.get("widths_pt", ()))
-    if strength_breaks != tuple(sorted(strength_breaks)) or len(strength_breaks) != 2:
+    if (
+        strength_breaks != tuple(sorted(strength_breaks))
+        or len(strength_breaks) != 2
+        or any(not 0.0 < value < 1.0 for value in strength_breaks)
+    ):
         raise ValueError("Mantel strength breaks must contain two ordered values")
     if len(widths) != 3:
         raise ValueError("Mantel link widths must match their bins")
@@ -95,9 +111,15 @@ def _validate_mantel_contract(contract: Mapping[str, Any]) -> None:
         raise ValueError("Mantel P-value modes must contain canonical and detailed")
     for mode, bin_count in expected_bins.items():
         selected = _mapping(modes[mode], f"plots.mantel.links.p_value_modes.{mode}")
-        breaks = tuple(float(value) for value in selected.get("breaks", ()))
+        breaks = _finite_numbers(
+            selected.get("breaks"), f"plots.mantel.links.p_value_modes.{mode}.breaks"
+        )
         colors = tuple(selected.get("colors", ()))
-        if breaks != tuple(sorted(breaks)) or len(breaks) != bin_count - 1:
+        if (
+            breaks != tuple(sorted(breaks))
+            or len(breaks) != bin_count - 1
+            or any(not 0.0 < value < 1.0 for value in breaks)
+        ):
             raise ValueError(f"Mantel {mode} P-value breaks do not match their bins")
         if len(colors) != bin_count:
             raise ValueError(f"Mantel {mode} P-value colors do not match their bins")

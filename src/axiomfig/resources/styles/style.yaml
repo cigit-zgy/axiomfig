@@ -153,14 +153,6 @@ plots:
         labelspacing: 0.20
         handletextpad: 0.45
         columnspacing: 0.75
-      lower:
-        legend_anchor_x_fraction: 0.55
-        p_legend_anchor_y_fraction: 0.02
-        strength_legend_anchor_y_fraction: 0.105
-      upper:
-        legend_anchor_x_fraction: 0.50
-        p_legend_anchor_y_fraction: 0.64
-        strength_legend_anchor_y_fraction: 0.725
     links:
       curve_curvature: 0.18
       strength_breaks: [0.25, 0.50]
