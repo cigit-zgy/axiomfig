@@ -238,7 +238,7 @@ def _positive_number(value: Any, name: str) -> float:
 
 def build_rcparams(
     contracts: Contracts, *, geometry: str = "single-column", typography: str = "sans"
-) -> dict[str, object]:
+) -> dict[Any, Any]:
     geometries = contracts.style["geometry"]
     if geometry not in geometries:
         raise ValueError(f"unknown geometry: {geometry}")
@@ -299,4 +299,5 @@ def build_rcparams(
         "savefig.dpi": int(contracts.style["rendering"]["dpi"]),
         "savefig.transparent": bool(contracts.style["rendering"]["transparent"]),
     }
-    return dict(mpl.RcParams(params))
+    validated = mpl.RcParams(params)
+    return {key: value for key, value in validated.items()}
