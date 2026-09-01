@@ -587,6 +587,37 @@ def test_public_bar_rejects_nonfinite_error_extent() -> None:
 
 @pytest.mark.parametrize("orientation", ["vertical", "horizontal"])
 @pytest.mark.parametrize(
+    ("template", "data"),
+    [
+        ("bar.simple", {"category": ["A"], "value": [0.0], "error": [1e308]}),
+        (
+            "bar.grouped",
+            {
+                "category": ["A", "A"],
+                "group": ["G1", "G2"],
+                "value": [0.0, 0.0],
+                "error": [[1e308, 1e308], [1e308, 1e308]],
+            },
+        ),
+    ],
+)
+def test_public_bar_rejects_finite_error_endpoints_with_overflowing_span(
+    orientation: str,
+    template: str,
+    data: dict[str, object],
+) -> None:
+    from axiomfig.intent import FigureIntentError
+
+    with pytest.raises(FigureIntentError, match="finite derived geometry"):
+        _build_public_bar(
+            template,
+            data,
+            semantics={"orientation": orientation, "uncertainty_type": "CI"},
+        )
+
+
+@pytest.mark.parametrize("orientation", ["vertical", "horizontal"])
+@pytest.mark.parametrize(
     ("template", "data", "expected_lower", "expected_upper"),
     [
         (

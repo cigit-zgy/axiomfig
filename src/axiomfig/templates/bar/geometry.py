@@ -25,6 +25,7 @@ def error_limits(magnitude: np.ndarray, error: np.ndarray) -> tuple[float, float
     lower_error, upper_error = error_endpoints(values, error)
     if not np.all(np.isfinite(lower_error)) or not np.all(np.isfinite(upper_error)):
         raise ValueError("bar values must produce finite derived geometry")
+    linear_limits(values, lower_error, upper_error)
     lower, upper = linear_limits(values)
     return min(lower, float(lower_error.min())), max(upper, float(upper_error.max()))
 
