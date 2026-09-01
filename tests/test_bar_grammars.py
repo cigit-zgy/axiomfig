@@ -497,6 +497,133 @@ def test_proportion_absolute_tolerance_accepts_boundary_without_relative_slack()
 
 
 @pytest.mark.parametrize(
+    ("template", "data", "semantics"),
+    [
+        ("bar.simple", {"category": ["A", "B"], "value": [-1e308, 1e308]}, {}),
+        (
+            "bar.grouped",
+            {
+                "category": ["A", "A", "B", "B"],
+                "group": ["G1", "G2", "G1", "G2"],
+                "value": [-1e308, 1e308, -1e308, 1e308],
+            },
+            {},
+        ),
+        (
+            "bar.stacked",
+            {
+                "category": ["A", "A"],
+                "component": ["C1", "C2"],
+                "value": [1e308, 1e308],
+            },
+            {},
+        ),
+        (
+            "bar.normalized_stacked",
+            {
+                "category": ["A", "A"],
+                "component": ["C1", "C2"],
+                "value": [1e308, 1e308],
+            },
+            {"normalization": "normalize"},
+        ),
+        (
+            "bar.grouped_stacked",
+            {
+                "category": ["A", "A"],
+                "group": ["G1", "G1"],
+                "component": ["C1", "C2"],
+                "value": [1e308, 1e308],
+            },
+            {},
+        ),
+        (
+            "bar.diverging_stacked",
+            {
+                "category": ["A", "A"],
+                "component": ["C1", "C2"],
+                "value": [1e308, 1e308],
+            },
+            {},
+        ),
+        (
+            "bar.range",
+            {"category": ["A"], "lower": [-1e308], "upper": [1e308]},
+            {},
+        ),
+        (
+            "bar.mirrored",
+            {
+                "category": ["A", "A"],
+                "side": ["left", "right"],
+                "value": [1e308, 1e308],
+            },
+            {"mirror_side": "left"},
+        ),
+    ],
+)
+def test_public_bar_rejects_finite_values_with_nonfinite_derived_geometry(
+    template: str,
+    data: dict[str, object],
+    semantics: dict[str, object],
+) -> None:
+    from axiomfig.intent import FigureIntentError
+
+    with pytest.raises(FigureIntentError, match="finite derived geometry"):
+        _build_public_bar(template, data, semantics=semantics)
+
+
+def test_public_bar_rejects_nonfinite_error_extent() -> None:
+    from axiomfig.intent import FigureIntentError
+
+    with pytest.raises(FigureIntentError, match="finite derived geometry"):
+        _build_public_bar(
+            "bar.simple",
+            {"category": ["A"], "value": [1e308], "error": [1e308]},
+            semantics={"uncertainty_type": "SE"},
+        )
+
+
+def test_waterfall_reconciliation_uses_absolute_only_tolerance() -> None:
+    from axiomfig.intent import FigureIntentError
+    from axiomfig.templates.bar.adapter import WATERFALL_RECONCILIATION_ABSOLUTE_TOLERANCE
+
+    accepted = _build_public_bar(
+        "bar.waterfall",
+        {
+            "step": ["Start", "Change", "Final"],
+            "delta": [1.0, 0.5, 1.5 + WATERFALL_RECONCILIATION_ABSOLUTE_TOLERANCE / 2],
+            "role": ["subtotal", "change", "total"],
+        },
+    )
+    plt.close(accepted)  # type: ignore[arg-type]
+
+    with pytest.raises(FigureIntentError, match="equal the cumulative value"):
+        _build_public_bar(
+            "bar.waterfall",
+            {
+                "step": ["Start", "Change", "Final"],
+                "delta": [1.0, 0.5, 1.5 + WATERFALL_RECONCILIATION_ABSOLUTE_TOLERANCE * 2],
+                "role": ["subtotal", "change", "total"],
+            },
+        )
+
+
+def test_public_waterfall_rejects_nonfinite_cumulative_geometry() -> None:
+    from axiomfig.intent import FigureIntentError
+
+    with pytest.raises(FigureIntentError, match="finite derived geometry"):
+        _build_public_bar(
+            "bar.waterfall",
+            {
+                "step": ["Start", "Change", "Final"],
+                "delta": [1e308, 1e308, 1e308],
+                "role": ["subtotal", "change", "total"],
+            },
+        )
+
+
+@pytest.mark.parametrize(
     ("variant", "values", "message"),
     [
         ("simple", {"category": ["A", "B"], "value": [1.0]}, "equal-length"),

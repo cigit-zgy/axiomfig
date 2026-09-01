@@ -64,3 +64,13 @@ def test_bar_family_guide_covers_each_grammar_without_schema_semantic_leakage() 
     assert "`category`, `component`, `value`, `normalization`" not in guide
     assert "`category`, `side`, `value`, `mirror_side`" not in guide
     assert "absolute tolerance of `1e-8` with no relative slack" in guide
+    for heading in (
+        "# Bar charts",
+        "## Scientific role",
+        "## Canonical tabular/DataFrame contracts",
+        "## Selection rules",
+        "## Modifiers",
+        "## Scientific boundaries",
+        "## Neighboring / non-Bar charts",
+    ):
+        assert heading in guide

@@ -19,6 +19,7 @@ from axiomfig.style import (
     bar_width,
 )
 from axiomfig.templates.bar.adapter import PROPORTION_ABSOLUTE_TOLERANCE
+from axiomfig.templates.bar.geometry import linear_limits
 
 
 def _orientation(value: object | None, *, default: str = "vertical") -> str:
@@ -26,14 +27,6 @@ def _orientation(value: object | None, *, default: str = "vertical") -> str:
     if selected not in {"vertical", "horizontal"}:
         raise ValueError("orientation must be vertical or horizontal")
     return selected
-
-
-def _limits(*arrays: np.ndarray, pad: float = 0.14) -> tuple[float, float]:
-    values = np.concatenate([np.asarray(array, dtype=float).ravel() for array in arrays])
-    lower = min(float(values.min()), 0.0)
-    upper = max(float(values.max()), 0.0)
-    span = max(upper - lower, 0.1)
-    return lower - span * pad, upper + span * pad
 
 
 def _categorical_axes(
@@ -217,7 +210,7 @@ def build_simple(
         ylabel=ylabel,
         value_suffix=suffix,
     )
-    _categorical_axes(axis, labels, selected_orientation, *_limits(values))
+    _categorical_axes(axis, labels, selected_orientation, *linear_limits(values))
     _finish_bars(axis, [container], value_labels)
     return figure
 
@@ -289,7 +282,7 @@ def build_grouped(
         ylabel=ylabel,
         value_suffix=suffix,
     )
-    _categorical_axes(axis, labels, selected_orientation, *_limits(values))
+    _categorical_axes(axis, labels, selected_orientation, *linear_limits(values))
     _finish_bars(axis, containers, value_labels)
     request_legend(axis)
     return figure
@@ -358,7 +351,7 @@ def _stacked(
         xlabel=xlabel,
         ylabel=ylabel,
     )
-    bounds = (0.0, 1.0) if normalized else _limits(bottom)
+    bounds = (0.0, 1.0) if normalized else linear_limits(bottom)
     _categorical_axes(axis, labels, selected_orientation, *bounds)
     _finish_bars(axis, containers, value_labels)
     request_legend(axis)
@@ -456,7 +449,7 @@ def build_grouped_stacked(
         xlabel=xlabel,
         ylabel=ylabel,
     )
-    _categorical_axes(axis, labels, selected_orientation, *_limits(bottom))
+    _categorical_axes(axis, labels, selected_orientation, *linear_limits(bottom))
     _finish_bars(axis, containers, value_labels)
     request_legend(axis)
     return figure
@@ -508,7 +501,7 @@ def build_diverging_stacked(
         xlabel=xlabel,
         ylabel=ylabel,
     )
-    _categorical_axes(axis, labels, selected_orientation, *_limits(negative, positive))
+    _categorical_axes(axis, labels, selected_orientation, *linear_limits(negative, positive))
     _finish_bars(axis, containers, value_labels)
     request_legend(axis)
     return figure
@@ -551,7 +544,9 @@ def build_range(
         xlabel=xlabel,
         ylabel=ylabel,
     )
-    _categorical_axes(axis, labels, selected_orientation, *_limits(lower_values, upper_values))
+    _categorical_axes(
+        axis, labels, selected_orientation, *linear_limits(lower_values, upper_values)
+    )
     _finish_bars(axis, [container], value_labels)
     return figure
 
@@ -602,7 +597,7 @@ def build_mirrored(
         xlabel=xlabel,
         ylabel=ylabel,
     )
-    _categorical_axes(axis, labels, selected_orientation, *_limits(signed))
+    _categorical_axes(axis, labels, selected_orientation, *linear_limits(signed))
     _finish_bars(axis, containers, value_labels)
     request_legend(axis)
     return figure
@@ -682,7 +677,7 @@ def build_waterfall(
         axis,
         labels,
         selected_orientation,
-        *_limits(np.asarray(starts), cumulative_endpoints),
+        *linear_limits(np.asarray(starts), cumulative_endpoints),
     )
     _finish_bars(axis, [container], value_labels)
     return figure
@@ -708,7 +703,7 @@ def build_dot(
     collection = axis.scatter(positions, values)
     apply_scatter_contract(collection)
     axis.set(ylabel="Value" if ylabel is None else str(ylabel))
-    _categorical_axes(axis, labels, "vertical", *_limits(values))
+    _categorical_axes(axis, labels, "vertical", *linear_limits(values))
     if value_labels is True:
         for position, selected in zip(positions, values, strict=True):
             axis.text(float(position), float(selected), f"{selected:.2f}", ha="center", va="bottom")

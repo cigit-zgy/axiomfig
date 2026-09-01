@@ -12,6 +12,7 @@ from axiomfig.templates._adapter import (
     optional_text,
     text,
 )
+from axiomfig.templates.bar.geometry import linear_limits
 
 _CATEGORY_VALUE_VARIANTS = {
     "simple",
@@ -27,6 +28,50 @@ _CATEGORY_VALUE_VARIANTS = {
 }
 _ORIENTATIONS = {"vertical", "horizontal"}
 PROPORTION_ABSOLUTE_TOLERANCE = 1e-8
+WATERFALL_RECONCILIATION_ABSOLUTE_TOLERANCE = 1e-8
+
+
+def _require_finite_derived(*arrays: np.ndarray) -> None:
+    if not all(np.all(np.isfinite(array)) for array in arrays):
+        raise ValueError("bar values must produce finite derived geometry")
+    linear_limits(*arrays)
+
+
+def _validate_error_geometry(magnitude: np.ndarray, error: np.ndarray) -> None:
+    with np.errstate(over="ignore", invalid="ignore"):
+        if error.ndim == 1:
+            lower = magnitude - error
+            upper = magnitude + error
+        else:
+            lower = magnitude - error[:, 0]
+            upper = magnitude + error[:, 1]
+    _require_finite_derived(magnitude, lower, upper)
+
+
+def _validate_cumulative_geometry(
+    values: dict[str, object],
+    key_names: Sequence[str],
+    *,
+    split_sign: bool = False,
+) -> None:
+    components = np.asarray(values["component"], dtype=object)
+    magnitude = np.asarray(values["value"], dtype=float)
+    component_order = tuple(dict.fromkeys(components.tolist()))
+    running: dict[tuple[object, ...], float] = {}
+    endpoints: list[float] = [0.0]
+    for component in component_order:
+        for index in np.flatnonzero(components == component):
+            key = tuple(np.asarray(values[name], dtype=object)[index] for name in key_names)
+            selected = float(magnitude[index])
+            if split_sign:
+                key = (*key, "positive" if selected >= 0 else "negative")
+            with np.errstate(over="ignore", invalid="ignore"):
+                updated = running.get(key, 0.0) + selected
+            if not np.isfinite(updated):
+                raise ValueError("bar values must produce finite derived geometry")
+            running[key] = updated
+            endpoints.append(updated)
+    _require_finite_derived(np.asarray(endpoints, dtype=float))
 
 
 def _bar_labels(value: object, name: str) -> np.ndarray:
@@ -63,7 +108,11 @@ def _category_totals(values: dict[str, object]) -> np.ndarray:
     categories = np.asarray(values["category"], dtype=object)
     magnitude = np.asarray(values["value"], dtype=float)
     labels = tuple(dict.fromkeys(categories.tolist()))
-    return np.asarray([magnitude[categories == label].sum() for label in labels], dtype=float)
+    with np.errstate(over="ignore", invalid="ignore"):
+        totals = np.asarray([magnitude[categories == label].sum() for label in labels], dtype=float)
+    if not np.all(np.isfinite(totals)):
+        raise ValueError("bar values must produce finite derived geometry")
+    return totals
 
 
 def _adapt_error(values: dict[str, object], magnitude: np.ndarray) -> None:
@@ -85,6 +134,7 @@ def _adapt_error(values: dict[str, object], magnitude: np.ndarray) -> None:
         raise ValueError("uncertainty_type is required when bar error is supplied")
     values["error"] = error
     values["uncertainty_type"] = text(values["uncertainty_type"], "uncertainty_type")
+    _validate_error_geometry(magnitude, error)
 
 
 def _adapt_orientation(values: dict[str, object]) -> None:
@@ -131,6 +181,16 @@ def _adapt_category_values(variant: str, values: dict[str, object]) -> None:
 
     if variant in {"simple", "grouped"}:
         _adapt_error(values, magnitude)
+        if "error" not in values:
+            _require_finite_derived(magnitude)
+    elif variant in {"vertical", "horizontal", "dot"}:
+        _require_finite_derived(magnitude)
+    elif variant == "stacked":
+        _validate_cumulative_geometry(values, ("category",))
+    elif variant == "grouped_stacked":
+        _validate_cumulative_geometry(values, ("category", "group"))
+    elif variant == "diverging_stacked":
+        _validate_cumulative_geometry(values, ("category",), split_sign=True)
     if variant == "normalized_stacked":
         mode = text(values["normalization"], "normalization")
         if mode not in {"normalize", "proportion"}:
@@ -153,6 +213,9 @@ def _adapt_category_values(variant: str, values: dict[str, object]) -> None:
         if mirror_side not in sides:
             raise ValueError("mirror_side must identify one supplied side")
         values["mirror_side"] = mirror_side
+        signed = magnitude.copy()
+        signed[np.asarray(values["side"], dtype=object).astype(str) == mirror_side] *= -1
+        _require_finite_derived(signed)
 
 
 def _adapt_range(values: dict[str, object]) -> None:
@@ -163,6 +226,9 @@ def _adapt_range(values: dict[str, object]) -> None:
     equal_length(arrays)
     if np.any(lower > upper):
         raise ValueError("bar range requires lower <= upper for every category")
+    with np.errstate(over="ignore", invalid="ignore"):
+        span = upper - lower
+    _require_finite_derived(lower, upper, span)
     values.update(arrays)
     _unique_logical_keys(values, ("category",))
 
@@ -182,17 +248,44 @@ def _adapt_waterfall(values: dict[str, object]) -> None:
         raise ValueError("waterfall requires exactly one final total row")
 
     running: float | None = None
+    starts: list[float] = []
+    endpoints: list[float] = []
     for index, (selected_delta, selected_role) in enumerate(zip(delta, role, strict=True)):
         if selected_role == "change":
             if running is None:
                 raise ValueError("waterfall cannot begin with a change row without a subtotal")
-            running += float(selected_delta)
+            start = running
+            with np.errstate(over="ignore", invalid="ignore"):
+                running += float(selected_delta)
+            if not np.isfinite(running):
+                raise ValueError("bar values must produce finite derived geometry")
         elif selected_role == "subtotal":
-            if running is not None and not np.isclose(selected_delta, running):
+            if running is not None and not np.isclose(
+                selected_delta,
+                running,
+                atol=WATERFALL_RECONCILIATION_ABSOLUTE_TOLERANCE,
+                rtol=0.0,
+            ):
                 raise ValueError("waterfall subtotal must equal the current cumulative value")
+            start = 0.0
             running = float(selected_delta)
-        elif index != len(role) - 1 or running is None or not np.isclose(selected_delta, running):
+        elif (
+            index != len(role) - 1
+            or running is None
+            or not np.isclose(
+                selected_delta,
+                running,
+                atol=WATERFALL_RECONCILIATION_ABSOLUTE_TOLERANCE,
+                rtol=0.0,
+            )
+        ):
             raise ValueError("waterfall total must be final and equal the cumulative value")
+        else:
+            start = 0.0
+            running = float(selected_delta)
+        starts.append(min(start, running))
+        endpoints.append(max(start, running))
+    _require_finite_derived(np.asarray(starts), np.asarray(endpoints))
 
 
 def adapt(variant: str, supplied: dict[str, object]) -> dict[str, object]:

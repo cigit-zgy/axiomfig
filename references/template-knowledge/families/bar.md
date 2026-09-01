@@ -1,6 +1,6 @@
-# Bar family knowledge
+# Bar charts
 
-## Scientific question
+## Scientific role
 
 Use the Bar family for supplied categorical magnitudes, parts of categorical totals, explicit
 ranges, paired mirrored magnitudes, or a supplied cumulative change sequence. A bar encodes a
@@ -30,7 +30,7 @@ v1.1. They are not core recommendation grammars. New requests use `bar.simple` p
 a categorical dot/lollipop request is a neighboring grammar rather than a reason to extend Bar
 internals.
 
-## Canonical DataFrame/tabular contract
+## Canonical tabular/DataFrame contracts
 
 The canonical Agent-facing representation is a long/tidy table. CSV and JSON are the executable
 runtime paths; “DataFrame schema” describes the same rows and columns without making pandas a
@@ -146,7 +146,11 @@ modifier rather than a data column.
 | Removal | -1.0 | change |
 | Final | 11.5 | total |
 
-## Grammar selection rules
+Waterfall subtotal and total reconciliation uses an absolute tolerance of `1e-8` with no relative
+slack. Values outside that tolerance fail closed rather than changing the supplied cumulative
+story.
+
+## Selection rules
 
 Choose `simple` when each category already has one supplied magnitude. Choose `grouped` when group
 identity matters within each category and side-by-side comparison is the message. Choose `stacked`
@@ -168,7 +172,7 @@ Choose `mirrored` only for two comparable sides with a meaningful shared zero in
 `waterfall` only for an ordered reconciliation in which the supplied changes and totals have an
 explicit cumulative meaning.
 
-## Semantic modifiers
+## Modifiers
 
 - `orientation`: `vertical` or `horizontal`; defaults are runtime-owned. It never changes required
   columns. Use horizontal orientation when category-label readability or the communication goal
@@ -189,7 +193,7 @@ semantics are the entire public adjustment surface. Bar width, group gap, colors
 legend placement, label padding, margins, and physical dimensions remain deterministic runtime
 decisions.
 
-## Scientific boundaries and upstream boundary
+## Scientific boundaries
 
 Do not turn replicate observations into category means to fit a bar grammar. When raw variation is
 the message, route to strip, box, violin, box-violin, raincloud, ECDF, histogram, or density as
@@ -204,7 +208,7 @@ scientifically meaningful sign. Mirrored sides require comparable quantities and
 Bar order follows the supplied first-seen order. AxiomFig does not sort by magnitude or derive an
 order unless a future typed grammar explicitly owns that scientific rule.
 
-## Neighboring and unsupported Bar requests
+## Neighboring / non-Bar charts
 
 - Raw distributions belong to the Distribution family.
 - A histogram bins observations; it is not a categorical bar grammar.
