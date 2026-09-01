@@ -6,7 +6,10 @@ from pathlib import Path
 
 import pytest
 import yaml
+from matplotlib import pyplot as plt
 
+import axiomfig.layout as layout_module
+import axiomfig.ornaments as ornaments_module
 from axiomfig import config
 from axiomfig.config import load_contracts
 from axiomfig.intent import (
@@ -21,6 +24,17 @@ from axiomfig.templates import registry
 from axiomfig.templates.association.mantel import styling as mantel_styling
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def _mutated_style_root(tmp_path: Path, mutate: Callable[[dict[str, object]], None]) -> Path:
+    source = ROOT / "src/axiomfig/resources/styles"
+    target = tmp_path / "styles"
+    shutil.copytree(source, target)
+    path = target / "style.yaml"
+    document = yaml.safe_load(path.read_text(encoding="utf-8"))
+    mutate(document)
+    path.write_text(yaml.safe_dump(document, sort_keys=False), encoding="utf-8")
+    return target
 
 
 def test_figure_intent_yaml_rejects_duplicate_keys(tmp_path: Path) -> None:
@@ -147,6 +161,41 @@ def test_all_executable_resource_containers_fail_closed(
         with pytest.raises(ValueError):
             load_contracts(target)
     finally:
+        load_contracts.cache_clear()
+
+
+def test_single_panel_consumer_rejects_unknown_margin_key(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    target = _mutated_style_root(
+        tmp_path,
+        lambda style: style["layout"]["single_panel"]["margins"].__setitem__("unexpected", 0.1),
+    )
+    monkeypatch.setattr(layout_module, "load_contracts", lambda: load_contracts(target))
+    figure = plt.figure()
+    try:
+        with pytest.raises(ValueError, match="margins must contain exactly"):
+            layout_module.apply_single_panel_layout(figure)
+    finally:
+        plt.close(figure)
+        load_contracts.cache_clear()
+
+
+@pytest.mark.parametrize("panel_format", ("{unknown}", "{letter", "panel"))
+def test_panel_label_consumer_rejects_invalid_format_contract(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, panel_format: str
+) -> None:
+    target = _mutated_style_root(
+        tmp_path,
+        lambda style: style["panel"].__setitem__("format", panel_format),
+    )
+    monkeypatch.setattr(ornaments_module, "load_contracts", lambda: load_contracts(target))
+    figure, axis = plt.subplots()
+    try:
+        with pytest.raises(ValueError, match="panel.format"):
+            ornaments_module.add_panel_labels([axis])
+    finally:
+        plt.close(figure)
         load_contracts.cache_clear()
 
 

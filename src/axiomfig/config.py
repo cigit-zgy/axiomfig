@@ -7,6 +7,7 @@ from functools import lru_cache
 from importlib.resources import files
 from importlib.resources.abc import Traversable
 from pathlib import Path
+from string import Formatter
 from types import MappingProxyType
 from typing import Any
 
@@ -109,6 +110,22 @@ def _integer(value: object, name: str, *, positive: bool = False) -> int:
     return value
 
 
+def _panel_format(value: object) -> str:
+    selected = _nonempty_string(value, "panel.format")
+    try:
+        fields = [
+            field_name
+            for _literal, field_name, _format_spec, _conversion in Formatter().parse(selected)
+            if field_name is not None
+        ]
+        selected.format(letter="a")
+    except (AttributeError, IndexError, KeyError, ValueError) as exc:
+        raise ValueError("panel.format must be a valid format string using {letter}") from exc
+    if fields != ["letter"]:
+        raise ValueError("panel.format must contain exactly one {letter} field")
+    return selected
+
+
 def _string_sequence(container: Mapping[str, Any], key: str, prefix: str) -> tuple[str, ...]:
     values = _required_sequence(container, key, prefix)
     if not values or not all(isinstance(value, str) and value for value in values):
@@ -159,6 +176,11 @@ def _validate_style_values(style: Mapping[str, Any]) -> None:
     layout = _required_mapping(style, "layout", "style")
     single_panel = _required_mapping(layout, "single_panel", "layout")
     margins = _required_mapping(single_panel, "margins", "layout.single_panel")
+    expected_margins = {"left", "right", "bottom", "top"}
+    if set(margins) != expected_margins:
+        raise ValueError(
+            f"layout.single_panel.margins must contain exactly {sorted(expected_margins)}"
+        )
     _required_mapping(layout, "multi_panel", "layout")
     series = _required_mapping(style, "series", "style")
     plots = _required_mapping(style, "plots", "style")
@@ -304,7 +326,7 @@ def _validate_style_values(style: Mapping[str, Any]) -> None:
         raise ValueError("output margin mode must be tight, normal, or custom")
     if not isinstance(style["legend"].get("frame"), bool):
         raise ValueError("legend.frame must be boolean")
-    _nonempty_string(style["panel"].get("format"), "panel.format")
+    _panel_format(style["panel"].get("format"))
     _nonempty_string(style["panel"].get("font_weight"), "panel.font_weight")
     for value, name in (
         (style["panel"]["left_offset_pt"], "panel.left_offset_pt"),
