@@ -101,60 +101,6 @@ def load_family_contract(family: str) -> dict[str, Any]:
                 f"contract for {family}/{variant} repeats roles across required and optional: "
                 f"{sorted(overlap)}"
             )
-        link_fields = spec.get("link_fields")
-        if link_fields is not None:
-            if not isinstance(link_fields, dict) or set(link_fields) != {
-                "required",
-                "optional",
-                "legacy_aliases",
-            }:
-                raise ValueError(
-                    f"contract for {family}/{variant} link_fields must contain required, "
-                    "optional, and legacy_aliases"
-                )
-            nested: dict[str, tuple[str, ...]] = {}
-            for name in ("required", "optional"):
-                value = link_fields.get(name)
-                if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
-                    raise ValueError(
-                        f"contract for {family}/{variant} link_fields.{name} must be a sequence"
-                    )
-                selected = tuple(value)
-                if not selected or not all(isinstance(field, str) and field for field in selected):
-                    raise ValueError(
-                        f"contract for {family}/{variant} link_fields.{name} must contain "
-                        "non-empty strings"
-                    )
-                if len(selected) != len(set(selected)):
-                    raise ValueError(
-                        f"contract for {family}/{variant} link_fields.{name} contains duplicates"
-                    )
-                nested[name] = selected
-            if set(nested["required"]) & set(nested["optional"]):
-                raise ValueError(
-                    f"contract for {family}/{variant} link_fields repeats required and optional"
-                )
-            aliases = link_fields.get("legacy_aliases")
-            if not isinstance(aliases, dict) or not all(
-                isinstance(key, str) and key and isinstance(value, str) and value
-                for key, value in aliases.items()
-            ):
-                raise ValueError(
-                    f"contract for {family}/{variant} link_fields.legacy_aliases must map "
-                    "non-empty strings"
-                )
-            if not set(aliases) <= set(nested["required"]):
-                raise ValueError(
-                    f"contract for {family}/{variant} link_fields legacy aliases must name "
-                    "required fields"
-                )
-            alias_values = tuple(aliases.values())
-            if len(alias_values) != len(set(alias_values)) or set(alias_values) & (
-                set(nested["required"]) | set(nested["optional"])
-            ):
-                raise ValueError(
-                    f"contract for {family}/{variant} link_fields legacy aliases must be unique"
-                )
     return contract
 
 

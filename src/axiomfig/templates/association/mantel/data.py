@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from dataclasses import fields as dataclass_fields
 
 import numpy as np
 
@@ -92,8 +93,55 @@ def _labels(value: object) -> tuple[str, ...]:
 
 
 def _link_field_schema() -> tuple[tuple[str, ...], tuple[str, ...], dict[str, str]]:
-    fields = load_family_contract("association")["variants"]["mantel"]["link_fields"]
-    return tuple(fields["required"]), tuple(fields["optional"]), dict(fields["legacy_aliases"])
+    spec = load_family_contract("association")["variants"]["mantel"]
+    schema = spec.get("link_fields")
+    if not isinstance(schema, Mapping) or set(schema) != {
+        "required",
+        "optional",
+        "legacy_aliases",
+    }:
+        raise ValueError(
+            "association/mantel link_fields must contain required, optional, and legacy_aliases"
+        )
+
+    selected: dict[str, tuple[str, ...]] = {}
+    for name in ("required", "optional"):
+        value = schema.get(name)
+        if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
+            raise ValueError(f"association/mantel link_fields.{name} must be a sequence")
+        normalized = tuple(value)
+        if not all(isinstance(item, str) and item for item in normalized):
+            raise ValueError(
+                f"association/mantel link_fields.{name} must contain non-empty strings"
+            )
+        selected[name] = normalized
+
+    model_fields = tuple(item.name for item in dataclass_fields(MantelLink))
+    expected_required = model_fields[:4]
+    expected_optional = model_fields[4:]
+    if selected["required"] != expected_required:
+        raise ValueError(
+            "association/mantel link_fields.required must match MantelLink core fields"
+        )
+    if selected["optional"] != expected_optional:
+        raise ValueError(
+            "association/mantel link_fields.optional must match MantelLink optional fields"
+        )
+
+    aliases = schema.get("legacy_aliases")
+    if not isinstance(aliases, Mapping) or not all(
+        isinstance(key, str) and key and isinstance(value, str) and value
+        for key, value in aliases.items()
+    ):
+        raise ValueError("association/mantel link_fields.legacy_aliases must map non-empty strings")
+    if set(aliases) != {"source", "target"}:
+        raise ValueError(
+            "association/mantel link_fields.legacy_aliases must preserve source and target"
+        )
+    alias_values = tuple(aliases.values())
+    if len(alias_values) != len(set(alias_values)) or set(alias_values) & set(model_fields):
+        raise ValueError("association/mantel legacy link aliases must be unique")
+    return selected["required"], selected["optional"], dict(aliases)
 
 
 def _links(value: object, labels: tuple[str, ...]) -> tuple[MantelLink, ...]:

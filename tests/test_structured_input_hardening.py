@@ -22,6 +22,7 @@ from axiomfig.intent import (
 )
 from axiomfig.structured_io import load_yaml
 from axiomfig.templates import registry
+from axiomfig.templates.association.mantel import data as mantel_data_module
 from axiomfig.templates.association.mantel import styling as mantel_styling
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -462,10 +463,11 @@ def test_scatter_consumer_rejects_alpha_bearing_edge_color(
 @pytest.mark.parametrize(
     "mutate",
     (
-        lambda fields: fields.__setitem__("required", [None]),
-        lambda fields: fields.__setitem__("optional", None),
-        lambda fields: fields.__setitem__("legacy_aliases", {"source": None}),
-        lambda fields: fields.__setitem__("legacy_aliases", {"unknown": "legacy"}),
+        lambda variant: variant.__setitem__("link_fields", None),
+        lambda variant: variant["link_fields"].__setitem__("required", ["foo"]),
+        lambda variant: variant["link_fields"].__setitem__("optional", ["unused"]),
+        lambda variant: variant["link_fields"].__setitem__("legacy_aliases", {"source": None}),
+        lambda variant: variant["link_fields"].__setitem__("legacy_aliases", {"unknown": "legacy"}),
     ),
 )
 def test_nested_link_field_contract_fails_closed(
@@ -477,14 +479,27 @@ def test_nested_link_field_contract_fails_closed(
     family = tmp_path / "association"
     family.mkdir()
     document = yaml.safe_load(source.read_text(encoding="utf-8"))
-    mutate(document["variants"]["mantel"]["link_fields"])
+    mutate(document["variants"]["mantel"])
     (family / "contract.yaml").write_text(
         yaml.safe_dump(document, sort_keys=False), encoding="utf-8"
     )
     monkeypatch.setattr(registry, "files", lambda _package: tmp_path)
 
     with pytest.raises(ValueError, match="link_fields"):
-        registry.load_family_contract("association")
+        mantel_data_module.normalized_public_values(
+            {
+                "correlation_matrix": [[1.0, 0.2], [0.2, 1.0]],
+                "labels": ["A", "B"],
+                "links": [
+                    {
+                        "source": "Surface",
+                        "target": "A",
+                        "mantel_r": 0.4,
+                        "p_value": 0.02,
+                    }
+                ],
+            }
+        )
 
 
 def test_json_rows_must_have_one_consistent_schema(tmp_path: Path) -> None:
