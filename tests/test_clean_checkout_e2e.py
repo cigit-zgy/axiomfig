@@ -43,7 +43,9 @@ def test_clean_checkout_executes_documented_quick_start(tmp_path: Path) -> None:
     }
     env["PYTHONNOUSERSITE"] = "1"
     _run([str(python), "scripts/validate_skill.py"], cwd=checkout, env=env)
-    output = outside / "parity"
+    artifacts = outside / "artifacts"
+    artifacts.mkdir()
+    output = artifacts / "parity"
     _run(
         [
             str(environment / "bin/axiomfig-intent"),
@@ -59,7 +61,7 @@ def test_clean_checkout_executes_documented_quick_start(tmp_path: Path) -> None:
     assert output.with_suffix(".pdf").is_file()
     assert output.with_suffix(".png").is_file()
     _run(
-        [str(environment / "bin/axiomfig-validate"), str(outside)],
+        [str(environment / "bin/axiomfig-validate"), str(artifacts)],
         cwd=outside,
         env=env,
     )
