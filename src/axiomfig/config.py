@@ -105,6 +105,12 @@ def _nonempty_string(value: object, name: str) -> str:
 def _integer(value: object, name: str, *, positive: bool = False) -> int:
     if isinstance(value, bool) or not isinstance(value, int):
         raise ValueError(f"{name} must be an integer")
+    try:
+        finite_value = float(value)
+    except OverflowError as exc:
+        raise ValueError(f"{name} must be finite") from exc
+    if not math.isfinite(finite_value):
+        raise ValueError(f"{name} must be finite")
     if positive and value <= 0:
         raise ValueError(f"{name} must be positive")
     return value

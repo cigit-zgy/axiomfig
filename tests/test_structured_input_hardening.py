@@ -362,6 +362,25 @@ def test_oversized_executable_yaml_numbers_are_bounded_value_errors(validator) -
 @pytest.mark.parametrize(
     "mutate",
     (
+        lambda style: style["rendering"].__setitem__("dpi", 10**1000),
+        lambda style: style["axes"]["nice_linear"].__setitem__("minor_divisor", 10**1000),
+    ),
+)
+def test_oversized_integer_style_consumers_fail_during_contract_loading(
+    tmp_path: Path, mutate: Callable[[dict[str, object]], None]
+) -> None:
+    target = _mutated_style_root(tmp_path, mutate)
+    load_contracts.cache_clear()
+    try:
+        with pytest.raises(ValueError, match="must be finite"):
+            load_contracts(target)
+    finally:
+        load_contracts.cache_clear()
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    (
         lambda contract: contract["matrix"].__setitem__("source_label_max_width_pt", 10**10000),
         lambda contract: contract["matrix"].__setitem__("target_rail_offset", 10**10000),
         lambda contract: contract["links"]["strength_breaks"].__setitem__(0, 10**10000),
