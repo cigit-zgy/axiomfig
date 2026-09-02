@@ -28,9 +28,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/cigit-zgy/axiomfig-skill"
-Repository = "https://github.com/cigit-zgy/axiomfig-skill"
-Issues = "https://github.com/cigit-zgy/axiomfig-skill/issues"
+Homepage = "https://github.com/cigit-zgy/axiomfig"
+Repository = "https://github.com/cigit-zgy/axiomfig"
+Issues = "https://github.com/cigit-zgy/axiomfig/issues"
 
 [project.optional-dependencies]
 dev = [

@@ -120,9 +120,9 @@ semantics. Do not provide chain-of-thought.
 
 {_DECISION_INSTRUCTIONS}
 
-<axiomfig-skill-surface>
+<axiomfig-surface>
 {_surface_text(workspace)}
-</axiomfig-skill-surface>
+</axiomfig-surface>
 
 <researcher-input>
 {case_input}

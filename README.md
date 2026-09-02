@@ -104,7 +104,7 @@ The repository follows a conventional Skill layout while keeping the executable 
 the same project:
 
 ```text
-axiomfig-skill/
+axiomfig/
 ├── SKILL.md                     # short Agent entry point and routing
 ├── references/                  # progressive-disclosure knowledge
 │   ├── element-contracts/       # default → exception → adjustment surface
@@ -202,7 +202,7 @@ The latest tagged stable runtime is currently `v1.1.0`:
 
 ```bash
 brew install tectonic poppler
-python -m pip install "axiomfig @ git+https://github.com/cigit-zgy/axiomfig-skill.git@v1.1.0"
+python -m pip install "axiomfig @ git+https://github.com/cigit-zgy/axiomfig.git@v1.1.0"
 ```
 
 For development from a source checkout:
