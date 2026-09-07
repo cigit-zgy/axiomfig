@@ -19,13 +19,16 @@ explicit User instruction
 
 `reports/concept/` is chronological design exploration/history only. `reports/handoff/` is conversation context only. Neither overrides current `design/` or an active committed task.
 
-Global collaboration authority is `cigit-zgy/agent-collaboration`. For repository tasks, resolve the current/pinned revision through its `SKILL.md`; delegated Codex tasks pin the exact collaboration commit.
+Global collaboration authority:
+`cigit-zgy/agent-collaboration@ad88170b23920ddac0bff9a2fd467aa0c59917cf`
+
+Resolve collaboration behavior through that revision's `SKILL.md` and only the owner(s) routed for the active concern. Future repository-changing work refreshes collaboration authority according to that Skill; each delegated Codex task pins its governing revision explicitly.
 
 ## Ownership
 
 ```text
 design/                one current living design set
-SKILL.md                shortest normal Agent route
+SKILL.md                shortest normal AxiomFig Agent route
 references/             scientific/routing/element contracts for progressive disclosure
 src/axiomfig/templates/ family registry, contracts, adapters, builders, Gallery case definitions
 src/axiomfig/resources/ executable typography/style/color/LaTeX resources
@@ -68,7 +71,7 @@ A discovered design gap returns upstream for adjudication; code and tests do not
 
 ## Runtime and tooling
 
-The supported Python/tooling contract is declared by `pyproject.toml`, repository CI, and the executable tests. Common release verification includes Ruff, Mypy, pytest, Skill validation, registry/release evaluation, structural repeatability, isolated wheel installation, clean-checkout E2E, Gallery validation, and project-scoped dependency audit when the active task requires them.
+The supported Python/tooling contract is declared by `pyproject.toml`, repository CI, and executable tests. Common release verification includes Ruff, Mypy, pytest, Skill validation, registry/release evaluation, structural repeatability, isolated wheel installation, clean-checkout E2E, Gallery validation, and project-scoped dependency audit when the active task requires them.
 
 Project-specific shared coding-Skill additions: none. Use the collaboration-pinned shared coding profile for activated cross-Agent coding Skills.
 
