@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -19,7 +20,9 @@ CORE_BAR_GRAMMARS = (
 
 
 @pytest.mark.e2e
-@pytest.mark.parametrize("grammar", CORE_BAR_GRAMMARS)
+@pytest.mark.parametrize(
+    "grammar", (*CORE_BAR_GRAMMARS, "simple_interval", "grouped_sparse_interval")
+)
 def test_bar_csv_figure_intent_examples_execute_real_cli(grammar: str, tmp_path: Path) -> None:
     from axiomfig.cli import intent_main
     from axiomfig.validation import validate_pair
@@ -39,6 +42,34 @@ def test_bar_csv_figure_intent_examples_execute_real_cli(grammar: str, tmp_path:
     )
 
     assert result == 0
+    validate_pair(stem.with_suffix(".pdf"), stem.with_suffix(".png"))
+
+
+@pytest.mark.e2e
+@pytest.mark.parametrize("example", ["simple_interval", "grouped_sparse_interval"])
+def test_endpoint_examples_execute_json_external_path(example: str, tmp_path: Path) -> None:
+    from axiomfig.cli import intent_main
+    from axiomfig.intent import load_dataset
+    from axiomfig.validation import validate_pair
+
+    root = Path(__file__).resolve().parents[1] / "examples/bar"
+    dataset = tmp_path / "data.json"
+    dataset.write_text(json.dumps(load_dataset(root / f"{example}.csv")), encoding="utf-8")
+    stem = tmp_path / example
+    assert (
+        intent_main(
+            [
+                str(root / f"{example}.intent.yaml"),
+                "--data",
+                str(dataset),
+                "--output",
+                str(stem),
+                "--work-root",
+                str(tmp_path / "work"),
+            ]
+        )
+        == 0
+    )
     validate_pair(stem.with_suffix(".pdf"), stem.with_suffix(".png"))
 
 

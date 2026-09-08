@@ -1,0 +1,3 @@
+template: bar.grouped
+data: {category: category, group: group, value: value, lower: lower, upper: upper}
+semantics: {uncertainty_type: "95% CI", value_labels: false}

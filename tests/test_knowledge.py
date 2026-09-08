@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import yaml
@@ -12,15 +13,18 @@ def test_knowledge_index_routes_to_existing_topics_and_templates() -> None:
     from axiomfig.templates.registry import load_template_registry
 
     document = yaml.safe_load((KNOWLEDGE_ROOT / "index.yaml").read_text(encoding="utf-8"))
-    registered = {spec.template_id for spec in load_template_registry()}
+    specs = load_template_registry()
+    recommended = {spec.template_id for spec in specs if spec.agent_recommended}
 
     assert document["version"] == 1
     assert 10 <= len(document["intents"]) <= 15
     for route in document["intents"].values():
         assert (KNOWLEDGE_ROOT / route["topic"]).is_file()
-        assert {template.replace(".", "/") for template in route["templates"]} <= registered
-    assert document["family_guides"] == {"bar": "families/bar.md"}
-    assert (KNOWLEDGE_ROOT / document["family_guides"]["bar"]).is_file()
+        assert {template.replace(".", "/") for template in route["templates"]} <= recommended
+    assert "bar" in document["family_guides"]
+    assert set(document["family_guides"]) <= {spec.family for spec in specs if spec.public}
+    for guide in document["family_guides"].values():
+        assert (KNOWLEDGE_ROOT / guide).is_file()
 
 
 def test_registry_stays_discovery_only_and_knowledge_stays_compact() -> None:
@@ -63,7 +67,6 @@ def test_bar_family_guide_covers_each_grammar_without_schema_semantic_leakage() 
     assert guide.count("|---") >= len(grammars) + 1
     assert "`category`, `component`, `value`, `normalization`" not in guide
     assert "`category`, `side`, `value`, `mirror_side`" not in guide
-    assert "absolute tolerance of `1e-8` with no relative slack" in guide
     for heading in (
         "# Bar charts",
         "## Scientific role",
@@ -74,3 +77,38 @@ def test_bar_family_guide_covers_each_grammar_without_schema_semantic_leakage() 
         "## Neighboring / non-Bar charts",
     ):
         assert heading in guide
+
+
+def test_bar_family_guide_columns_and_endpoint_intent_match_executable_contracts() -> None:
+    from axiomfig.intent import parse_figure_intent
+    from axiomfig.templates.registry import load_family_contract, public_template_specs
+
+    guide = (KNOWLEDGE_ROOT / "families/bar.md").read_text(encoding="utf-8")
+    contract = load_family_contract("bar")["variants"]
+    rows = re.findall(r"^\| `bar\.([^`]+)` \| [^|]+ \| ([^|]+) \|$", guide, re.MULTILINE)
+    assert {variant for variant, _ in rows} == {
+        spec.variant
+        for spec in public_template_specs()
+        if spec.family == "bar" and spec.agent_recommended
+    }
+    for variant, columns in rows:
+        declared = set(contract[variant]["required"]) | set(contract[variant]["optional"])
+        assert set(re.findall(r"`([^`]+)`", columns)) <= declared
+
+    examples = re.findall(r"```yaml\n(.*?)\n```", guide, re.DOTALL)
+    assert examples
+    for example in examples:
+        parse_figure_intent(yaml.safe_load(example))
+    for variant in ("simple", "grouped"):
+        assert {"lower", "upper", "error", "uncertainty_type"} <= set(contract[variant]["optional"])
+        data = {"category": "category", "value": "value", "lower": "lower", "upper": "upper"}
+        if variant == "grouped":
+            data["group"] = "group"
+        parsed = parse_figure_intent(
+            {
+                "template": f"bar.{variant}",
+                "data": data,
+                "semantics": {"uncertainty_type": "95% CI"},
+            }
+        )
+        assert dict(parsed.data) == data

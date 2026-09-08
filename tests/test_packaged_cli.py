@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -8,6 +9,8 @@ import zipfile
 from pathlib import Path
 
 import pytest
+
+from axiomfig.templates.registry import load_template_registry
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -69,6 +72,10 @@ def test_clean_wheel_installs_resources_and_canonical_template_taxonomy(
     assert not any("share/axiomfig/" in name for name in names)
     assert not any("evaluation/" in name for name in names)
     assert not any("template-knowledge/" in name for name in names)
+    assert not any(
+        set(Path(name).parts) & {"reports", "design", "00_archive", "tests", "examples"}
+        for name in names
+    )
     assert "axiomfig/resources/fonts/XCharter-Roman.otf" in names
     assert "axiomfig/resources/fonts/licenses/Maple-Mono-OFL.txt" in names
     assert "axiomfig/resources/fonts/licenses/OFL-1.1.txt" in names
@@ -76,25 +83,18 @@ def test_clean_wheel_installs_resources_and_canonical_template_taxonomy(
     assert "axiomfig/resources/latex/axiomfig-colors.tex" in names
     assert not any("share/axiomfig/fonts/" in name for name in names)
     assert "axiomfig/templates/index.yaml" in names
-    for family in (
-        "line",
-        "scatter",
-        "bar",
-        "distribution",
-        "heatmap",
-        "estimation",
-        "diagnostics",
-        "ordination",
-        "association",
-        "flow",
-        "field",
-        "omics",
-        "survival",
-        "layouts",
-    ):
+    specs = load_template_registry()
+    families = {spec.family for spec in specs}
+    public_families = {spec.family for spec in specs if spec.public}
+    assert {
+        Path(name).parent.name
+        for name in names
+        if re.fullmatch(r"axiomfig/templates/[^/]+/contract\.yaml", name)
+    } == families
+    for family in families:
         assert f"axiomfig/templates/{family}/builders.py" in names
         assert f"axiomfig/templates/{family}/contract.yaml" in names
-        if family != "layouts":
+        if family in public_families:
             assert f"axiomfig/templates/{family}/adapter.py" in names
     assert (
         not {
@@ -172,9 +172,25 @@ def test_clean_wheel_installs_resources_and_canonical_template_taxonomy(
         cwd=outside,
         env=env,
     )
+    bar_examples = ("simple_interval", "grouped_sparse_interval")
+    for name in bar_examples:
+        for suffix in ("csv", "intent.yaml"):
+            shutil.copy2(ROOT / f"examples/bar/{name}.{suffix}", outside / f"{name}.{suffix}")
+        _run(
+            [
+                str(environment / "bin/axiomfig-intent"),
+                str(outside / f"{name}.intent.yaml"),
+                "--data",
+                str(outside / f"{name}.csv"),
+                "--output",
+                str(artifacts / name),
+            ],
+            cwd=outside,
+            env=env,
+        )
     assert all(
         (artifacts / f"{stem}.{suffix}").is_file()
-        for stem in ("intent-parity", "canonical-parity")
+        for stem in ("intent-parity", "canonical-parity", *bar_examples)
         for suffix in ("pdf", "png")
     )
     _run(

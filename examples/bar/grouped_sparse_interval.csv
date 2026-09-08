@@ -1,0 +1,6 @@
+category,group,value,lower,upper
+Influent,Control,5.2,4.6,6.1
+Influent,Treatment,4.7,4.1,5.0
+Effluent,Control,2.9,2.3,3.2
+Reuse,Treatment,0.0,0.0,0.3
+Reuse,Control,1.8,1.6,2.3

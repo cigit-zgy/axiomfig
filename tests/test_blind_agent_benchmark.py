@@ -27,6 +27,7 @@ def _render_decision() -> dict[str, object]:
 
 
 def test_sanitized_workspace_exposes_only_the_agent_surface(tmp_path: Path) -> None:
+    from axiomfig.templates.registry import load_template_registry
     from tests.evaluation.blind_agent import prepare_sanitized_workspace
 
     destination = tmp_path / "sandbox"
@@ -38,9 +39,13 @@ def test_sanitized_workspace_exposes_only_the_agent_surface(tmp_path: Path) -> N
     assert destination / "references/template-knowledge/index.yaml" in copied
     assert destination / "references/template-knowledge/families/bar.md" in copied
     assert destination / "src/axiomfig/templates/index.yaml" in copied
-    assert len(list(destination.glob("src/axiomfig/templates/*/contract.yaml"))) == 14
+    assert {
+        path.parent.name for path in destination.glob("src/axiomfig/templates/*/contract.yaml")
+    } == {spec.family for spec in load_template_registry()}
     assert not (destination / "tests").exists()
     assert not (destination / "reports").exists()
+    assert not (destination / "design").exists()
+    assert not (destination / "00_archive").exists()
     assert not (destination / ".git").exists()
     assert not any(path.is_symlink() for path in destination.rglob("*"))
 

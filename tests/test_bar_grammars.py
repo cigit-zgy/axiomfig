@@ -391,15 +391,6 @@ def test_public_bar_rejects_null_identifier_roles(
     ("template", "data", "semantics"),
     [
         (
-            "bar.grouped",
-            {
-                "category": ["A", "A", "B"],
-                "group": ["G1", "G2", "G1"],
-                "value": [1.0, 2.0, 3.0],
-            },
-            {},
-        ),
-        (
             "bar.stacked",
             {
                 "category": ["A", "A", "B"],

@@ -1,0 +1,3 @@
+template: bar.simple
+data: {category: category, value: value, lower: lower, upper: upper}
+semantics: {uncertainty_type: "95% CI", value_labels: false}

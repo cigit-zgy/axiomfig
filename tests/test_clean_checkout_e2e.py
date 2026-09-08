@@ -60,6 +60,19 @@ def test_clean_checkout_executes_documented_quick_start(tmp_path: Path) -> None:
     )
     assert output.with_suffix(".pdf").is_file()
     assert output.with_suffix(".png").is_file()
+    for example in ("simple_interval", "grouped_sparse_interval"):
+        _run(
+            [
+                str(environment / "bin/axiomfig-intent"),
+                str(checkout / f"examples/bar/{example}.intent.yaml"),
+                "--data",
+                str(checkout / f"examples/bar/{example}.csv"),
+                "--output",
+                str(artifacts / example),
+            ],
+            cwd=outside,
+            env=env,
+        )
     _run(
         [str(environment / "bin/axiomfig-validate"), str(artifacts)],
         cwd=outside,

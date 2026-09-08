@@ -109,6 +109,20 @@ def _category_totals(values: dict[str, object]) -> np.ndarray:
 
 
 def _adapt_error(values: dict[str, object], magnitude: np.ndarray) -> None:
+    endpoints = {"lower", "upper"} & values.keys()
+    if endpoints:
+        if "error" in values:
+            raise ValueError("bar error and lower/upper are mutually exclusive")
+        if endpoints != {"lower", "upper"}:
+            raise ValueError("bar lower and upper must be supplied together")
+        lower = numeric_1d(values["lower"], "lower")
+        upper = numeric_1d(values["upper"], "upper")
+        equal_length({"value": magnitude, "lower": lower, "upper": upper})
+        if np.any(lower > magnitude) or np.any(upper < magnitude):
+            raise ValueError("bar uncertainty requires lower <= value <= upper")
+        with np.errstate(over="ignore", invalid="ignore"):
+            values["error"] = np.column_stack((magnitude - lower, upper - magnitude))
+        del values["lower"], values["upper"]
     if "error" not in values:
         if "uncertainty_type" in values:
             raise ValueError("bar uncertainty_type requires supplied error values")
@@ -163,7 +177,6 @@ def _adapt_category_values(variant: str, values: dict[str, object]) -> None:
     }
     _unique_logical_keys(values, key_roles[variant])
     if variant in {
-        "grouped",
         "stacked",
         "normalized_stacked",
         "grouped_stacked",

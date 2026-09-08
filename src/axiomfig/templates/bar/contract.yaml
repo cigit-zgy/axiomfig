@@ -3,11 +3,11 @@ variants:
   simple:
     input_mode: direct
     required: [category, value]
-    optional: [orientation, error, uncertainty_type, value_labels, xlabel, ylabel]
+    optional: [orientation, lower, upper, error, uncertainty_type, value_labels, xlabel, ylabel]
   grouped:
     input_mode: direct
     required: [category, value, group]
-    optional: [orientation, error, uncertainty_type, value_labels, xlabel, ylabel]
+    optional: [orientation, lower, upper, error, uncertainty_type, value_labels, xlabel, ylabel]
   stacked:
     input_mode: direct
     required: [category, value, component]

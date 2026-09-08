@@ -110,8 +110,10 @@ def adapt_template_data(template_id: str, values: dict[str, Any]) -> dict[str, o
     if unknown:
         raise ValueError(f"{template_id} does not accept: {sorted(unknown)}")
     adapted = adapter(variant, dict(values))
-    if set(adapted) != provided:
-        raise RuntimeError(f"adapter for {template_id} changed supplied field ownership")
+    # Adapters may normalize alternative declared roles (e.g. endpoints to error widths),
+    # but cannot remove required roles or escape the family's executable contract.
+    if not required <= set(adapted) <= permitted:
+        raise RuntimeError(f"adapter for {template_id} violated declared field ownership")
     return adapted
 
 

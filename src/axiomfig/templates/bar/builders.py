@@ -240,48 +240,47 @@ def build_grouped(
     ylabel: object | None = None,
 ) -> Figure:
     if category is None and value is None and group is None:
-        labels = ["COD", "Nitrogen", "Phosphorus"]
-        groups = ["Mechanistic", "Hybrid"]
-        values = np.array([[0.72, 0.67, 0.61], [0.84, 0.76, 0.71]])
-        errors = None
-    elif category is not None and value is not None and group is not None:
-        labels, groups, values = _pivot(category, value, group)
-        if error is None:
-            errors = None
-        else:
-            error_values = np.asarray(error, dtype=float)
-            if error_values.ndim == 1:
-                _, _, errors = _pivot(category, error_values, group)
-            else:
-                _, _, lower_errors = _pivot(category, error_values[:, 0], group)
-                _, _, upper_errors = _pivot(category, error_values[:, 1], group)
-                errors = np.stack((lower_errors, upper_errors), axis=1)
-        if errors is not None and uncertainty_type is None:
-            raise ValueError("uncertainty_type is required with grouped bar errors")
-    else:
+        category = ["COD", "Nitrogen", "Phosphorus"] * 2
+        group = ["Mechanistic"] * 3 + ["Hybrid"] * 3
+        value = [0.72, 0.67, 0.61, 0.84, 0.76, 0.71]
+    if category is None or value is None or group is None:
         raise ValueError("grouped bar requires category, value, and group together")
-    if errors is None:
-        bounds = linear_limits(values)
-    else:
-        raw_values = np.asarray(value, dtype=float)
-        raw_error = np.asarray(error, dtype=float)
-        bounds = error_limits(raw_values, raw_error)
+    categories = np.asarray(category, dtype=object).astype(str)
+    groups_array = np.asarray(group, dtype=object).astype(str)
+    values = np.asarray(value, dtype=float)
+    if (
+        categories.ndim != 1
+        or groups_array.shape != categories.shape
+        or values.shape != categories.shape
+        or not values.size
+    ):
+        raise ValueError("grouped bar requires equal-length one-dimensional data")
+    keys = list(zip(categories, groups_array, strict=True))
+    if len(keys) != len(set(keys)):
+        raise ValueError("bar duplicate logical key for category, group")
+    labels = list(dict.fromkeys(categories))
+    groups = list(dict.fromkeys(groups_array))
+    positions = np.asarray([labels.index(label) for label in categories])
+    errors = None if error is None else np.asarray(error, dtype=float)
+    if errors is not None and uncertainty_type is None:
+        raise ValueError("uncertainty_type is required with grouped bar errors")
+    bounds = linear_limits(values) if errors is None else error_limits(values, errors)
     selected_orientation = _orientation(orientation)
-    positions = np.arange(len(labels))
     width = bar_width(len(groups))
     figure, axis = plt.subplots()
     containers: list[BarContainer] = []
     for index, label in enumerate(groups):
         offset = (index - (len(groups) - 1) / 2) * width
+        rows = groups_array == label
         containers.append(
             _bar(
                 axis,
-                positions + offset,
-                values[index],
+                positions[rows] + offset,
+                values[rows],
                 orientation=selected_orientation,
                 width=width,
                 label=label,
-                error=None if errors is None else errors[index],
+                error=None if errors is None else errors[rows].T,
             )
         )
     suffix = "" if uncertainty_type is None else f" ({uncertainty_type})"

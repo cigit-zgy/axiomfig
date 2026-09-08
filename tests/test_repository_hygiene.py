@@ -16,6 +16,11 @@ PUBLIC_TEXT_ROOTS = (
     ROOT / "README.md",
     ROOT / "SKILL.md",
     ROOT / "CONTRIBUTING.md",
+    ROOT / "AGENTS.md",
+    ROOT / "design",
+    ROOT / ".github",
+    ROOT / "pyproject.toml",
+    ROOT / "SECURITY.md",
 )
 TEXT_SUFFIXES = {".py", ".md", ".yaml", ".yml", ".toml", ".csv", ".json", ".sh"}
 INTENTIONAL_LARGE_PREFIXES = ("gallery/", "src/axiomfig/resources/fonts/")
@@ -48,6 +53,16 @@ def test_public_and_production_text_contains_no_local_absolute_user_paths() -> N
         if pattern.search(path.read_text(encoding="utf-8", errors="replace"))
     ]
 
+    assert violations == []
+
+
+def test_active_operational_surfaces_use_current_repository_identity() -> None:
+    retired_repository = "cigit-zgy/axiomfig-skill"
+    violations = [
+        path.relative_to(ROOT).as_posix()
+        for path in _public_text_files()
+        if retired_repository in path.read_text(encoding="utf-8", errors="replace")
+    ]
     assert violations == []
 
 
@@ -130,6 +145,7 @@ def test_contract_markdown_does_not_duplicate_physical_runtime_defaults() -> Non
         ROOT / "references/style-contract.md",
         ROOT / "references/layout-contract.md",
         ROOT / "references/mantel.md",
+        *(ROOT / "references/template-knowledge/families").glob("*.md"),
     )
     numeric_physical_unit = re.compile(r"\b\d+(?:\.\d+)?\s*(?:pt²?|mm|px)\b")
     violations = {

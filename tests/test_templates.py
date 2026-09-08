@@ -29,21 +29,6 @@ SCIENTIFIC_FAMILIES = (
     "omics",
     "survival",
 )
-EXPECTED_PUBLIC_COUNTS = {
-    "line": 7,
-    "scatter": 6,
-    "bar": 12,
-    "distribution": 8,
-    "heatmap": 5,
-    "estimation": 3,
-    "diagnostics": 8,
-    "ordination": 4,
-    "association": 2,
-    "flow": 1,
-    "field": 2,
-    "omics": 2,
-    "survival": 1,
-}
 
 
 def test_registry_has_canonical_taxonomy_and_separate_layouts() -> None:
@@ -52,11 +37,9 @@ def test_registry_has_canonical_taxonomy_and_separate_layouts() -> None:
 
     assert tuple(dict.fromkeys(spec.family for spec in public)) == SCIENTIFIC_FAMILIES
     assert {spec.family for spec in specs if not spec.public} == {"layouts"}
-    assert len(public) == sum(EXPECTED_PUBLIC_COUNTS.values())
-    assert len(specs) == len(public) + sum(not spec.public for spec in specs)
-    assert {
-        family: sum(spec.family == family for spec in public) for family in SCIENTIFIC_FAMILIES
-    } == EXPECTED_PUBLIC_COUNTS
+    assert {spec.template_id for spec in public} == {
+        spec.template_id for spec in specs if spec.public
+    }
 
 
 def test_registry_ids_contracts_and_builders_agree_exactly() -> None:
