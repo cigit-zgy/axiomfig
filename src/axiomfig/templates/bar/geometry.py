@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from axiomfig.style import nice_linear_axis
+
 _LINEAR_LIMIT_PADDING_FRACTION = 0.14
 
 
@@ -43,6 +45,12 @@ def linear_limits(*arrays: np.ndarray) -> tuple[float, float]:
         )
     if not np.all(np.isfinite(limits)):
         raise ValueError("bar values must produce finite derived geometry")
+    # Finite extrema alone do not guarantee finite downstream tick candidates.
+    # Validate the existing axis grammar before leaving the public adapter boundary.
+    try:
+        nice_linear_axis(*limits)
+    except (OverflowError, ValueError) as exc:
+        raise ValueError("bar values must produce finite renderable axis geometry") from exc
     return limits
 
 

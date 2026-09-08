@@ -83,6 +83,27 @@ def test_endpoint_uncertainty_requires_explicit_meaning():
         _figure("simple", {"category": ["A"], "value": [2.0], "lower": [1.0], "upper": [3.0]})
 
 
+@pytest.mark.parametrize("variant", ["simple", "grouped"])
+@pytest.mark.parametrize("orientation", ["vertical", "horizontal"])
+@pytest.mark.parametrize("uncertainty", ["none", "error", "endpoints"])
+@pytest.mark.parametrize("value", [5e307, 1e308])
+def test_extreme_finite_axis_candidates_fail_at_public_adapter_boundary(
+    variant, orientation, uncertainty, value
+):
+    data = {"category": ["A"], "value": [value]}
+    semantics = {"orientation": orientation}
+    if variant == "grouped":
+        data["group"] = ["G"]
+    if uncertainty != "none":
+        semantics["uncertainty_type"] = "CI"
+        if uncertainty == "error":
+            data["error"] = [value * 0.1]
+        else:
+            data.update(lower=[value * 0.5], upper=[value * 1.2])
+    with pytest.raises(FigureIntentError, match="finite renderable axis geometry"):
+        _figure(variant, data, **semantics)
+
+
 @pytest.mark.parametrize("orientation", ["vertical", "horizontal"])
 @pytest.mark.parametrize("uncertainty", ["none", "error", "endpoints"])
 def test_sparse_grouped_preserves_global_slots_missing_zero_order_and_uncertainty(
