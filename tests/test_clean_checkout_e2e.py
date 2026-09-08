@@ -37,11 +37,21 @@ def test_clean_checkout_executes_documented_quick_start(tmp_path: Path) -> None:
     _run(["git", "checkout", "--detach", expected_sha], cwd=checkout)
     _run([sys.executable, "-m", "venv", str(environment)], cwd=outside)
     python = environment / "bin/python"
-    _run([str(python), "-m", "pip", "install", str(checkout)], cwd=outside)
     env = {
         key: value for key, value in os.environ.items() if key not in {"PYTHONPATH", "PYTHONHOME"}
     }
     env["PYTHONNOUSERSITE"] = "1"
+    _run([str(python), "-m", "pip", "install", str(checkout)], cwd=outside, env=env)
+    _run(
+        [
+            str(python),
+            "-c",
+            "import sys; from pathlib import Path; import axiomfig; "
+            "assert Path(axiomfig.__file__).is_relative_to(Path(sys.prefix))",
+        ],
+        cwd=outside,
+        env=env,
+    )
     _run([str(python), "scripts/validate_skill.py"], cwd=checkout, env=env)
     artifacts = outside / "artifacts"
     artifacts.mkdir()

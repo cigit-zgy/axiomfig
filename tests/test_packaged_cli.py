@@ -112,16 +112,18 @@ def test_clean_wheel_installs_resources_and_canonical_template_taxonomy(
 
     _run([sys.executable, "-m", "venv", str(environment)], cwd=outside)
     python = environment / "bin/python"
-    _run([str(python), "-m", "pip", "install", str(wheel)], cwd=outside)
     env = {
         key: value for key, value in os.environ.items() if key not in {"PYTHONPATH", "PYTHONHOME"}
     }
     env["PYTHONNOUSERSITE"] = "1"
+    _run([str(python), "-m", "pip", "install", str(wheel)], cwd=outside, env=env)
     _run(
         [
             str(python),
             "-c",
             (
+                "import sys; from pathlib import Path; import axiomfig; "
+                "assert Path(axiomfig.__file__).is_relative_to(Path(sys.prefix)); "
                 "from axiomfig.config import load_contracts; "
                 "from axiomfig.templates import TEMPLATE_BUILDERS; "
                 "from importlib.resources import files; "
